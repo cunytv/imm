@@ -1,5 +1,9 @@
 #!/bin/bash
 
+## local variables
+# declare an age in days under which files will be excluded from being removal candidates
+keepnewforXdays=5
+
 cp -v /Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml /Users/archivesx/Desktop/XML/
 
 #inputs
@@ -14,7 +18,7 @@ CUNYTV_TOAIRALL="/Volumes/From library/schedules/cunytvto_air_all.txt"
 CUNYTV_TOAIR="/Volumes/From library/schedules/cunytvto_air.txt"
 
 #outputs
-AGED_DATE=$(date -v-5d '+%F')
+AGED_DATE=$(date -v-${keepnewforXdays}d '+%F')
 TODAY=$(date '+%F')
 REPORTDIR="$HOME/Desktop/REPORTS/$TODAY"
 IDS_NYCMG="/$REPORTDIR/all_protrack_ids_nycmg.txt"
