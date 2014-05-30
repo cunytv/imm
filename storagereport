@@ -66,21 +66,20 @@ for xml in `find "${NYCMG_ABOUT_TO_RUN_DIR}" -type f -iname "*.xml"` ; do
     sort -u "${NYCMG4AIR}x" > "${NYCMG4AIR}"
     echo "Mediaid count for $(basename "$xml"): $(sed -n -e 's/.*<mediaid>\([^<]*\)<\/mediaid>.*/\1/p' "$xml" | grep -v "^$" | sort -u | wc -l)"
 done
-echo "Total files loaded to air on NYCMG: $(wc -l "${NYCMG4AIR}")"
+echo "Total files loaded to air on NYCMG: $(cat "${NYCMG4AIR}" | wc -l)"
 
 # list all NYCMG ProTrack IDs (Programs and Filler)
 # 'T-' and '/1' are temporary prefixes and suffixes of NYCMG mediaids and are removed when filematching
 cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | sort -u > "$IDS_NYCMG"
-echo "Total known NYCMG mediaids: $(wc -l "$IDS_NYCMG")"
+echo "Total known NYCMG mediaids: $(cat "$IDS_NYCMG" | wc -l)"
 cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u > "$NYCMG_FILLER_IDS"
 echo "Total known NYCMG mediaids (interstitials): $(wc -l "$IDS_NYCMG")"
 
 # list all CUNYTV ProTrack IDs (Programs, Segments, and Filler)
 cat "$CUNY_FILLERS" "$CUNY_PROGRAMS" "$CUNY_SEGMENTS" | tr "\r" "\n" | awk '{print $1}' | sort -u > "$IDS_CUNYTV"
-echo "Total known CUNYTV mediaids: $(wc -l "$IDS_CUNYTV")"
+echo "Total known CUNYTV mediaids: $(cat "$IDS_CUNYTV"| wc -l)"
 cat "$CUNY_FILLERS" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "$CUNYTV_FILLER_IDS"
-echo "Total known CUNYTV mediaids (interstitials): $(wc -l "$IDS_NYCMG")"
-
+echo "Total known CUNYTV mediaids (interstitials): $(cat "$CUNYTV_FILLER_IDS" | wc -l)"
 # list all ProTrack IDs, both systems
 cat "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "$IDS_BOTH"
 comm -1 -2 "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "${CONFLICTS}"
