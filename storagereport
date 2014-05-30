@@ -70,14 +70,15 @@ echo "Total files loaded to air on NYCMG: $(wc -l "${NYCMG4AIR}")"
 # list all NYCMG ProTrack IDs (Programs and Filler)
 # 'T-' and '/1' are temporary prefixes and suffixes of NYCMG mediaids and are removed when filematching
 cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | sort -u > "$IDS_NYCMG"
+echo "Total known NYCMG mediaids: $(wc -l "$IDS_NYCMG")"
+cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u > "$NYCMG_FILLER_IDS"
+echo "Total known NYCMG mediaids (interstitials): $(wc -l "$IDS_NYCMG")"
 
-# list all NYCMG Filler
-# need to make this work with Windows line endings on input
-cat "$NYCMG_MEDIAID_CSV" | grep "F,$" | cut -d, -f1 | sort -u > "$NYCMG_FILLER_IDS"
-cat "$CUNY_FILLERS" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "$CUNYTV_FILLER_IDS"
-
-# list all CUNYTV ProTrack IDs
+# list all CUNYTV ProTrack IDs (Programs, Segments, and Filler)
 cat "$CUNY_FILLERS" "$CUNY_PROGRAMS" "$CUNY_SEGMENTS" | tr "\r" "\n" | awk '{print $1}' | sort -u > "$IDS_CUNYTV"
+echo "Total known CUNYTV mediaids: $(wc -l "$IDS_CUNYTV")"
+cat "$CUNY_FILLERS" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "$CUNYTV_FILLER_IDS"
+echo "Total known CUNYTV mediaids (interstitials): $(wc -l "$IDS_NYCMG")"
 
 # list all ProTrack IDs, both systems
 cat "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "$IDS_BOTH"
