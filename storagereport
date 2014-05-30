@@ -43,12 +43,12 @@ NYCMG_ON_OMNEON_NOT_FILLER="$REPORTDIR/what_is_on_the_omneon_ids_only_nycmg_only
 CUNYTV_ON_OMNEON_NOT_FILLER="$REPORTDIR/what_is_on_the_omneon_ids_only_cunytv_only_not_filler.txt"
 NYCMG_NEARLINE="$REPORTDIR/nycmg_on_nearline.txt"
 NYCMG_NEARLINE_STAT="$REPORTDIR/nycmg_on_nearline_stat.txt"
-CUNYTV_NEARLINE="$REPORTDIR/cunytv_on_nearline.txt"
-CUNYTV_NEARLINE_STAT="$REPORTDIR/cunytv_on_nearline_stat.txt"
 NYCMG_REMOVAL_CANDIDATES="$REPORTDIR/nycmg_omneon_removal_candidates.txt"
-CUNYTV_REMOVAL_CANDIDATES="$REPORTDIR/cunytv_omneon_removal_candidates.txt"
 NYCMG_REMOVAL_CANDIDATES_NEARLINE="$REPORTDIR/nycmg_omneon_removal_candidates_already_on_nearline.txt"
 NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE="$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline.txt"
+CUNYTV_NEARLINE="$REPORTDIR/cunytv_on_nearline.txt"
+CUNYTV_NEARLINE_STAT="$REPORTDIR/cunytv_on_nearline_stat.txt"
+CUNYTV_REMOVAL_CANDIDATES="$REPORTDIR/cunytv_omneon_removal_candidates.txt"
 
 # set up reporting directories
 mkdir -p "$REPORTDIR"
