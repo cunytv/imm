@@ -51,7 +51,11 @@ NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE="$REPORTDIR/nycmg_omneon_removal_candidate
 mkdir -p "$REPORTDIR"
 mkdir -p "${NYCMG_ABOUT_TO_RUN_DIR}"
 
-# grab and process about to runs
+### REPORT ON MEDIAIDS IN UPCOMING AIR
+# get CUNYTV mediaids that are needed for air
+cat "$CUNYTV_TOAIRALL" "$CUNYTV_TOAIR" | tr "\r" "\n" | awk '{print $1}' | sort -u  | grep -v "^$" > "$CUNYTV4AIR"
+echo "Total files loaded to air on CUNYTV: $(cat "${CUNYTV4AIR}" | wc -l)"
+# grab and process about to runs for NYCMG
 for abouttorun in "${abouttoruns[@]}" ; do
     if [[ -f "${abouttorun}" ]] ; then
         cp "${abouttorun}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
@@ -88,9 +92,6 @@ comm -1 -2 "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "${CONFLICTS}"
 stat -F -l -t '%FT%T' "$OMNEON_PATH/"* | grep -v "/$" | sed 's/*//g' > "$ON_OMNEON_FILES_STAT"
 cut -d " " -f 7- "$ON_OMNEON_FILES_STAT" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$ON_OMNEON_IDS"
 awk -v date="$AGED_DATE" '$6 <= date' "$ON_OMNEON_FILES_STAT" | cut -d " " -f 7- |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$ON_OMNEON_IDS_OLD"
-
-# get CUNYTV mediaids that are needed for air
-cat "$CUNYTV_TOAIRALL" "$CUNYTV_TOAIR" | tr "\r" "\n" | awk '{print $1}' | sort -u  | grep -v "^$" > "$CUNYTV4AIR"
 
 # make orphans report
 comm -2 -3 "$ON_OMNEON_IDS" "$IDS_BOTH" > "$ORPHANS"
