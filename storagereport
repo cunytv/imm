@@ -120,6 +120,10 @@ find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t
 cut -d " " -f 7- "$CUNYTV_NEARLINE_STAT" | cut -d/ -f4 | cut -d. -f1 | sort | grep -v "^$" > "$CUNYTV_NEARLINE"
 echo "Nearline file count (cunytv): $(cat "${CUNYTV_NEARLINE}" | wc -l)"
 
+# LTO reports
+cat ~/Documents/C0* | grep "^/Volumes/" > "/$REPORTDIR/nycmg_files_on_long_term_storage.txt"
+cat ~/Documents/A00* | grep ^/Volumes | cut -d/ -f4- | cut -d. -f1 | tr '/' '\n' | sort | uniq > "$REPORTDIR/cunytv_lto_ids.txt"
+
 # find NYCMG removal candidates
 comm -2 -3 "$NYCMG_ON_OMNEON" "$NYCMG_FILLER_IDS" > "$NYCMG_ON_OMNEON_NOT_FILLER"
 comm -2 -3 "$NYCMG_ON_OMNEON_NOT_FILLER" "$NYCMG4AIR" > "$NYCMG_REMOVAL_CANDIDATES"
@@ -140,5 +144,3 @@ for i in `cat "$CUNYTV_REMOVAL_CANDIDATES_NEARLINE"` ; do grep "/${i}\." "$ON_OM
 for i in `cat "$CUNYTV_REMOVAL_CANDIDATES_NEARLINE"` ; do grep "/${i}\." "$CUNYTV_NEARLINE_STAT" | awk '{print $7 " " $5}' | sed 's:/Volumes/NYCM_Media/::g' ; done > "/$REPORTDIR/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt"
 diff -y "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "/$REPORTDIR/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "/$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
 
-cat ~/Documents/C0* | grep "^/Volumes/" > "/$REPORTDIR/nycmg_files_on_long_term_storage.txt"
-cat ~/Documents/A00* | grep ^/Volumes | cut -d/ -f4- | cut -d. -f1 | tr '/' '\n' | sort | uniq > "/$REPORTDIR/cunytv_lto_ids.txt"
