@@ -4,7 +4,9 @@
 # declare an age in days under which files will be excluded from being removal candidates
 keepnewforXdays=5
 
-cp -v /Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml /Users/archivesx/Desktop/XML/
+# shortcuts
+AGED_DATE=$(date -v-${keepnewforXdays}d '+%F')
+TODAY=$(date '+%F')
 
 #inputs
 CUNY_FILLERS="/Volumes/From library/schedules/all_ids_filler.txt"
@@ -18,8 +20,6 @@ CUNYTV_TOAIRALL="/Volumes/From library/schedules/cunytvto_air_all.txt"
 CUNYTV_TOAIR="/Volumes/From library/schedules/cunytvto_air.txt"
 
 #outputs
-AGED_DATE=$(date -v-${keepnewforXdays}d '+%F')
-TODAY=$(date '+%F')
 REPORTDIR="$HOME/Desktop/REPORTS/$TODAY"
 IDS_NYCMG="/$REPORTDIR/all_protrack_ids_nycmg.txt"
 IDS_CUNYTV="/$REPORTDIR/all_protrack_ids_cunytv.txt"
