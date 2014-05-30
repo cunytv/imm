@@ -35,6 +35,7 @@ CUNYTV4AIR="$REPORTDIR/cunytv_ids_in_upcoming_air.txt"
 NYCMG_FILLER_IDS="$REPORTDIR/nycmg_ids_of_filler.txt"
 CUNYTV_FILLER_IDS="$REPORTDIR/cunytv_ids_of_filler.txt"
 ORPHANS="$REPORTDIR/orphans.txt"
+CONFLICTS="$REPORTDIR/conflicts.txt"
 NYCMG_ON_OMNEON="$REPORTDIR/what_is_on_the_omneon_ids_only_nycmg_only.txt"
 CUNYTV_ON_OMNEON="$REPORTDIR/what_is_on_the_omneon_ids_only_cunytv_only.txt"
 NYCMG_ON_OMNEON_NOT_FILLER="$REPORTDIR/what_is_on_the_omneon_ids_only_nycmg_only_not_filler.txt"
@@ -82,6 +83,7 @@ echo "Total known CUNYTV mediaids (interstitials): $(wc -l "$IDS_NYCMG")"
 
 # list all ProTrack IDs, both systems
 cat "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "$IDS_BOTH"
+comm -1 -2 "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "${CONFLICTS}"
 
 # list all Omneon files
 stat -F -l -t '%FT%T' "$OMNEON_PATH/"* | grep -v "/$" | sed 's/*//g' > "$ON_OMNEON_FILES_STAT"
