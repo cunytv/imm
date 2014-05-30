@@ -3,7 +3,9 @@
 ## local variables
 # declare an age in days under which files will be excluded from being removal candidates
 keepnewforXdays=5
-
+# array of about-to-runs
+abouttoruns=(/Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml)
+    
 # shortcuts
 AGED_DATE=$(date -v-${keepnewforXdays}d '+%F')
 TODAY=$(date '+%F')
@@ -13,7 +15,6 @@ CUNY_FILLERS="/Volumes/From library/schedules/all_ids_filler.txt"
 CUNY_PROGRAMS="/Volumes/From library/schedules/all_ids_program.txt"
 CUNY_SEGMENTS="/Volumes/From library/schedules/all_ids_segments.txt"
 NYCMG_MEDIAID_CSV="/Users/archivesx/Desktop/REPORTS/NYCLIFE01011980.csv"
-NYCMG_XML_LOCATION="/Users/archivesx/Desktop/XML"
 NYCMG_NEARLINE_PATH="/Volumes/NYCM_Media"
 OMNEON_PATH="/Volumes/fs0/clip.dir"
 CUNYTV_TOAIRALL="/Volumes/From library/schedules/cunytvto_air_all.txt"
@@ -21,6 +22,7 @@ CUNYTV_TOAIR="/Volumes/From library/schedules/cunytvto_air.txt"
 
 #outputs
 REPORTDIR="$HOME/Desktop/REPORTS/$TODAY"
+NYCMG_ABOUT_TO_RUN_DIR="${REPORTDIR}/nycmg-about-to-runs"
 IDS_NYCMG="/$REPORTDIR/all_protrack_ids_nycmg.txt"
 IDS_CUNYTV="/$REPORTDIR/all_protrack_ids_cunytv.txt"
 IDS_BOTH="/$REPORTDIR/all_protrack_ids_cunytv_and_nycmg.txt"
@@ -49,8 +51,26 @@ NYCMG_REMOVAL_CANDIDATES_LESS_LAST_LETTER="/$REPORTDIR/nycmg_omneon_removal_cand
 NYCMG_REMOVAL_CANDIDATES_NEARLINE="/$REPORTDIR/nycmg_omneon_removal_candidates_already_on_nearline.txt"
 NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE="/$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline.txt"
 
-# set up reporting directory
+# set up reporting directories
 mkdir -p "$REPORTDIR"
+mkdir -p "${NYCMG_ABOUT_TO_RUN_DIR}"
+
+# grab and process about to runs
+for abouttorun in "${abouttoruns[@]}" ; do
+    if [[ -f "${abouttorun}" ]] ; then
+        cp -v "${abouttorun}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
+    else
+        echo "WARNING ${abouttorun} is expected but is not found."
+    fi
+done
+# get NYCMG mediaids that are needed for air
+for xml in `find "${NYCMG_ABOUT_TO_RUN_DIR}" -type f -iname "*.xml"` ; do
+    echo reading "$xml" 1>&2
+    sed -n -e 's/.*<mediaid>\([^<]*\)<\/mediaid>.*/\1/p' "$xml" >> "${NYCMG4AIR}1"
+    sed -n -e 's/.*<HouseNumber>\([^<]*\)<\/HouseNumber>.*/\1/p' "$xml" >> "${NYCMG4AIR}2"
+done
+cat "${NYCMG4AIR}1" "${NYCMG4AIR}2" | grep -v "^$" | sort -u >> "$NYCMG4AIR"
+rm "${NYCMG4AIR}1" "${NYCMG4AIR}2"
 
 # list all NYCMG ProTrack IDs (Programs and Filler)
 # 'T-' and '/1' are temporary prefixes and suffixes of NYCMG mediaids and are removed when filematching
@@ -71,15 +91,6 @@ cat "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "$IDS_BOTH"
 stat -F -l -t '%FT%T' "$OMNEON_PATH/"* | grep -v "/$" | sed 's/*//g' > "$ON_OMNEON_FILES_STAT"
 cut -d " " -f 7- "$ON_OMNEON_FILES_STAT" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$ON_OMNEON_IDS"
 awk -v date="$AGED_DATE" '$6 <= date' "$ON_OMNEON_FILES_STAT" | cut -d " " -f 7- |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$ON_OMNEON_IDS_OLD"
-
-# get NYCMG mediaids that are needed for air
-for xml in `find "$NYCMG_XML_LOCATION" -type f -iname "*.xml"` ; do
-    echo reading "$xml" 1>&2
-    sed -n -e 's/.*<mediaid>\([^<]*\)<\/mediaid>.*/\1/p' "$xml" >> "${NYCMG4AIR}1"
-    sed -n -e 's/.*<HouseNumber>\([^<]*\)<\/HouseNumber>.*/\1/p' "$xml" >> "${NYCMG4AIR}2"
-done
-cat "${NYCMG4AIR}1" "${NYCMG4AIR}2" | grep -v "^$" | sort -u >> "$NYCMG4AIR"
-rm "${NYCMG4AIR}1" "${NYCMG4AIR}2"
 
 # get CUNYTV mediaids that are needed for air
 cat "$CUNYTV_TOAIRALL" "$CUNYTV_TOAIR" | tr "\r" "\n" | awk '{print $1}' | sort -u  | grep -v "^$" > "$CUNYTV4AIR"
