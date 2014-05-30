@@ -77,8 +77,7 @@ echo "Total files loaded to air on NYCMG: $(cat "${NYCMG4AIR}" | wc -l)"
 cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | sort -u > "$IDS_NYCMG"
 echo "Total known NYCMG mediaids: $(cat "$IDS_NYCMG" | wc -l)"
 cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u > "$NYCMG_FILLER_IDS"
-echo "Total known NYCMG mediaids (interstitials): $(wc -l "$IDS_NYCMG")"
-
+echo "Total known NYCMG mediaids (interstitials): $(cat "$NYCMG_FILLER_IDS" | wc -l)"
 # list all CUNYTV ProTrack IDs (Programs, Segments, and Filler)
 cat "$CUNY_FILLERS" "$CUNY_PROGRAMS" "$CUNY_SEGMENTS" | tr "\r" "\n" | awk '{print $1}' | sort -u > "$IDS_CUNYTV"
 echo "Total known CUNYTV mediaids: $(cat "$IDS_CUNYTV"| wc -l)"
