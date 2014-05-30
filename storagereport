@@ -58,19 +58,19 @@ mkdir -p "${NYCMG_ABOUT_TO_RUN_DIR}"
 # grab and process about to runs
 for abouttorun in "${abouttoruns[@]}" ; do
     if [[ -f "${abouttorun}" ]] ; then
-        cp -v "${abouttorun}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
+        cp "${abouttorun}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
     else
         echo "WARNING ${abouttorun} is expected but is not found."
     fi
 done
 # get NYCMG mediaids that are needed for air
 for xml in `find "${NYCMG_ABOUT_TO_RUN_DIR}" -type f -iname "*.xml"` ; do
-    echo reading "$xml" 1>&2
-    sed -n -e 's/.*<mediaid>\([^<]*\)<\/mediaid>.*/\1/p' "$xml" >> "${NYCMG4AIR}1"
-    sed -n -e 's/.*<HouseNumber>\([^<]*\)<\/HouseNumber>.*/\1/p' "$xml" >> "${NYCMG4AIR}2"
+    sed -n -e 's/.*<mediaid>\([^<]*\)<\/mediaid>.*/\1/p' "$xml" | grep -v "^$" | sort -u >> "${NYCMG4AIR}"
+    mv "${NYCMG4AIR}" "${NYCMG4AIR}x"
+    sort -u "${NYCMG4AIR}x" > "${NYCMG4AIR}"
+    echo "Mediaid count for $(basename "$xml"): $(sed -n -e 's/.*<mediaid>\([^<]*\)<\/mediaid>.*/\1/p' "$xml" | grep -v "^$" | sort -u | wc -l)"
 done
-cat "${NYCMG4AIR}1" "${NYCMG4AIR}2" | grep -v "^$" | sort -u >> "$NYCMG4AIR"
-rm "${NYCMG4AIR}1" "${NYCMG4AIR}2"
+echo "Total files loaded to air on NYCMG: $(wc -l "${NYCMG4AIR}")"
 
 # list all NYCMG ProTrack IDs (Programs and Filler)
 # 'T-' and '/1' are temporary prefixes and suffixes of NYCMG mediaids and are removed when filematching
