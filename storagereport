@@ -169,6 +169,7 @@ echo
 fi
 if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC) ]] ; then
     echo
+        echo "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
     echo "To remove nycmg files that are not new, not filler, not about-to-air, that are already on nearline run:"
     echo
     echo "  pushd "${OMNEON_PATH}" && rm -i $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC | xargs) && popd"
@@ -176,6 +177,7 @@ if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_base
 fi
 if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt") ]] ; then
     echo
+    echo "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
     echo "To remove cunytv files that are not new, not filler, not about-to-air, that are already on nearline run:"
     echo
     echo "  pushd "${OMNEON_PATH}" && rm -i $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) && popd"
@@ -183,6 +185,7 @@ if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_bas
 fi
 if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt") ]] ; then
     echo
+    echo "Candidate files to remove = $(du -sch $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) | tail -n1 | awk '{print $1}')"
     echo "To remove cunytv files that are not new, not filler, not about-to-air, that are already on LTO tape run:"
     echo
     echo "  rm -i $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs)"
