@@ -5,20 +5,21 @@
 keepnewforXdays=5
 # array of about-to-runs
 abouttoruns=(/Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml)
-    
+
 # shortcuts
 AGED_DATE=$(date -v-${keepnewforXdays}d '+%F')
 TODAY=$(date '+%F')
 
-#inputs
-CUNY_FILLERS="/Volumes/From library/schedules/all_ids_filler.txt"
-CUNY_PROGRAMS="/Volumes/From library/schedules/all_ids_program.txt"
-CUNY_SEGMENTS="/Volumes/From library/schedules/all_ids_segments.txt"
-NYCMG_MEDIAID_CSV="/Users/archivesx/Desktop/REPORTS/NYCLIFE01011980.csv"
+##inputs
+NYCMG_MEDIAID_CSV="$HOME/Desktop/REPORTS/NYCLIFE01011980.csv"           # protrack csv export from NYCMG
+CUNY_PROTRACK_REPORT_DIR="/Volumes/From library/schedules"              # directory where cunytv protrack database reports to
+CUNYTV_TOAIRALL="${CUNY_PROTRACK_REPORT_DIR}/cunytvto_air_all.txt"
+CUNYTV_TOAIR="${CUNY_PROTRACK_REPORT_DIR}/cunytvto_air.txt"
+CUNY_FILLERS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_filler.txt"
+CUNY_PROGRAMS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_program.txt"
+CUNY_SEGMENTS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_segments.txt"
 NYCMG_NEARLINE_PATH="/Volumes/NYCM_Media"
 OMNEON_PATH="/Volumes/fs0/clip.dir"
-CUNYTV_TOAIRALL="/Volumes/From library/schedules/cunytvto_air_all.txt"
-CUNYTV_TOAIR="/Volumes/From library/schedules/cunytvto_air.txt"
 
 #outputs
 REPORTDIR="$HOME/Desktop/REPORTS/$TODAY"
