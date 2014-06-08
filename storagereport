@@ -52,7 +52,11 @@ CUNYTV_REMOVAL_CANDIDATES="$REPORTDIR/cunytv_omneon_removal_candidates.txt"
 CUNYTV_REMOVAL_CANDIDATES_NEARLINE="$REPORTDIR/cunytv_omneon_removal_candidates_already_on_nearline.txt"
 CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE="$REPORTDIR/cunytv_omneon_removal_candidates_not_on_nearline.txt"
 CUNYTV_TO_RESTORE="$REPORTDIR/cunytv_to_recall.txt"
+NYCMG_TO_RESTORE="$REPORTDIR/nycmg_to_recall.txt"
 CUNYTV_TO_RESTORE_FROM_LTO="$REPORTDIR/cunytv_to_recall_from_lto.txt"
+NYCMG_TO_RESTORE_FROM_LTO="$REPORTDIR/nycmg_to_recall_from_lto.txt"
+CUNYTV_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/cunytv_to_recall_from_lto_detail.txt"
+NYCMG_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/nycmg_to_recall_from_lto_detail.txt"
 
 # set up reporting directories
 mkdir -p "$REPORTDIR"
@@ -148,8 +152,8 @@ for i in $(comm -1 -2 "$CUNYTV_REMOVAL_CANDIDATES" "$REPORTDIR/cunytv_lto_ids.tx
 
 # recall list
 comm -2 -3 "${CUNYTV4AIR}" "${CUNYTV_ON_OMNEON}" > "${CUNYTV_TO_RESTORE}"
-comm -1 -2 "${CUNYTV_TO_RESTORE}" "$REPORTDIR/cunytv_lto_ids.txt" > cunytv_to_restore_from_lto.txt
-while read i ; do grep -h "${i}[^_]" ~/Documents/A00*.txt ; done < cunytv_to_restore_from_lto.txt | grep -v "metadata" | grep -v "objects" | grep -v "txt$" | sort
+comm -1 -2 "${CUNYTV_TO_RESTORE}" "$REPORTDIR/cunytv_lto_ids.txt" > "${CUNYTV_TO_RESTORE_FROM_LTO}"
+while read i ; do grep -h "${i}[^_]" ~/Documents/A00*.txt ; done < "${CUNYTV_TO_RESTORE_FROM_LTO}" | grep -v "metadata" | grep -v "objects" | grep -v "txt$" | sort > "${CUNYTV_TO_RESTORE_FROM_LTO_DETAIL}" 
 
 echo
 echo "Omneon status information:"
