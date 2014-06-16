@@ -182,7 +182,7 @@ echo
 fi
 if [[ $(cat "${ORPHANS}") ]] ; then
 report -d "Please note there are $(cat "${ORPHANS}" | wc -l) orphans, to see them run:"
-report -w "  open -a /Applications/TextEdit.app ${ORPHANS}"
+report -w "  cat ${ORPHANS}"
 echo
 fi
 if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC) ]] ; then
