@@ -101,7 +101,7 @@ report -d "Total known CUNYTV mediaids (interstitials): $(cat "$CUNYTV_FILLER_ID
 # list all ProTrack IDs, both systems
 cat "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "$IDS_BOTH"
 comm -1 -2 "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "${CONFLICTS}"
-cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9-_]\+\(.mov\|.mxf\)$" | cut -d " " -f 7 | cut -d/ -f 5- > "${BAD_FILENAMES}"
+cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9][A-Z0-9-_]\+\(.mov\|.mxf\)$" | cut -d " " -f 7- | cut -d/ -f 5- > "${BAD_FILENAMES}"
 if [ -s "${BAD_FILENAMES}" ] ; then
     report -w "Known bad file names: $(cat "${BAD_FILENAMES}" | wc -l)"
 fi
