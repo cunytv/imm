@@ -38,6 +38,8 @@ CUNYTV4AIR="$REPORTDIR/cunytv_ids_in_upcoming_air.txt"
 NYCMG_FILLER_IDS="$REPORTDIR/nycmg_ids_of_filler.txt"
 CUNYTV_FILLER_IDS="$REPORTDIR/cunytv_ids_of_filler.txt"
 ORPHANS="$REPORTDIR/orphans.txt"
+ORPHANPATHS="$REPORTDIR/orphans_fullpath.txt"
+ORPHANSDETAIL="$REPORTDIR/orphans_details.csv"
 CONFLICTS="$REPORTDIR/conflicts.txt"
 NYCMG_ON_OMNEON="$REPORTDIR/what_is_on_the_omneon_ids_only_nycmg_only.txt"
 CUNYTV_ON_OMNEON="$REPORTDIR/what_is_on_the_omneon_ids_only_cunytv_only.txt"
@@ -209,3 +211,21 @@ if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_bas
     report -w "  rm -i $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs)"
     echo
 fi
+
+echo -n "" > "${ORPHANPATHS}"
+while read orphan ; do
+    grep "clip.dir/${orphan}.m" "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- >> "${ORPHANPATHS}"
+done < "${ORPHANS}"
+
+
+echo "filename,recport,recdate,recname" > "$ORPHANSDETAIL"
+while read orphanpath ; do
+    omdata=$(head -c 10000 "${orphanpath}" | strings | grep clip.dir | head -n 1)
+    recport=$(echo "$omdata" | cut -d";" -f2)
+    recdate=$(echo "$omdata" | cut -d";" -f9)
+    recname=$(echo "$omdata" | cut -d";" -f6)
+    if [[ "${orphanpath}" == "${recname}" ]] ;then
+        recname=""
+    fi
+    echo "${orphanpath},${recport},${recdate},${recname}" >> "${ORPHANSDETAIL}"
+done < "${ORPHANPATHS}"
