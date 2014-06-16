@@ -59,6 +59,7 @@ CUNYTV_TO_RESTORE_FROM_LTO="$REPORTDIR/cunytv_to_recall_from_lto.txt"
 NYCMG_TO_RESTORE_FROM_LTO="$REPORTDIR/nycmg_to_recall_from_lto.txt"
 CUNYTV_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/cunytv_to_recall_from_lto_detail.txt"
 NYCMG_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/nycmg_to_recall_from_lto_detail.txt"
+BAD_FILENAMES="$REPORTDIR/bad_filenames.txt"
 
 # set up reporting directories
 mkdir -p "$REPORTDIR"
@@ -100,7 +101,11 @@ report -d "Total known CUNYTV mediaids (interstitials): $(cat "$CUNYTV_FILLER_ID
 # list all ProTrack IDs, both systems
 cat "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "$IDS_BOTH"
 comm -1 -2 "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "${CONFLICTS}"
-if [[ "${CONFLICTS}" ]] ; then
+cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9-_]\+\(.mov\|.mxf\)$" | cut -d " " -f 7 | cut -d/ -f 5- > "${BAD_FILENAMES}"
+if [ -s "${BAD_FILENAMES}" ] ; then
+    report -w "Known bad file names: $(cat "${BAD_FILENAMES}" | wc -l)"
+fi
+if [ -s "${CONFLICTS}" ] ; then
     report -w "Known mediaids conflicts: $(cat "${CONFLICTS}" | wc -l)"
 fi
 
@@ -166,8 +171,13 @@ report -d "Storage reports have been written to: ${REPORTDIR} to open run:"
 echo
 report -d "  open ${REPORTDIR}"
 echo
-if [[ $(cat "${CONFLICTS}") ]] ; then
+if [[ -s "${CONFLICTS}" ]] ; then
 report -w "Please note these mediaid conflicts: $(cat "${CONFLICTS}" | xargs)"
+echo
+fi
+if [[ -s "${BAD_FILENAMES}" ]] ; then
+report -w "Please note these bad filenames:"
+cat "${BAD_FILENAMES}"
 echo
 fi
 if [[ $(cat "${ORPHANS}") ]] ; then
