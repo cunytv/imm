@@ -1,4 +1,6 @@
 #!/bin/bash
+scriptdir=$(dirname "$0")
+. "$scriptdir/mmfunctions" || { echo "Missing '$scriptdir/mmfunctions'. Exiting." ; exit 1 ;};
 
 ## local variables
 # declare an age in days under which files will be excluded from being removal candidates
