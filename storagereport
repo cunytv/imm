@@ -102,14 +102,7 @@ cat "$CUNY_FILLERS" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" >
 report -d "Total known CUNYTV mediaids (interstitials): $(cat "$CUNYTV_FILLER_IDS" | wc -l)"
 # list all ProTrack IDs, both systems
 cat "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "$IDS_BOTH"
-comm -1 -2 "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "${CONFLICTS}"
-cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9][A-Z0-9-_]\+\(.mov\|.mxf\)$" | cut -d " " -f 7- | cut -d/ -f 5- > "${BAD_FILENAMES}"
-if [ -s "${BAD_FILENAMES}" ] ; then
-    report -w "Known bad file names: $(cat "${BAD_FILENAMES}" | wc -l)"
-fi
-if [ -s "${CONFLICTS}" ] ; then
-    report -w "Known mediaids conflicts: $(cat "${CONFLICTS}" | wc -l)"
-fi
+
 
 ### REPORT ON OMNEON FILES
 # list all Omneon files
@@ -125,6 +118,15 @@ comm -1 -2 "$ON_OMNEON_IDS_OLD" "$IDS_CUNYTV" > "$CUNYTV_ON_OMNEON"
 report -d "Omneon file count (cunytv): $(cat "${CUNYTV_ON_OMNEON}" | wc -l)"
 comm -2 -3 "$ON_OMNEON_IDS" "$IDS_BOTH" > "$ORPHANS"
 report -d "Omneon file count (orphans): $(cat "${ORPHANS}" | wc -l)"
+
+comm -1 -2 "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "${CONFLICTS}"
+cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9][A-Z0-9-_]\+\(.mov\|.mxf\)$" | cut -d " " -f 7- | cut -d/ -f 5- > "${BAD_FILENAMES}"
+if [ -s "${BAD_FILENAMES}" ] ; then
+    report -w "Known bad file names: $(cat "${BAD_FILENAMES}" | wc -l)"
+fi
+if [ -s "${CONFLICTS}" ] ; then
+    report -w "Known mediaids conflicts: $(cat "${CONFLICTS}" | wc -l)"
+fi
 
 ### REPORT ON NEARLINE FILES
 # find what is on nearline - nycmg
