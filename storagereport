@@ -14,7 +14,7 @@ TODAY=$(date '+%F')
 
 ##inputs
 NYCMG_MEDIAID_CSV="$HOME/Desktop/REPORTS/NYCLIFE01011980.csv"           # protrack csv export from NYCMG
-CUNY_PROTRACK_REPORT_DIR="/Volumes/From library/schedules"              # directory where cunytv protrack database reports to
+CUNY_PROTRACK_REPORT_DIR="/Volumes/XsanFileserver2/CUNY TV files/From library/schedules/"              # directory where cunytv protrack database reports to
 CUNYTV_TOAIRALL="${CUNY_PROTRACK_REPORT_DIR}/cunytvto_air_all.txt"
 CUNYTV_TOAIR="${CUNY_PROTRACK_REPORT_DIR}/cunytvto_air.txt"
 CUNY_FILLERS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_filler.txt"
