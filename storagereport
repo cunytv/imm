@@ -47,6 +47,7 @@ NYCMG_ON_OMNEON_NOT_FILLER="$REPORTDIR/what_is_on_the_omneon_ids_only_nycmg_only
 CUNYTV_ON_OMNEON_NOT_FILLER="$REPORTDIR/what_is_on_the_omneon_ids_only_cunytv_only_not_filler.txt"
 NYCMG_NEARLINE="$REPORTDIR/nycmg_on_nearline.txt"
 NYCMG_NEARLINE_STAT="$REPORTDIR/nycmg_on_nearline_stat.txt"
+NYCMG_NEARLINE_BY_SIZE="$REPORTDIR/nycmg_on_nearline_by_filesize.csv"
 NYCMG_REMOVAL_CANDIDATES="$REPORTDIR/nycmg_omneon_removal_candidates.txt"
 NYCMG_REMOVAL_CANDIDATES_NEARLINE="$REPORTDIR/nycmg_omneon_removal_candidates_already_on_nearline.txt"
 NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE="$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline.txt"
@@ -231,3 +232,5 @@ while read orphanpath ; do
     fi
     echo "${orphanpath},${recport},${recdate},${recname}" >> "${ORPHANSDETAIL}"
 done < "${ORPHANPATHS}"
+awk '{print $7 "," $5}' /Users/archivesx/Desktop/REPORTS/2014-07-01/nycmg_on_nearline_stat.txt | awk -F/ '{print $NF}' | sort -t, -k 2,2 -n > "${NYCMG_NEARLINE_BY_SIZE}"
+
