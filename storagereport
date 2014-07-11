@@ -235,6 +235,6 @@ while read orphanpath ; do
     echo "${orphanpath},${recport},${recdate},${recname}" >> "${ORPHANSDETAIL}"
 done < "${ORPHANPATHS}"
 cat "$NYCMG_MEDIAID_CSV" | awk -F "," '{print $1 "," $(NF-2) }' | sed 's/T-//' | sed 's|/1||' | sed 's/.........$//' | sort -t, -k2 -r | sort -t, -u -k1,1 | sort -t, -k2 | awk -v d=$(date "+%F") -F, '$2 < d' > "${NYCMG_EXPIRED_IDS}"
-for i in `cat "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" | sort -u` ; do grep "^${i}," "${NYCMG_EXPIRED_IDS}" ; done > "${NYCMG_EXPIRED_ONLINE}"
+for i in `cat "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" | sort -u` ; do grep "^${i}," "${NYCMG_EXPIRED_IDS}" ; done > "${NYCMG_EXPIRED_IDS_ONLINE}"
 awk '{print $7 "," $5}' /Users/archivesx/Desktop/REPORTS/2014-07-01/nycmg_on_nearline_stat.txt | awk -F/ '{print $NF}' | sort -t, -k 2,2 -n > "${NYCMG_NEARLINE_BY_SIZE}"
 
