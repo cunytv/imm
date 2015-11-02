@@ -330,3 +330,8 @@ done
 comm -2 -3 nycmg_ids_in_upcoming_air.txt  what_is_on_the_omneon_ids_only.txt > /tmp/nycmg_pulllist_temp.txt
 for i in `cat /tmp/nycmg_pulllist_temp.txt` ; do grep "$i" nycmg_storage_summary.txt ; done > "/$REPORTDIR/nycmg_pulllist.csv"
 
+ls -l /Volumes/NYCM_Media/media/ | awk '{print $9 " " $5 }' | sort > /tmp/nearline.txt
+for i in ~/Documents/lto_indexes/C*.schema ; do
+    xml sel -t -m ".//file" -v name -o " " -v length -n "$i" | sort -u
+done | sort > /tmp/ltosizes.txt
+comm -1 -2 /tmp/nearline.txt /tmp/ltosizes.txt | cut -d " " -f1 > "/$REPORTDIR/nycmg_on_lto_and_nearline_sizename_match.txt"
