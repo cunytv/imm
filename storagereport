@@ -40,6 +40,7 @@ NYCMG_ROOT="/Volumes/NYCM_Media"
 
 ##inputs
 NYCMG_MEDIAID_CSV="$HOME/Desktop/REPORTS/NYCLIFE01011980.csv"           # protrack csv export from NYCMG
+EVERGREEN_LIST="$HOME/Desktop/REPORTS/EVERGREEN.txt"           # files to not remove
 CUNY_PROTRACK_REPORT_DIR="/Volumes/XsanFileserver2/CUNY TV files/From library/schedules/"              # directory where cunytv protrack database reports to
 CUNYTV_TOAIRALL="${CUNY_PROTRACK_REPORT_DIR}/cunytvto_air_all.txt"
 CUNYTV_TOAIR="${CUNY_PROTRACK_REPORT_DIR}/cunytvto_air.txt"
@@ -60,6 +61,7 @@ IDS_BOTH="$REPORTDIR/all_protrack_ids_cunytv_and_nycmg.txt"
 ON_OMNEON_FILES_STAT="$REPORTDIR/what_is_on_the_omneon_stat.txt"
 ON_OMNEON_IDS="$REPORTDIR/what_is_on_the_omneon_ids_only.txt"
 ON_OMNEON_IDS_OLD="$REPORTDIR/what_is_on_the_omneon_and_old_ids_only.txt"
+ON_OMNEON_IDS_NO_EVERGREEN="$REPORTDIR/what_is_on_the_omneon_and_old_ids_only_no_evergreen.txt"
 NYCMG4AIR="$REPORTDIR/nycmg_ids_in_upcoming_air.txt"
 CUNYTV4AIR="$REPORTDIR/cunytv_ids_in_upcoming_air.txt"
 NYCMG_FILLER_IDS="$REPORTDIR/nycmg_ids_of_filler.txt"
@@ -151,11 +153,12 @@ stat -F -l -t '%FT%T' "$OMNEON_PATH/"* | grep -v "/$" | sed 's/*//g' > "$ON_OMNE
 cut -d " " -f 7- "$ON_OMNEON_FILES_STAT" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$ON_OMNEON_IDS"
 report -d "Omneon file count: $(cat "${ON_OMNEON_IDS}" | wc -l)"
 awk -v date="$AGED_DATE" '$6 <= date' "$ON_OMNEON_FILES_STAT" | cut -d " " -f 7- |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$ON_OMNEON_IDS_OLD"
+comm -2 -3 "$ON_OMNEON_IDS_OLD" "$EVERGREEN_LIST" > "$ON_OMNEON_IDS_NO_EVERGREEN"
 report -d "Omneon file count (older than ${keepnewforXdays} days): $(cat "${ON_OMNEON_IDS_OLD}" | wc -l)"
 # associate omneon files to custodians
-comm -1 -2 "$ON_OMNEON_IDS_OLD" "$IDS_NYCMG" > "$NYCMG_ON_OMNEON"
+comm -1 -2 "$ON_OMNEON_IDS_NO_EVERGREEN" "$IDS_NYCMG" > "$NYCMG_ON_OMNEON"
 report -d "Omneon file count (nycmg): $(cat "${NYCMG_ON_OMNEON}" | wc -l)"
-comm -1 -2 "$ON_OMNEON_IDS_OLD" "$IDS_CUNYTV" > "$CUNYTV_ON_OMNEON"
+comm -1 -2 "$ON_OMNEON_IDS_NO_EVERGREEN" "$IDS_CUNYTV" > "$CUNYTV_ON_OMNEON"
 report -d "Omneon file count (cunytv): $(cat "${CUNYTV_ON_OMNEON}" | wc -l)"
 comm -2 -3 "$ON_OMNEON_IDS" "$IDS_BOTH" > "$ORPHANS"
 report -d "Omneon file count (orphans): $(cat "${ORPHANS}" | wc -l)"
