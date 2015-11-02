@@ -97,6 +97,7 @@ NYCMG_ON_LTO="/$REPORTDIR/nycmg_files_on_LTO_tape.txt"
 BAD_FILENAMES="$REPORTDIR/bad_filenames.txt"
 NYCMG_EXPIRED_IDS="$REPORTDIR/nycmg_expired_all.txt"
 NYCMG_EXPIRED_IDS_ONLINE="$REPORTDIR/nycmg_expired_online.csv"
+NYCMG_EXPIRED_IDS_ONLINE_WITH_INFO="$REPORTDIR/nycmg_expired_online_with_protrack_info.csv"
 NYCMG_STORAGE_SUMMARY="$REPORTDIR/nycmg_storage_summary.txt"
 
 # set up reporting directories
@@ -278,6 +279,11 @@ done < "${ORPHANPATHS}"
 cat "${ORPHANSDETAIL}" | grep ",MR-[1-9][-SD],\|,MR-[10]," > "${ORPHANSDETAIL_CUNYONLY}"
 cat "$NYCMG_MEDIAID_CSV" | awk -F "," '{print $1 "," $(NF-2) }' | sed 's/T-//' | sed 's|/1||' | sed 's/.........$//' | sort -t, -k2 -r | sort -t, -u -k1,1 | sort -t, -k2 | awk -v d=$(date "+%F") -F, '$2 < d' > "${NYCMG_EXPIRED_IDS}"
 for i in `cat "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" | sort -u` ; do grep "^${i}," "${NYCMG_EXPIRED_IDS}" ; done > "${NYCMG_EXPIRED_IDS_ONLINE}"
+for i in `cut -d, -f1 "${NYCMG_EXPIRED_IDS_ONLINE}" | sort` ; do
+    name=`echo "$i" | cut -d. -f1`
+    csvdata=`grep "^${name}," "${NYCMG_MEDIAID_CSV}"`
+    echo "${i},${csvdata}"
+done > "${NYCMG_EXPIRED_IDS_ONLINE_WITH_INFO}"
 awk '{print $7 "," $5}' "${NYCMG_NEARLINE_STAT}" | awk -F/ '{print $NF}' | sort -t, -k 2,2 -n > "${NYCMG_NEARLINE_BY_SIZE}"
 for i in `sort "${NYCMG_NEARLINE_BY_SIZE}"` ; do
     name=`echo "$i" | cut -d. -f1`
