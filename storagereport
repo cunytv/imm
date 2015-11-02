@@ -4,7 +4,7 @@ scriptdir=$(dirname "$0")
 
 ## local variables
 # declare an age in days under which files will be excluded from being removal candidates
-keepnewforXdays=5
+keepnewforXdays=7
 # array of about-to-runs
 abouttoruns=(/Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml)
 
