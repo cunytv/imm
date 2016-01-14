@@ -380,23 +380,23 @@ cp "$ORPHANSDETAIL" "$NYCMG_NEARLINE" "$NYCMG_ON_OMNEON" "$CUNYTV_ON_OMNEON" "${
 
 echo "om_filename,om_recport,om_recdate,om_recname,om_size,om_encdate,nl_name,nl_recport,nl_recdate,nl_recname,nl_size,nl_encdate" > "/$REPORTDIR/filenameconflicts.csv"
 diff -y "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "/$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep "|" | while read conflictnameline ; do
-	omname=$(echo "${conflictnameline}" | awk '{print $1}')
+    omname=$(echo "${conflictnameline}" | awk '{print $1}')
     omdata=$(head -c 10000 "${OMNEON_PATH}/${omname}" | strings | grep clip.dir | head -n 1)
     omrecport=$(echo "$omdata" | cut -d";" -f2)
     omrecdate=$(echo "$omdata" | cut -d";" -f9)
     omrecname=$(echo "$omdata" | cut -d";" -f6)
-	omencdate=$(ffprobe 2>/dev/null -i "${OMNEON_PATH}/${omname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
-	omsize=$(ls -l "${OMNEON_PATH}/${omname}" | awk '{print $5}')
+    omencdate=$(ffprobe 2>/dev/null -i "${OMNEON_PATH}/${omname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
+    omsize=$(ls -l "${OMNEON_PATH}/${omname}" | awk '{print $5}')
     if [[ "${orphanpath}" == "${omrecname}" ]] ;then
         omrecname=""
     fi
-	nlname=$(echo "${conflictnameline}" | awk '{print $4}')
-	nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep clip.dir | head -n 1)
+        nlname=$(echo "${conflictnameline}" | awk '{print $4}')
+        nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep clip.dir | head -n 1)
     nlrecport=$(echo "$nldata" | cut -d";" -f2)
     nlrecdate=$(echo "$nldata" | cut -d";" -f9)
     nlrecname=$(echo "$nldata" | cut -d";" -f6)
-	nlencdate=$(ffprobe 2>/dev/null -i "${NYCMG_NEARLINE_PATH}/${nlname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
-	nlsize=$(ls -l "${NYCMG_NEARLINE_PATH}/${nlname}" | awk '{print $5}')
+        nlencdate=$(ffprobe 2>/dev/null -i "${NYCMG_NEARLINE_PATH}/${nlname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
+        nlsize=$(ls -l "${NYCMG_NEARLINE_PATH}/${nlname}" | awk '{print $5}')
     if [[ "${orphanpath}" == "${nlrecname}" ]] ;then
         nlrecname=""
     fi
