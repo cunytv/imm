@@ -170,7 +170,10 @@ CUNYTV_TO_RESTORE_FROM_LTO="$REPORTDIR/cunytv_to_recall_from_lto.txt"
 NYCMG_TO_RESTORE_FROM_LTO="$REPORTDIR/nycmg_to_recall_from_lto.txt"
 CUNYTV_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/cunytv_to_recall_from_lto_detail.txt"
 NYCMG_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/nycmg_to_recall_from_lto_detail.txt"
-NYCMG_ON_LTO="/$REPORTDIR/nycmg_files_on_LTO_tape.txt"
+NYCMG_ON_LTO_SIZE_EXT
+="/$REPORTDIR/nycmg_lto_with_extension_and_size.txt"
+CUNYTV_ON_LTO_SIZE_EXT
+="$REPORTDIR/cunytv_lto_with_extension_and_size.txt"
 BAD_FILENAMES="$REPORTDIR/bad_filenames.txt"
 NYCMG_EXPIRED_IDS="$REPORTDIR/nycmg_expired_all.txt"
 NYCMG_EXPIRED_IDS_ONLINE="$REPORTDIR/nycmg_expired_online.csv"
@@ -267,8 +270,8 @@ cut -d " " -f 7- "$CUNYTV_NEARLINE_STAT" | cut -d/ -f8 | cut -d. -f1 | sort | gr
 printf "%-32s %12d %20s \n" "File Count (cunytv)" "$(cat "${CUNYTV_NEARLINE}" | wc -l)" ""
 
 # LTO reports
-cat ~/Documents/lto_indexes/C0* | sort > "${NYCMG_ON_LTO}"
-cat ~/Documents/lto_indexes/A*_namesize.txt | sort > "$REPORTDIR/cunytv_lto_with_extension_and_size.txt"
+cat ~/Documents/lto_indexes/C0*_namesize.txt | sort > "${NYCMG_ON_LTO_SIZE_EXT}"
+cat ~/Documents/lto_indexes/A0*_namesize.txt | sort > "${CUNYTV_ON_LTO_SIZE_EXT}"
 
 # find NYCMG removal candidates
 comm -2 -3 "$NYCMG_ON_OMNEON" "$NYCMG_FILLER_IDS" > "$NYCMG_ON_OMNEON_NOT_FILLER"
@@ -289,11 +292,11 @@ comm -1 -3 "$CUNYTV_NEARLINE" "$CUNYTV_REMOVAL_CANDIDATES" > "$CUNYTV_REMOVAL_CA
 for i in `cat "$CUNYTV_REMOVAL_CANDIDATES"` ; do grep "/${i}\." "$ON_OMNEON_FILES_STAT" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt"
 for i in `cat "$CUNYTV_REMOVAL_CANDIDATES_NEARLINE"` ; do grep "/${i}\." "$CUNYTV_NEARLINE_STAT" | awk '{print $7 " " $5}' | cut -d/ -f8- | sed 's/*//' ; done > "/$REPORTDIR/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt"
 diff -y "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "$REPORTDIR/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
-comm -1 -2 "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "$REPORTDIR/cunytv_lto_with_extension_and_size.txt" | cut -d " " -f1 > "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt"
+comm -1 -2 "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "$CUNYTV_ON_LTO_SIZE_EXT" | cut -d " " -f1 > "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt"
 
 # recall list
 comm -2 -3 "${CUNYTV4AIR}" "${CUNYTV_ON_OMNEON}" > "${CUNYTV_TO_RESTORE}"
-#comm -1 -2 "${CUNYTV_TO_RESTORE}" "$REPORTDIR/cunytv_lto_with_extension_and_size.txt" > "${CUNYTV_TO_RESTORE_FROM_LTO}"
+#comm -1 -2 "${CUNYTV_TO_RESTORE}" "$CUNYTV_ON_LTO_SIZE_EXT" > "${CUNYTV_TO_RESTORE_FROM_LTO}"
 #while read i ; do grep -h "${i}[^_]" ~/Documents/A00*.txt done < "${CUNYTV_TO_RESTORE_FROM_LTO}" | grep -v "metadata" | grep -v "objects" | grep -v "txt$" | sort > "${CUNYTV_TO_RESTORE_FROM_LTO_DETAIL}" 
 
 echo
@@ -370,12 +373,12 @@ done > "${NYCMG_NEARLINE_BY_SIZE_WITH_INFO}"
 cat "${IDS_NYCMG}" | while read line ; do echo "${line} " ; done > /tmp/all.txt
 cat "${NYCMG_ON_OMNEON}" | while read line ; do echo "$line omneon" ; done | tr "\r" "\n" > /tmp/omneon.txt
 cat "${NYCMG_NEARLINE}" | while read line ; do echo "$line nearline" ; done | sort | tr "\r" "\n" > /tmp/nearline.txt
-cat "${NYCMG_ON_LTO}" | awk -F '/' '{print $NF " " $(NF-1)}' | sed 's/.mxf//g' | sed 's/.mov//g' | grep -v '^\.' | sort | tr "\r" "\n" > /tmp/lto.txt
+cat "${NYCMG_ON_LTO_SIZE_EXT}" | awk -F '/' '{print $NF " " $(NF-1)}' | sed 's/.mxf//g' | sed 's/.mov//g' | grep -v '^\.' | sort | tr "\r" "\n" > /tmp/lto.txt
 join -a1 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
 join -a1 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
 join -a1 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
-cp "$ORPHANSDETAIL" "$NYCMG_NEARLINE" "$NYCMG_ON_OMNEON" "$CUNYTV_ON_OMNEON" "${NYCMG_ON_LTO}" "${NYCMG_STORAGE_SUMMARY}" "$REPORTDIRNYC/"
+cp "$ORPHANSDETAIL" "$NYCMG_NEARLINE" "$NYCMG_ON_OMNEON" "$CUNYTV_ON_OMNEON" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "$REPORTDIRNYC/"
 
 echo "om_filename,om_recport,om_recdate,om_recname,om_size,om_encdate,nl_name,nl_recport,nl_recdate,nl_recname,nl_size,nl_encdate" > "/$REPORTDIR/filenameconflicts.csv"
 diff -y "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "/$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep "|" | while read conflictnameline ; do
