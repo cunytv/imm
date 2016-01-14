@@ -268,7 +268,7 @@ printf "%-32s %12d %20s \n" "File Count (cunytv)" "$(cat "${CUNYTV_NEARLINE}" | 
 
 # LTO reports
 cat ~/Documents/lto_indexes/C0* | sort > "${NYCMG_ON_LTO}"
-#cat ~/Documents/lto_indexes/A00* | cut -d/ -f4- | cut -d. -f1 | tr '/' '\n' | sort | uniq > "$REPORTDIR/cunytv_lto_ids.txt"
+cat ~/Documents/lto_indexes/A*_namesize.txt | sort > "$REPORTDIR/cunytv_lto_with_extension_and_size.txt"
 
 # find NYCMG removal candidates
 comm -2 -3 "$NYCMG_ON_OMNEON" "$NYCMG_FILLER_IDS" > "$NYCMG_ON_OMNEON_NOT_FILLER"
@@ -290,10 +290,11 @@ for i in `cat "$CUNYTV_REMOVAL_CANDIDATES_NEARLINE"` ; do grep "/${i}\." "$ON_OM
 for i in `cat "$CUNYTV_REMOVAL_CANDIDATES_NEARLINE"` ; do grep "/${i}\." "$CUNYTV_NEARLINE_STAT" | awk '{print $7 " " $5}' | cut -d/ -f8- | sed 's/*//' ; done > "/$REPORTDIR/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt"
 diff -y "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "$REPORTDIR/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
 #for i in $(comm -1 -2 "$CUNYTV_REMOVAL_CANDIDATES" "$REPORTDIR/cunytv_lto_ids.txt") ; do grep "clip.dir/${i}.m" "${ON_OMNEON_FILES_STAT}" ; done | cut -d " " -f7 | sed 's:${OMNEON_PATH}::g'> "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt"
+comm -1 -2 "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "$REPORTDIR/cunytv_lto_with_extension_and_size.txt" | cut -d " " -f1 > "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt"
 
 # recall list
 comm -2 -3 "${CUNYTV4AIR}" "${CUNYTV_ON_OMNEON}" > "${CUNYTV_TO_RESTORE}"
-#comm -1 -2 "${CUNYTV_TO_RESTORE}" "$REPORTDIR/cunytv_lto_ids.txt" > "${CUNYTV_TO_RESTORE_FROM_LTO}"
+#comm -1 -2 "${CUNYTV_TO_RESTORE}" "$REPORTDIR/cunytv_lto_with_extension_and_size.txt" > "${CUNYTV_TO_RESTORE_FROM_LTO}"
 #while read i ; do grep -h "${i}[^_]" ~/Documents/A00*.txt done < "${CUNYTV_TO_RESTORE_FROM_LTO}" | grep -v "metadata" | grep -v "objects" | grep -v "txt$" | sort > "${CUNYTV_TO_RESTORE_FROM_LTO_DETAIL}" 
 
 echo
@@ -329,10 +330,10 @@ if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_bas
 fi
 if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt") ]] ; then
     echo
-    _report -d "Candidate files to remove = $(du -sch $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) | tail -n1 | awk '{print $1}')"
+    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
     _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on LTO tape run:"
     echo
-    _report -w "  rm -i $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs)"
+    _report -w "  pushd "${OMNEON_PATH}" && rm -i $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) && popd"
     echo
 fi
 
