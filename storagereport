@@ -186,7 +186,7 @@ _mkdir2 "$REPORTDIR" "$REPORTDIRNYC" "${NYCMG_ABOUT_TO_RUN_DIR}"
 ### REPORT ON MEDIAIDS IN UPCOMING AIR
 # get CUNYTV mediaids that are needed for air
 cat "$CUNYTV_TOAIRALL" "$CUNYTV_TOAIR" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" > "$CUNYTV4AIR"
-_report "STORAGE REPORT - _get_iso8601"
+_report "STORAGE REPORT - $(_get_iso8601)"
 echo
 _report -d "Omneon status information:"
 df -h "${OMNEON_PATH}"
