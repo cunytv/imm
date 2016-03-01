@@ -378,7 +378,7 @@ join -a1 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
 join -a1 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
 join -a1 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
-cp "$ORPHANSDETAIL" "$NYCMG_NEARLINE" "$NYCMG_ON_OMNEON" "$CUNYTV_ON_OMNEON" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "$REPORTDIRNYC/"
+rsync -rtv --perms --chmod=777  "$ORPHANSDETAIL" "$NYCMG_NEARLINE" "$NYCMG_ON_OMNEON" "$CUNYTV_ON_OMNEON" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "$REPORTDIRNYC/"
 
 echo "om_filename,om_recport,om_recdate,om_recname,om_size,om_encdate,nl_name,nl_recport,nl_recdate,nl_recname,nl_size,nl_encdate" > "/$REPORTDIR/filenameconflicts.csv"
 diff -y "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "/$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep "|" | while read conflictnameline ; do
