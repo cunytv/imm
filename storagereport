@@ -87,7 +87,7 @@ _check4mount(){
 
 ## local variables
 # declare an age in days under which files will be excluded from being removal candidates
-keepnewforXdays=7
+keepnewforXdays=5
 
 ## connect to Autosaved folder if not already
 if [ $(mount | grep -c /Volumes/Autosaved) = 0 ] ; then
@@ -171,6 +171,7 @@ NYCMG_TO_RESTORE_FROM_LTO="$REPORTDIR/nycmg_to_recall_from_lto.txt"
 CUNYTV_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/cunytv_to_recall_from_lto_detail.txt"
 NYCMG_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/nycmg_to_recall_from_lto_detail.txt"
 NYCMG_ON_LTO_SIZE_EXT="/$REPORTDIR/nycmg_lto_with_extension_and_size.txt"
+NYCMG_ON_LTO_PATH="/$REPORTDIR/nycmg_lto_with_path.txt"
 CUNYTV_ON_LTO_SIZE_EXT="$REPORTDIR/cunytv_lto_with_extension_and_size.txt"
 BAD_FILENAMES="$REPORTDIR/bad_filenames.txt"
 NYCMG_EXPIRED_IDS="$REPORTDIR/nycmg_expired_all.txt"
@@ -269,6 +270,7 @@ printf "%-32s %12d %20s \n" "File Count (cunytv)" "$(cat "${CUNYTV_NEARLINE}" | 
 
 # LTO reports
 cat ~/Documents/lto_indexes/C0*_namesize.txt | sort > "${NYCMG_ON_LTO_SIZE_EXT}"
+cat ~/Documents/lto_indexes/C0*_index.txt | sort > "${NYCMG_ON_LTO_PATH}"
 cat ~/Documents/lto_indexes/A0*_namesize.txt | sort > "${CUNYTV_ON_LTO_SIZE_EXT}"
 
 # find NYCMG removal candidates
@@ -371,7 +373,7 @@ done > "${NYCMG_NEARLINE_BY_SIZE_WITH_INFO}"
 cat "${IDS_NYCMG}" | while read line ; do echo "${line} " ; done > /tmp/all.txt
 cat "${NYCMG_ON_OMNEON}" | while read line ; do echo "$line omneon" ; done | tr "\r" "\n" > /tmp/omneon.txt
 cat "${NYCMG_NEARLINE}" | while read line ; do echo "$line nearline" ; done | sort | tr "\r" "\n" > /tmp/nearline.txt
-cat "${NYCMG_ON_LTO_SIZE_EXT}" | awk -F '/' '{print $NF " " $(NF-1)}' | sed 's/.mxf//g' | sed 's/.mov//g' | grep -v '^\.' | sort | tr "\r" "\n" > /tmp/lto.txt
+cat "${NYCMG_ON_LTO_PATH}" | awk -F "/" '{print $NF " " $(NF-1)}' | sed 's/.mxf//g' | sed 's/.mov//g' | grep -v '^\.' | sort | tr "\r" "\n" > /tmp/lto.txt
 join -a1 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
 join -a1 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
 join -a1 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
