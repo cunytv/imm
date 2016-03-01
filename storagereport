@@ -170,10 +170,8 @@ CUNYTV_TO_RESTORE_FROM_LTO="$REPORTDIR/cunytv_to_recall_from_lto.txt"
 NYCMG_TO_RESTORE_FROM_LTO="$REPORTDIR/nycmg_to_recall_from_lto.txt"
 CUNYTV_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/cunytv_to_recall_from_lto_detail.txt"
 NYCMG_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/nycmg_to_recall_from_lto_detail.txt"
-NYCMG_ON_LTO_SIZE_EXT
-="/$REPORTDIR/nycmg_lto_with_extension_and_size.txt"
-CUNYTV_ON_LTO_SIZE_EXT
-="$REPORTDIR/cunytv_lto_with_extension_and_size.txt"
+NYCMG_ON_LTO_SIZE_EXT="/$REPORTDIR/nycmg_lto_with_extension_and_size.txt"
+CUNYTV_ON_LTO_SIZE_EXT="$REPORTDIR/cunytv_lto_with_extension_and_size.txt"
 BAD_FILENAMES="$REPORTDIR/bad_filenames.txt"
 NYCMG_EXPIRED_IDS="$REPORTDIR/nycmg_expired_all.txt"
 NYCMG_EXPIRED_IDS_ONLINE="$REPORTDIR/nycmg_expired_online.csv"
