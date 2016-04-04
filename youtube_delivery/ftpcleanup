@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# This script will clean up the /FTPRoot/Uploads directory of files older than 3 days
+echo `date +"%Y-%m-%d %H:%M:%S"`: ftpclean script called. List of files to be deleted:  >> /var/log/ftpscan.log
+find /FTPRoot/Uploaded -mtime +7 | grep -v "TEST" >> /var/log/ftpscan.log
+find /FTPRoot/Uploaded -mtime +7 | grep -v "TEST" | xargs -I{} rm -v {}
+echo `date +"%Y-%m-%d %H:%M:%S"`: ftpclean script completed. >> /var/log/ftpscan.log
