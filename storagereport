@@ -261,7 +261,7 @@ echo
 _report -d "Nearline Storage stats"
 # find what is on nearline - nycmg
 stat -F -l -t '%FT%T' "$NYCMG_NEARLINE_PATH/"* | grep -v "/$" | sed 's:*::g' > "$NYCMG_NEARLINE_STAT"
-cut -d " " -f 7- "$NYCMG_NEARLINE_STAT" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$NYCMG_NEARLINE"
+cut -d " " -f 7- "$NYCMG_NEARLINE_STAT" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "$NYCMG_NEARLINE"
 printf "%-32s %12d %20s \n" "File Count (nycmg)" "$(cat "${NYCMG_NEARLINE}" | wc -l)" ""
 # find what is on nearline - cunytv
 find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; > "$CUNYTV_NEARLINE_STAT"
