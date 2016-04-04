@@ -1,0 +1,3 @@
+# bxf2pb
+
+This xsl is used to convert a [BXF](https://en.wikipedia.org/wiki/Broadcast_Exchange_Format) file into a proprietary XML document used by Pebble Beach to convey the scheduling data that BXF typically does. Pebble Beach provides their own translator for BXF files but this xsl provides several local improvements particularly to super-imposition placement, follow-on vs fixed time strategy, AFD flags, and non-primary events.
