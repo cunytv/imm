@@ -62,7 +62,7 @@ my @exts = qw(MP4);
 # Maximum number of youtube-upload commands running at a time
 my $maxups = 1;
 # Maximum number of times to retry uploading a file that received an error
-my $maxretries = 2;
+my $maxretries = 4;
 my @filesFound = "";
 my %fileList = ();
 my $logDir = "/var/log/";
