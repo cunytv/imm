@@ -364,7 +364,7 @@ for i in `cut -d, -f1 "${NYCMG_EXPIRED_IDS_ONLINE}" | sort` ; do
     echo "${i},${csvdata}"
 done > "${NYCMG_EXPIRED_IDS_ONLINE_WITH_INFO}"
 awk '{print $7 " " $5}' "${NYCMG_NEARLINE_STAT}" | awk -F/ '{print $NF}' | sort -t, -k 2,2 -n > "${NYCMG_NEARLINE_BY_SIZE}"
-for i in `sort "${NYCMG_NEARLINE_BY_SIZE}"` ; do
+for i in `cat nycmg_on_nearline_by_filesize.txt | sed 's/ /,/g'` ; do
     name=`echo "$i" | cut -d. -f1`
     csvdata=`grep "^${name}," "${NYCMG_MEDIAID_CSV}"`
     echo "${i},${csvdata}"
