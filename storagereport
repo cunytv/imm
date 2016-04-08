@@ -389,7 +389,7 @@ if [ ! -f "/$REPORTDIR/filenameconflicts.csv" ] ; then
     echo "om_filename,om_duration,om_modtime,om_encode_time,om_recport,om_recdate,om_recname,om_size,om_encdate,nl_name,nl_duration,nl_modtime,nl_encode_time,nl_recport,nl_recdate,nl_recname,nl_size,nl_encdate" > "/$REPORTDIR/filenameconflicts.csv"
     diff -y "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "/$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep "|" | while read conflictnameline ; do
         omname=$(echo "${conflictnameline}" | awk '{print $1}')
-        ommediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${OMNEON_PATH}/${filename}")
+        ommediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${OMNEON_PATH}/${omname}")
         omdata=$(head -c 10000 "${OMNEON_PATH}/${omname}" | strings | grep clip.dir | head -n 1)
         omrecport=$(echo "$omdata" | cut -d";" -f2)
         omrecdate=$(echo "$omdata" | cut -d";" -f9)
@@ -400,7 +400,7 @@ if [ ! -f "/$REPORTDIR/filenameconflicts.csv" ] ; then
             omrecname=""
         fi
         nlname=$(echo "${conflictnameline}" | awk '{print $4}')
-        nlmediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${NYCMG_NEARLINE_PATH}/${filename}")
+        nlmediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${NYCMG_NEARLINE_PATH}/${nlname}")
         nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep clip.dir | head -n 1)
         nlrecport=$(echo "$nldata" | cut -d";" -f2)
         nlrecdate=$(echo "$nldata" | cut -d";" -f9)
