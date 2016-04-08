@@ -16,6 +16,7 @@ fi
 
 #location of delivery folder
 PREPDIR="/Volumes/CUNYTV_Media/archive_projects/PREPPED/"
+PREPPING="/Volumes/CUNYTV_Media/archive_projects/PREPPING/"
 
 if [ ! -d "${PREPDIR}" ] ; then
     _report -wt "Error: the delivery folder is not loaded! "
@@ -49,7 +50,11 @@ do
 		fi
 		_report -dt "Encoding ${FILELOCATION}"
         if [ -s "${FILELOCATION}" ] ; then 
-            makeresourcespace -o "${PREPDIR}" "${FILELOCATION}"
+            makeresourcespace -o "${PREPPING}" "${FILELOCATION}"
+            #modify permissions and move file to different directory
+            FILETOMOD=$(find "${PREPPING}" -type f -iname "*.mp4")
+            chmod 776 "${FILETOMOD}" 
+            mv "${FILETOMOD}" "${PREPDIR}"
         fi
     fi
 done 3< "${IDLIST}"
