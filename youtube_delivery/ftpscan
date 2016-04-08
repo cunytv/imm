@@ -41,6 +41,8 @@
 #              added an option to show the information for a single file
 #
 # 2016-03-03 - Adding new show to the allowed: BLAM
+#
+# 2016-04-08 - No longer upload: EDCA
 #----------------------------------------------------------------------------
 
 use strict;
@@ -82,7 +84,6 @@ my @noGoList = (
 "CIWI",
 "DANI",
 "DIGA",
-"EDCA",
 "ELCO",
 "INSO",
 "IRWR",
