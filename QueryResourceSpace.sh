@@ -52,8 +52,8 @@ do
         if [ -s "${FILELOCATION}" ] ; then 
             makeresourcespace -o "${PREPPING}" "${FILELOCATION}"
             #modify permissions and move file to different directory
-            chmod 776 "${PREPPING}/*.mp4" 
-            mv -n -v "${PREPPING}/*.mp4" "${PREPDIR}"
+            chmod 776 "${PREPPING}/{ROOTNAME}.mp4"
+            mv -n -v "${PREPPING}/{ROOTNAME}.mp4" "${PREPDIR}"
         fi
     fi
 done 3< "${IDLIST}"
