@@ -48,7 +48,6 @@
                     <xsl:attribute name="type">8</xsl:attribute>
                     <xsl:value-of select="fmp:COL[count(key('N', 'PBCoreAssetType::assetType'))]/fmp:DATA[$row_pos]"/>
                 </field>
-                <PBCoreDescriptionDocument>
                     <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreIdentifier::asset_serial_fk'))]/fmp:DATA">
                         <xsl:variable name="pos" select="position()"/>
                         <xsl:variable name="asset_fk"><xsl:value-of select="../../fmp:COL[count(key('N','PBCoreIdentifier::asset_serial_fk'))]/fmp:DATA[$pos]"/></xsl:variable>
@@ -160,7 +159,6 @@
                             </pbcoreInstantiation>
                         </xsl:if>
                     </xsl:for-each>
-                </PBCoreDescriptionDocument>
             </resource>
             </xsl:for-each>
         </resourceset>
