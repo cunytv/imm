@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns="http://www.pbcore.org/PBCore/PBCoreNamespace.html" xmlns:fmp="http://www.filemaker.com/fmpxmlresult" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLoaction="http://www.pbcore.org/PBCore/PBCoreNamespace.html">
+    <!--
+    
+    Note that metadata may be pulled from filemaker server via this url convention:
+        http://10.10.200.28/fmi/xml/FMPXMLRESULT.xml?-db=CUNY_TV_archive&-lay=remoteimport&PBCoreIdentifier::identifier=EWM00105&-find
+        replace EWM00105 with the mediaid requested
+    
+    -->
     <xsl:output encoding="UTF-8" method="xml" version="1.0" indent="yes"/>
     <xsl:key name="N" match="/fmp:FMPXMLRESULT/fmp:METADATA/fmp:FIELD" use="@NAME"/>
     <xsl:key name="N" match="/fmp:FMPXMLRESULT/fmp:METADATA/fmp:FIELD" use="following-sibling::fmp:FIELD/@NAME"/>
