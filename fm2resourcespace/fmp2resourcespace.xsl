@@ -16,7 +16,7 @@
     <xsl:template match="fmp:FMPXMLRESULT/fmp:RESULTSET">
         <xsl:if test="count(fmp:ROW)>0">
             <resourceset>
-                <xsl:for-each select="fmp:ROW">
+                <xsl:for-each select="fmp:ROW[1]">
                     <xsl:variable name="row_pos" select="position()"/>
                     <xsl:variable name="asset_pk">
                         <xsl:value-of select="fmp:COL[count(key('N','asset_serial_pk'))]/fmp:DATA"/>
