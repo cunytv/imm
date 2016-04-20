@@ -32,10 +32,69 @@
                             <xsl:value-of select="fmp:COL[count(key('N','PBCoreTitle::title'))]/fmp:DATA"/>
                         </collection>
                         -->
+                        <xsl:if test="fmp:COL[count(key('N', 'PBCoreIdentifier::identifier'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">78</xsl:attribute><!-- identifiers -->
+                            <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreIdentifier::identifier'))]/fmp:DATA">
+                                <xsl:variable name="pos" select="position()"/>
+                                <xsl:text>&lt;tr&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="../../fmp:COL[count(key('N', 'PBCoreIdentifier::identifierSource'))]/fmp:DATA[$pos]"/>
+                                <xsl:text>&lt;/td&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="."/>
+                                <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
+                            </xsl:for-each>
+                        </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCoreAssetType::assetType'))]/fmp:DATA">
                         <field>
                             <xsl:attribute name="ref">77</xsl:attribute><!-- assettype -->
-                            <xsl:value-of select="fmp:COL[count(key('N','PBCoreAssetType::assetType'))]/fmp:DATA[$row_pos]"/>
+                            <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreAssetType::assetType'))]/fmp:DATA">
+                                <xsl:variable name="pos" select="position()"/>
+                                <xsl:text>&lt;tr&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="."/>
+                                <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
+                            </xsl:for-each>
                         </field>
+                      </xsl:if>
+                        <xsl:if test="fmp:COL[count(key('N', 'PBCoreCoverage::coverage'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">93</xsl:attribute><!-- coverage -->
+                            <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreCoverage::coverage'))]/fmp:DATA">
+                                <xsl:variable name="pos" select="position()"/>
+                                <xsl:text>&lt;tr&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="../../fmp:COL[count(key('N', 'PBCoreCoverage::type'))]/fmp:DATA[$pos]"/>
+                                <xsl:text>&lt;/td&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="."/>
+                                <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
+                            </xsl:for-each>
+                        </field>
+                        </xsl:if>
+                        <xsl:if test="fmp:COL[count(key('N', 'PBCoreDate::datevalue'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">82</xsl:attribute><!-- dates -->
+                            <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreDate::datevalue'))]/fmp:DATA">
+                                <xsl:variable name="pos" select="position()"/>
+                                <xsl:text>&lt;tr&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="../../fmp:COL[count(key('N', 'PBCoreDate::dateType'))]/fmp:DATA[$pos]"/>
+                                <xsl:text>&lt;/td&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="."/>
+                                <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
+                            </xsl:for-each>
+                        </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCoreTitle_series'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">73</xsl:attribute><!-- title series -->
+                            <xsl:value-of select="fmp:COL[count(key('N','PBCoreTitle_series'))]/fmp:DATA[$row_pos]"/>
+                        </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCoreTitle_episode'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">76</xsl:attribute><!-- title episode -->
+                            <xsl:value-of select="fmp:COL[count(key('N','PBCoreTitle_episode'))]/fmp:DATA[$row_pos]"/>
+                        </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCoreTitle::title'))]/fmp:DATA">
                         <field>
                             <xsl:attribute name="ref">111</xsl:attribute><!-- titles -->
                             <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreTitle::title'))]/fmp:DATA">
@@ -47,6 +106,8 @@
                                 <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
                             </xsl:for-each>
                         </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCoreDescription::description'))]/fmp:DATA">
                         <field>
                             <xsl:attribute name="ref">84</xsl:attribute><!-- descriptions -->
                             <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreDescription::description'))]/fmp:DATA">
@@ -58,6 +119,59 @@
                                 <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
                             </xsl:for-each>
                         </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCoreCreator::creator'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">86</xsl:attribute><!-- creators -->
+                            <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreCreator::creator'))]/fmp:DATA">
+                                <xsl:variable name="pos" select="position()"/>
+                                <xsl:text>&lt;tr&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="."/>
+                                <xsl:text>&lt;/td&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="../../fmp:COL[count(key('N', 'PBCoreCreator::creatorRole'))]/fmp:DATA[$pos]"/><!-- is this right -->
+                                <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
+                            </xsl:for-each>
+                        </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCoreContributor::contributor'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">90</xsl:attribute><!-- contributors -->
+                            <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreContributor::contributor'))]/fmp:DATA">
+                                <xsl:variable name="pos" select="position()"/>
+                                <xsl:text>&lt;tr&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="."/>
+                                <xsl:text>&lt;/td&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="../../fmp:COL[count(key('N', 'PBCoreContributor::affiliation'))]/fmp:DATA[$pos]"/>
+                                <xsl:text>&lt;/td&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="../../fmp:COL[count(key('N', 'PBCoreRole_Contributor::role'))]/fmp:DATA[$pos]"/>
+                                <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
+                            </xsl:for-each>
+                        </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCorePublisher::publisher'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">91</xsl:attribute><!-- publishers -->
+                            <xsl:for-each select="fmp:COL[count(key('N', 'PBCorePublisher::publisher'))]/fmp:DATA">
+                                <xsl:variable name="pos" select="position()"/>
+                                <xsl:text>&lt;tr&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="."/>
+                                <xsl:text>&lt;/td&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="../../fmp:COL[count(key('N', 'PBCorePublisher::publisherRole'))]/fmp:DATA[$pos]"/>
+                                <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
+                            </xsl:for-each>
+                        </field>
+                      </xsl:if>
+                      <xsl:if test="fmp:COL[count(key('N', 'PBCoreInstantiation::display_Instantiation_w_related_summary'))]/fmp:DATA">
+                        <field>
+                            <xsl:attribute name="ref">116</xsl:attribute><!-- instantiations -->
+                            <xsl:for-each select="fmp:COL[count(key('N', 'PBCoreInstantiation::display_Instantiation_w_related_summary'))]/fmp:DATA">
+                                <xsl:variable name="pos" select="position()"/>
+                                <xsl:text>&lt;tr&gt;&lt;td&gt;</xsl:text>
+                                <xsl:value-of select="."/>
+                                <xsl:text>&lt;/td&gt;&lt;/tr&gt;</xsl:text>
+                            </xsl:for-each>
+                        </field>
+                      </xsl:if>
                     </resource>
                 </xsl:for-each>
             </resourceset>
