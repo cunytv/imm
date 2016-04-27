@@ -10,6 +10,8 @@ REPORTDATE=$(date '+%F')
 if [ -d "${1}" ] ; then
     IDLIST=/tmp/querylist.txt
     find "${1}" -type f -mindepth 1 -maxdepth 1 > /tmp/querylist.txt
+elif [ -f "~/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt" ] ; then
+    IDLIST="~/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
 else
     IDLIST="/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"    
 fi
