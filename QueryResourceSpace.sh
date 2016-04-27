@@ -10,10 +10,13 @@ REPORTDATE=$(date '+%F')
 if [ -d "${1}" ] ; then
     IDLIST=/tmp/querylist.txt
     find "${1}" -type f -mindepth 1 -maxdepth 1 > /tmp/querylist.txt
-elif [ -f "~/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt" ] ; then
-    IDLIST="~/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
-else
-    IDLIST="/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"    
+elif [ -f "${HOME}/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt" ] ; then
+    IDLIST="${HOME}/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
+elif [ -f "/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt" ] ; then
+    IDLIST="/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
+elif [ ! -f "${IDLIST}" ] ; then
+    _report -wt "Error: I'm not able to load and read the list of IDs on the omneon!"
+    exit 1
 fi
 
 #location of delivery folder
@@ -24,13 +27,6 @@ if [ ! -d "${PREPDIR}" ] ; then
     _report -wt "Error: the delivery folder is not loaded! "
     exit 1
 fi
-
-if [ ! -f "${IDLIST}" ] ; then
-    _report -wt "Error: I'm not able to load and read the list of IDs on the omneon!"
-    exit 1
-fi
-
-
 
 #comparing the IDs of everything on the omneon to what has been uploaded so far into resource space
 while read ID <&3
