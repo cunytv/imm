@@ -87,7 +87,7 @@ _check4mount(){
 
 ## local variables
 # declare an age in days under which files will be excluded from being removal candidates
-keepnewforXdays=5
+keepnewforXdays=7
 
 ## connect to Autosaved folder if not already
 if [ $(mount | grep -c /Volumes/Autosaved) = 0 ] ; then
