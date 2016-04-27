@@ -8,10 +8,10 @@ REPORTDATE=$(date '+%F')
 
 #ID list is the list of everything on the omneon that belongs to CUNY TV
 if [ -d "${1}" ] ; then
-	IDLIST=/tmp/querylist.txt
-	find "${1}" -type f -mindepth 1 -maxdepth 1 > /tmp/querylist.txt
+    IDLIST=/tmp/querylist.txt
+    find "${1}" -type f -mindepth 1 -maxdepth 1 > /tmp/querylist.txt
 else
-	IDLIST="/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"	
+    IDLIST="/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"    
 fi
 
 #location of delivery folder
@@ -33,26 +33,26 @@ fi
 #comparing the IDs of everything on the omneon to what has been uploaded so far into resource space
 while read ID <&3
 do
-	if [ -d "${1}" ] ; then
-		ROOTNAME=$(basename "${ID%.*}")
-	else
-		ROOTNAME="${ID}"
-	fi
-	echo -n "Working on ${ROOTNAME}"
-	RESULTS="$(curl "http://10.10.200.28/fmi/xml/FMPXMLRESULT.xml?-db=CUNY_TV_archive&-lay=resource_data&-find&resource_type_field=51&value=${ROOTNAME}" 2>/dev/null | xml sel -T -t -m _:FMPXMLRESULT/_:RESULTSET -v @FOUND -n 2>/dev/null)"
-	echo "  and found ${RESULTS} records in resourcespace."
+    if [ -d "${1}" ] ; then
+        ROOTNAME=$(basename "${ID%.*}")
+    else
+        ROOTNAME="${ID}"
+    fi
+    echo -n "Working on ${ROOTNAME}"
+    RESULTS="$(curl "http://10.10.200.28/fmi/xml/FMPXMLRESULT.xml?-db=CUNY_TV_archive&-lay=resource_data&-find&resource_type_field=51&value=${ROOTNAME}" 2>/dev/null | xml sel -T -t -m _:FMPXMLRESULT/_:RESULTSET -v @FOUND -n 2>/dev/null)"
+    echo "  and found ${RESULTS} records in resourcespace."
     #if the result is 1, the item has been uploaded into resource space. If the result is 0, the file must be transcoded and uploaded to resource space
     if [ "${RESULTS}" == 0 ] ; then
-		if [ -d "${1}" ] ; then
-			FILELOCATION="${ID}"
-		else
-	        FILELOCATION=$(grep "clip.dir/${ROOTNAME}.m" "/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_stat.txt" | head -n 1 | cut -d " " -f 7)
-		fi
-		_report -dt "Encoding ${FILELOCATION}"
+        if [ -d "${1}" ] ; then
+            FILELOCATION="${ID}"
+        else
+            FILELOCATION=$(grep "clip.dir/${ROOTNAME}.m" "/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_stat.txt" | head -n 1 | cut -d " " -f 7)
+        fi
+        _report -dt "Encoding ${FILELOCATION}"
         if [ -s "${FILELOCATION}" ] ; then 
             makeresourcespace -o "${PREPPING}" "${FILELOCATION}"
             #modify permissions and move file to different directory
-            chmod 776 "${PREPPING}/{ROOTNAME}.mp4"
+            chmod 777 "${PREPPING}/{ROOTNAME}.mp4"
             mv -n -v "${PREPPING}/{ROOTNAME}.mp4" "${PREPDIR}"
         fi
     fi
