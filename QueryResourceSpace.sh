@@ -57,4 +57,6 @@ do
         fi
     fi
 done 3< "${IDLIST}"
-rm -v /tmp/querylist.txt
+if [ -f /tmp/querylist.txt ] ; then
+    rm -v /tmp/querylist.txt
+fi
