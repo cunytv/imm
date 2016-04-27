@@ -12,8 +12,10 @@ if [ -d "${1}" ] ; then
     find "${1}" -type f -mindepth 1 -maxdepth 1 > /tmp/querylist.txt
 elif [ -f "${HOME}/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt" ] ; then
     IDLIST="${HOME}/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
+    STATLIST="${HOME}/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_stat.txt"
 elif [ -f "/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt" ] ; then
     IDLIST="/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
+    STATLIST="/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_stat.txt"
 elif [ ! -f "${IDLIST}" ] ; then
     _report -wt "Error: I'm not able to load and read the list of IDs on the omneon!"
     exit 1
@@ -44,7 +46,7 @@ do
         if [ -d "${1}" ] ; then
             FILELOCATION="${ID}"
         else
-            FILELOCATION=$(grep "clip.dir/${ROOTNAME}.m" "/Volumes/archivesx/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_stat.txt" | head -n 1 | cut -d " " -f 7)
+            FILELOCATION=$(grep "clip.dir/${ROOTNAME}.m" "$STATLIST" | head -n 1 | cut -d " " -f 7)
         fi
         _report -dt "Encoding ${FILELOCATION}"
         if [ -s "${FILELOCATION}" ] ; then 
