@@ -1,7 +1,8 @@
 #!/bin/bash
+SCRIPTDIR="$(dirname "$0")"
 MEDIAID="${1}"
 
-curl "http://10.10.200.28/fmi/xml/FMPXMLRESULT.xml?-db=CUNY_TV_archive&-lay=remoteimport&PBCoreIdentifier::identifier=${MEDIAID}&-find" | xsltproc --nonet fmp2resourcespace.xsl - > /tmp/hey.xml
+curl "http://10.10.200.28/fmi/xml/FMPXMLRESULT.xml?-db=CUNY_TV_archive&-lay=remoteimport&PBCoreIdentifier::identifier=${MEDIAID}&-find" | xsltproc --nonet "${SCRIPTDIR}/fmp2resourcespace.xsl" - > /tmp/hey.xml
 if [ -s /tmp/hey.xml ] ; then
 curl --data-urlencode xml@/tmp/hey.xml http://respace.cunytv.lan/plugins/remoteimport/pages/update_unsafe.php
 echo
