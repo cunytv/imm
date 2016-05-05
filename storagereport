@@ -416,7 +416,7 @@ fi
 
 # make nycmg pull list
 comm -2 -3 "${NYCMG4AIR}"  "${ON_OMNEON_IDS}" > /tmp/nycmg_pulllist_temp.txt
-for i in `cat /tmp/nycmg_pulllist_temp.txt` ; do grep "$i" nycmg_storage_summary.txt ; done > "/$REPORTDIR/nycmg_pulllist.csv"
+for i in `cat /tmp/nycmg_pulllist_temp.txt` ; do grep "$i" "${NYCMG_STORAGE_SUMMARY}" ; done > "/$REPORTDIR/nycmg_pulllist.csv"
 
 ls -l /Volumes/NYCM_Media/media/ | awk '{print $9 " " $5 }' | sort > /tmp/nearline.txt
 for i in ~/Documents/lto_indexes/C*.schema ; do
