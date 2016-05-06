@@ -1,4 +1,5 @@
 #!/bin/bash
+SCRIPTDIR="$(dirname "$0")"
 MEDIAID="${1}"
 
 _maketemp(){
