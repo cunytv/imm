@@ -3,6 +3,15 @@ MEDIAID="${1}"
 
 curl "http://10.10.200.28/fmi/xml/FMPXMLRESULT.xml?-db=CUNY_TV_archive&-lay=remoteimport&PBCoreIdentifier::identifier=${MEDIAID}&-find" | xsltproc --nonet fmp2resourcespace.xsl - > /tmp/hey.xml
 if [ -s /tmp/hey.xml ] ; then
+_maketemp(){
+    mktemp -q "/tmp/$(basename "${0}").XXXXXX"
+    if [ "${?}" -ne 0 ]; then
+        echo "${0}: Can't create temp file, exiting..."
+        _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
+        exit 1
+    fi
+}
+
 curl --data-urlencode xml@/tmp/hey.xml http://respace.cunytv.lan/plugins/remoteimport/pages/update_unsafe.php
 echo
 else
