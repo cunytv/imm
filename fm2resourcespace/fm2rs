@@ -22,3 +22,4 @@ fi
 if [ -f "${TEMPXML}" ] ;then
     rm "${TEMPXML}"
 fi
+# for i in $(wget "http://10.10.200.28/fmi/xml/fmresultset.xml?-db=CUNY_TV_archive&-lay=resource_field8&-findall" -O - | xml sel -N fm=http://www.filemaker.com/xml/fmresultset -t -m /fm:fmresultset/fm:resultset/fm:record -v fm:field/fm:data -n - ) ; do ./fm2rs "$i" ; done
