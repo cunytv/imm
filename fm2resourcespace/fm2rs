@@ -18,4 +18,6 @@ echo
 else
     echo "Metadata about $MEDIAID is unavailable."
 fi
-rm "${TEMPXML}"
+if [ -f "${TEMPXML}" ] ;then
+    rm "${TEMPXML}"
+fi
