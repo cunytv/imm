@@ -1,0 +1,123 @@
+#!/bin/bash
+# uploadYOUTUBE
+# upload to YOUTUBE
+requireconfig="Y"
+
+# A .netrc file must be set up, see http://lowendmac.com/2009/automating-ftp-on-the-mac/.
+
+version="1.0"
+YOUTUBEIP=10.10.200.28
+YOUTUBEPATH=.
+UPLOADREGEX="^AALE|^AALF|^AITC|^BLAM|^BLTV|^BUNY|^CANA|^CFOR|^CITA|^CIWI|^DANI|^DIGA|^ELCO|^INSO|^IRWR|^ITAL|^NUEV|^OPED|^OPEN|^OTOO|^PTSBL|^SCIU|^SPEC|^STRP|^SWTB|^THTK|^TNGD|^TKHL"
+
+scriptdir=$(dirname "$0")
+. "$scriptdir/mmfunctions" || { echo "Missing '$scriptdir/mmfunctions'. Exiting." ; exit 1 ;};
+
+usage(){
+    echo
+    echo "$(basename ${0}) ${version}"
+    echo "This application will upload file(s) to a server via rsync in sequential order. Options are specified via 'mmconfig'."
+    echo
+    echo "Settings:"
+    echo "YOUTUBEIP=${YOUTUBEIP}"
+    echo "YOUTUBEPATH=${YOUTUBEPATH}"
+    echo "Usage: $(basename $0) file1 [ file2 ...]"
+    echo "  -h ( display this help )"
+    echo
+    exit
+}
+[ "$#" = 0 ] && usage
+
+cleanup(){
+    _log -a "Process aborted"
+    exit 1
+}
+
+get_ftp_status(){
+local filename="$1"
+status=$(ftp "$YOUTUBEIP" <<END_SCRIPT
+binary
+ls "${YOUTUBEPATH}/${filename}"
+exit
+END_SCRIPT)
+size=$(echo "$status" | grep "${filename}" | awk '{print $5}')
+}
+
+trap cleanup SIGHUP SIGINT SIGTERM
+_log -b
+
+# command-line options to set mediaid and original variables
+OPTIND=1
+while getopts ":h" opt; do
+    case "$opt" in
+        h) usage ;;
+        *) echo "Invalid option: -$OPTARG" ; exit 1 ;;
+        :) echo "Option -$OPTARG requires an argument" ; exit 1 ;;
+    esac
+done
+shift $(( ${OPTIND} - 1 ))
+
+[ ! "$TMPDIR" ] && { report -wt "The temporary directory must be set and be available. Run 'mmconfig'." ; exit 1 ;};
+[ ! -d "$TMPDIR" ] && mkdir -p "$TMPDIR"
+[ ! -n "$YOUTUBEIP" ] && { report -wt "The YOUTUBE IP must be set. Run 'mmconfig'." ; exit 1 ;};
+[ ! -n "$YOUTUBEPATH" ] && { report -wt "The YOUTUBE Path must be set. Run 'mmconfig'." ; exit 1 ;};
+
+while [ "$*" != "" ] ; do
+
+sourcefile="$1"
+removetmp="n"
+filename=$(basename "$sourcefile")
+
+if [ $(echo "$filename" | grep -E "${UPLOADREGEX}") ] ; then
+        report -dt "${filename} qualifies for youtube upload."
+
+_log -b
+
+get_ftp_status "${filename}"
+if [[ ! $(echo "$status" | grep "${YOUTUBEPATH}") ]] ; then
+report "The file named $filename is not currently on the youtube server, proceeding..."
+
+if echo "$sourcefile" | grep -q "/Volumes/" ; then
+    report -dt "The file ${filename} is coming from an external volume. It will first move the file to ${TMPDIR} and then upload to the YOUTUBE."
+    rsync -rtv --progress "$sourcefile" "${TMPDIR}/"
+    uploadfile="${TMPDIR}/${filename}"
+    removetmp="y"
+else
+    uploadfile="$sourcefile"
+fi
+extension=$(basename "${sourcefile##*.}")
+
+report -dt "Starting to ftp $filename to the YOUTUBE..."
+ftp "$YOUTUBEIP" <<END_SCRIPT
+binary
+put "${uploadfile}" "${YOUTUBEPATH}/${filename}.uploading.${extension}"
+rename "${YOUTUBEPATH}/${filename}.uploading.${extension}" "${YOUTUBEPATH}/${filename}"
+exit
+END_SCRIPT
+upload_err="${?}"
+get_ftp_status "${filename}"
+if [ "$upload_err" = "0" ] ; then
+    report -dt "${filename} is uploaded to the YOUTUBE"
+    localsize=$(ls -l "${sourcefile}" | awk '{print $5}')
+    if [[ "${localsize}" = "${size}" ]] ; then
+        report -dt "Uploaded file matches source file at ${size} bytes. Looks good."
+    else
+        report -wt "WARNING: Uploaded file is ${size} bytes and local file is ${localsize} bytes."
+    fi
+    if [ "$removetmp" = "y" ] ; then
+        rm -v "${TMPDIR}/${filename}"
+    fi
+else
+    report -wt "ftp exited with code ${upload_err} for $uploadfile"
+fi
+else
+report -wt "$filename is already on the YOUTUBE as a $size byte file."
+fi
+
+else
+    report -dt "${filename} does NOT qualify for youtube upload, skipping."
+fi
+
+shift
+done
+_log -e
