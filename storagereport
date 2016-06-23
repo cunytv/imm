@@ -4,6 +4,11 @@
 _get_iso8601(){
     date +%FT%T
 }
+
+_get_iso8601_c(){
+    date +%Y%m%d-%H%M%S
+}
+
 _log(){
     MMLOGNAME="mm.log"
     MMLOGDIR="${CUSTOM_LOG_DIR:-/tmp}"
