@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+<xsd:include schemaLocation="pmcptype.xsd"/>
+	<xsd:simpleType name="isanRootType">
+		<xsd:annotation>
+			<xsd:documentation>Type for the root part of an ISAN</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[\dA-Fa-f]{4}-[\dA-Fa-f]{4}-[\dA-Fa-f]{4}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="isanEpisodeType">
+		<xsd:annotation>
+			<xsd:documentation>Type for the episode part of an ISAN or V-ISAN</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[\dA-Fa-f]{4}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="isanCheckType">
+		<xsd:annotation>
+			<xsd:documentation>Type for the check digits of a ISAN</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[\dA-Za-z]"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="isanVersionType">
+		<xsd:annotation>
+			<xsd:documentation>Type for the version part of a ISAN</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[\dA-Fa-f]{4}-[\dA-Fa-f]{4}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="IsanType">
+		<xsd:annotation>
+			<xsd:documentation>ISAN, as defined by ISO. Only the root is required, allowing its use as an ISAN or even to reference all episodes</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="root" type="isanRootType" use="required"/>
+		<xsd:attribute name="episodeOrPart" type="isanEpisodeType" use="optional"/>
+		<xsd:attribute name="check1" type="isanCheckType" use="optional"/>
+		<xsd:attribute name="version" type="isanVersionType" use="optional"/>
+		<xsd:attribute name="check2" type="isanCheckType" use="optional"/>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+
+
+</xsd:schema>

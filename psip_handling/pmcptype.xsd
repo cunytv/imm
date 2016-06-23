@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:simpleType name="languageType">
+		<xsd:annotation>
+			<xsd:documentation>Three-letter language code per ISO-639-2</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[a-z]{3}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="actionType">
+		<xsd:annotation>
+			<xsd:documentation>Enables the sender of a message to indicate, for each element, which action should be performed on the current element. The rules governing the allowed values can be found in the PMCP Standard.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="read"/>
+			<xsd:enumeration value="add"/>
+			<xsd:enumeration value="update"/>
+			<xsd:enumeration value="remove"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="errorType">
+		<xsd:annotation>
+			<xsd:documentation>Used in a message of type "reply" with a status of "error" to indicate where and why an error occured</xsd:documentation>
+		</xsd:annotation>
+		<xsd:list itemType="elementaryErrorType"/>
+	</xsd:simpleType>
+	<xsd:simpleType name="statusType">
+		<xsd:annotation>
+			<xsd:documentation>Status of a reply message</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="valid">
+				<xsd:annotation>
+					<xsd:documentation>means that the request was valid XML but has not been processed yet</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="invalid">
+				<xsd:annotation>
+					<xsd:documentation>means that the request was invalid XML and could not be processed</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="OK">
+				<xsd:annotation>
+					<xsd:documentation>means that the request was valid XML and has been processed with no error</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="error">
+				<xsd:annotation>
+					<xsd:documentation>means that the request was valid XML but contained at least one error, described in the body of the PmcpMessage, using the "error" attribute.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="elementaryErrorType">
+		<xsd:annotation>
+			<xsd:documentation>Type for an elementary error</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="(element_does_not_exist|.*_out_of_range|.*_missing|.*_change_denied)(:.*)?"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="privateInformationDataType">
+		<xsd:annotation>
+			<xsd:documentation>Specifies the format of private data to be carried in ATSC tables</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:hexBinary">
+			<xsd:maxLength value="251"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="audioIdType">
+		<xsd:annotation>
+			<xsd:documentation>Type for an audioId attribute</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedByte">
+			<xsd:minInclusive value="1"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="applicationTypeType">
+		<xsd:annotation>
+			<xsd:documentation>Type of the application described in this AIT sub_table (A/101 10.6.2.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="ACAP-J"/>
+			<xsd:enumeration value="DVB-J"/>
+			<xsd:enumeration value="ACAP-X"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+    <xsd:simpleType name="channelNumberType">
+          <xsd:annotation>
+                   <xsd:documentation>Specifies the format of a two-part or one-part channel number</xsd:documentation>
+          </xsd:annotation>
+          <xsd:restriction base="xsd:string">
+                  <xsd:pattern value="1[0-6][0-3][0-8][0-4]"/>
+				  <xsd:pattern value="[1-9][0-9]{0,3}"/>
+				  <xsd:pattern value="[1-9][0-9]{0,2}\-[0-9]{1,3}"/>
+          </xsd:restriction>
+ </xsd:simpleType>
+<!--
+	<xsd:simpleType name="channelNumberType">
+		<xsd:annotation>
+			<xsd:documentation>Specifies the format of a two-part or one-part channel number</xsd:documentation>
+		</xsd:annotation>
+		<xsd:union memberTypes="onePartType twoPartType"/>
+	</xsd:simpleType>
+-->
+	<xsd:simpleType name="onePartType">
+		<xsd:annotation>
+			<xsd:documentation>Type for one-part channel number for cable</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort">
+			<xsd:maxExclusive value="16384"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="twoPartType">
+		<xsd:annotation>
+			<xsd:documentation>Type for two-part channel number (Major-Minor)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[1-9][0-9]{0,2}-[0-9]{1,3}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="pidType">
+		<xsd:annotation>
+			<xsd:documentation>Specifies the format of an MPEG-2 PID.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort">
+			<xsd:maxExclusive value="8192"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="PrivatePmcpInformationType">
+		<xsd:annotation>
+			<xsd:documentation>Any sequence of well-formed private xml elements. Allows systems to carry additional private information in a PMCP message</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:any namespace="##any" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:complexType name="PrivateInformationType">
+		<xsd:annotation>
+			<xsd:documentation>ATSC Private Information descriptor, used for sending private data in an ATSC table (A/53B Amendment 2, 5.7.3.4)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="privateInformationDataType">
+				<xsd:attribute name="formatIdentifier" type="xsd:unsignedInt" use="required">
+					<xsd:annotation>
+						<xsd:documentation>Format Identifier registered by SMPTE</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="action" type="actionType" use="optional"/>
+				<xsd:attribute name="error" type="errorType" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+
+	<xsd:complexType name="DescriptorType">
+		<xsd:annotation>
+			<xsd:documentation>Generic descriptor type, used for future extensions of the PSIP standard. All currently defined PSIP descriptors have their own associated type.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:hexBinary">
+				<xsd:attribute name="descriptorTag" type="xsd:unsignedByte" use="required">
+					<xsd:annotation>
+						<xsd:documentation>Descriptor tag</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="action" type="actionType" use="optional"/>
+				<xsd:attribute name="error" type="errorType" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="TextType">
+		<xsd:annotation>
+			<xsd:documentation>One string of a Multiple String Structure of PSIP (A/65B 6.10)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:string">
+				<xsd:attribute name="lang" type="languageType" use="required"/>
+				<xsd:attribute name="action" type="actionType" use="optional"/>
+				<xsd:attribute name="error" type="errorType" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="ConditionalAccessType">
+		<xsd:annotation>
+			<xsd:documentation>MPEG-2 conditional_access_descriptor. Declares an EMM PID at the transport stream level and an ECM PID at the program or elementary stream level.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:hexBinary">
+				<xsd:attribute name="systemId" type="xsd:unsignedShort" use="required">
+					<xsd:annotation>
+						<xsd:documentation>Conditional access system ID</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="pid" type="pidType" use="optional">
+					<xsd:annotation>
+						<xsd:documentation>EMM or ECM PID, depending on context</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="action" type="actionType" use="optional"/>
+				<xsd:attribute name="error" type="errorType" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="RedistributionControlType">
+		<xsd:annotation>
+			<xsd:documentation>Redistribution Control Descriptor (A/65B 6.9.13)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Null" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Means that there is no redistribution control descriptor</xsd:documentation>
+				</xsd:annotation>
+				<xsd:complexType/>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+</xsd:schema>

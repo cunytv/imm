@@ -1,0 +1,140 @@
+<?xml version="1.0"?>
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<xsd:include schemaLocation="pmcptype.xsd"/>
+	<xsd:complexType name="DimensionType">
+		<xsd:annotation>
+			<xsd:documentation>Type for a dimension in a rating region</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Name" type="TextType" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Name of the dimension</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Value" type="RatingValueType" maxOccurs="15">
+				<xsd:annotation>
+					<xsd:documentation>Possible values for a given dimension</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="graduatedScale" type="xsd:boolean" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Indicates if the dimension is graduated</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="RatingValueType">
+		<xsd:annotation>
+			<xsd:documentation>Type for a rating value</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="AbbrevName" type="TextType">
+				<xsd:annotation>
+					<xsd:documentation>Abbreviated name of the value</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Name" type="TextType" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Long name of the value</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="RatingsType">
+		<xsd:annotation>
+			<xsd:documentation>Describes the ratings system and is used to build the Rating Region Table (A/65B 6.4)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Region" type="RegionType" maxOccurs="255">
+				<xsd:annotation>
+					<xsd:documentation>Rating system for one region</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="RegionType">
+		<xsd:annotation>
+			<xsd:documentation>Type for the rating system of a region</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Name" type="TextType" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Name of the region</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Dimension" type="DimensionType" maxOccurs="255">
+				<xsd:annotation>
+					<xsd:documentation>Existing dimensions for the region</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the RRT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Descriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the RRT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="id" type="xsd:unsignedByte" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Region ID, as defined by the ATSC Code Point Registry</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="RatingType">
+		<xsd:annotation>
+			<xsd:documentation>Rating for one dimension in Content Advisory Descriptor (A/65B 6.9.4)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="dimension" type="xsd:string" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Name of the dimension</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="value" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Name of the rating value</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ParentalRatingType">
+		<xsd:annotation>
+			<xsd:documentation>Ratings for one region in Content Advisory Descriptor (A/65B 6.9.4)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+		<xsd:choice>
+			<xsd:element name="Null">
+				<xsd:annotation>
+					<xsd:documentation>Means that there is no rating for the given region</xsd:documentation>
+				</xsd:annotation>
+				<xsd:complexType/>
+			</xsd:element>
+			<xsd:element name="Rating" type="RatingType" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Individual rating dimensions</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:choice>
+				<xsd:element type="TextType" maxOccurs="unbounded" minOccurs="0" name="ContentAdvisory"/>
+	</xsd:sequence>
+		<xsd:attribute name="region" type="xsd:unsignedByte" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Rating region, as defined by the ATSC Code Point Registry</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+</xsd:schema>

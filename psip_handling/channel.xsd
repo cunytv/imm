@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v2004 rel. 4 U (http://www.xmlspy.com) by Kim Yong Ho (ETRI) -->
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:include schemaLocation="elementarystream.xsd"/>
+	<xsd:include schemaLocation="audios.xsd"/>
+	<xsd:include schemaLocation="regionrating.xsd"/>
+	<xsd:include schemaLocation="captions.xsd"/>
+	<xsd:complexType name="TimeShiftedServiceType">
+		<xsd:annotation>
+			<xsd:documentation>Time Shifted Service Descriptor (A/65B 6.9.7)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Copy" type="ChannelCopyType" maxOccurs="20">
+				<xsd:annotation>
+					<xsd:documentation>Time shifted service</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ChannelCopyType">
+		<xsd:annotation>
+			<xsd:documentation>Type for a time shifted service</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="timeShift" type="xsd:duration" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Delay compared to the reference channel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="channel" type="channelNumberType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Channel number of the time-shifted copy</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:simpleType name="channelStatusType">
+		<xsd:annotation>
+			<xsd:documentation>Channel activity status (A/65B 6.3 hidden and hide_guide)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="active"/>
+			<xsd:enumeration value="inactive"/>
+			<xsd:enumeration value="hidden"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="shortNameType">
+		<xsd:annotation>
+			<xsd:documentation>PSIP short name (7 characters max.) (A/65B 6.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="7"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="serviceType">
+		<xsd:annotation>
+			<xsd:documentation>Type of the primary service provided by the channel: TV, radio or data (A/65B 6.3 service_type)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="analog_television"/>
+			<xsd:enumeration value="digital_television"/>
+			<xsd:enumeration value="digital_radio"/>
+			<xsd:enumeration value="data_broadcast"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="ChannelType">
+		<xsd:annotation>
+			<xsd:documentation>Describes an ATSC "Virtual Channel", equivalent to an MPEG-2 "program" </xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Name" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Long name of the channel, potentially for multiple languages (A/65B 6.9.5)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Description" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Multiple-language description of the channel carried in the channel ETT (A/65B 6.6)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ElementaryStream" type="ElementaryStreamType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Description of the elementary streams that make up the channel, as carried in the service location descriptor of the VCT (A/65B 6.9.6) and in the PMT (A/53B 5.4)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ParentalRating" type="ParentalRatingType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Current parental ratings of the channel. Overrides the value set for the current event.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Audios" type="AudiosType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Current audio configuration of the channel. Overrides the value set for the current event.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Captions" type="CaptionsType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Current caption services of the channel. Overrides the value set for the current event.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="RedistributionControl" type="RedistributionControlType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Current "broadcast flag" of the channel. Overrides the value set for the current event.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="TimeShiftedService" type="TimeShiftedServiceType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Signals that this channel has time shifted copies</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ConditionalAccess" type="ConditionalAccessType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Defines the CA systems in use in this channel and the corresponding ECM PIDs</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DeferredAssociationTags" type="DeferredAssociationTagsType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>This descriptor is present, if the stream object is bound to elementary streams of other services, (A/101 10.6.2.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PmtPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the PMT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="VctPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the inner loop of the VCT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PmtDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the PMT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="VctDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the inner loop of the VCT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PrivatePmcpInformation" type="PrivatePmcpInformationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Channel-level PMCP-private information</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="channelNumber" type="channelNumberType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Two-part or one-part channel number of the virtual channel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="tsid" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>TSID of the carrying transport stream (A/65B 6.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="network" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Network identifier, used when the TSID is not unique in the system</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="programNumber" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>MPEG-2 program number used by the virtual channel (A/65B 6.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="sourceId" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>PSIP source_id (A/65B 6.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="status" type="channelStatusType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Current activity status of the channel (A/65B 6.3 hidden and hide_guide)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="type" type="serviceType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Type of the primary service provided by the channel: TV, radio or data (A/65B 6.3 service_type)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="ca" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Specifies if this channel is partly or completely encrypted and access-controlled (A/65B 6.3 access_controlled)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="shortName" type="shortNameType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>PSIP short name (7 characters max.) (A/65B 6.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="outOfBand" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>When true, signals that the PSIP data is not carried in the same physical channel as the virtual channel itself (A/65B 6.3.2)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pmtPid" type="pidType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>PID used to carry the MPEG-2 PMT of the channel (A/53B 5.4)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pcrPid" type="pidType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>PID used to carry the PCR fields of the channel, same as video PID per ATSC rules (A/53B 5.4)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DeferredAssociationTagsType">
+		<xsd:annotation>
+			<xsd:documentation>Deferred Association Tags Descriptor (A/101 10.6.2.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="AssociationTags" type="AssociationTagsType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>List of deferred association tags</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="programNumber" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>service_id of the service that is associated with enlisted association tags</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="tsid" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>TSID of the transport stream in which the MPEG-2 Program resides that contains the PIDs that are associated with the enlisted assocation tags</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+</xsd:schema>

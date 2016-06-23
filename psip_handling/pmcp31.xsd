@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--W3C Schema for Programming Metadata Communication Protocol-->
+<xsd:schema targetNamespace="http://www.atsc.org/XMLSchemas/pmcp/2007/3.1" elementFormDefault="qualified" version="3.1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.atsc.org/XMLSchemas/pmcp/2007/3.1">
+	<xsd:include schemaLocation="transportstream.xsd"/>
+	<xsd:include schemaLocation="channel.xsd"/>
+	<xsd:include schemaLocation="event.xsd"/>
+	<xsd:include schemaLocation="timeparameters.xsd"/> 
+	<xsd:include schemaLocation="acapservice.xsd"/>
+	<xsd:element name="PmcpMessage">
+		<xsd:annotation>
+			<xsd:documentation>PMCP message wrapper. This is the root structure of any PMCP message</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="PmcpReply" type="PmcpReplyType" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>This element, required when the PMCP message is a reply, references the request and communicates its status</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="TransportStream" type="TransportStreamType" minOccurs="0" maxOccurs="unbounded">
+					<xsd:annotation>
+						<xsd:documentation>Declaration of the transport streams managed by the system and definition of their global parameters.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Channel" type="ChannelType" minOccurs="0" maxOccurs="unbounded">
+					<xsd:annotation>
+						<xsd:documentation>Declaration of the "virtual channels" managed by the system and definition of their branding and tuning parameters.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Show" type="ShowType" minOccurs="0" maxOccurs="unbounded">
+					<xsd:annotation>
+						<xsd:documentation>List of shows used in the program guides. Has no PSIP equivalent.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="PsipEvent" type="PsipEventType" minOccurs="0" maxOccurs="unbounded">
+					<xsd:annotation>
+						<xsd:documentation>Program guide information for regular TV and radio services.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="PsipDataEvent" type="PsipDataEventType" minOccurs="0" maxOccurs="unbounded">
+					<xsd:annotation>
+						<xsd:documentation>Data program guide information for regular TV service.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="AcapDataService" type="AcapDataServiceType" minOccurs="0" maxOccurs="unbounded">
+					<xsd:annotation>
+						<xsd:documentation>Information about the transport protocol associated with ACAP data broadcast service</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="TimeParameters" type="TimeParametersType" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Parameters used to compute the System Time Table (A/65B 6.1), with the exception of the time itself, which is communicated using other protocols than PMCP.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Ratings" type="RatingsType" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Definition of the parental rating system for multiple regions as carried in the RRT (A/65B 6.4)</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="PrivatePmcpInformation" type="PrivatePmcpInformationType" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>System-level PMCP-private information</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+			</xsd:sequence>
+			<xsd:attribute name="id" type="xsd:unsignedInt" use="required">
+				<xsd:annotation>
+					<xsd:documentation>unique number assigned to the message by its originating system</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="origin" type="xsd:string" use="required">
+				<xsd:annotation>
+					<xsd:documentation>Device name of the originating system of the message</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="originType" type="xsd:string" use="required">
+				<xsd:annotation>
+					<xsd:documentation>Type of the originating system (see ATSC code point registry)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="destination" type="xsd:string" use="optional" default="all">
+				<xsd:annotation>
+					<xsd:documentation>Device name of the intended destination for the message</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="dateTime" type="xsd:dateTime" use="required">
+				<xsd:annotation>
+					<xsd:documentation>Date and time of generation of the message</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="type" type="messageType" use="optional" default="information">
+				<xsd:annotation>
+					<xsd:documentation>Message type</xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+			<xsd:attribute name="error" type="errorType" use="optional"/>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:complexType name="PmcpReplyType">
+		<xsd:annotation>
+			<xsd:documentation>This element, required when the PMCP message is a reply, references the request and communicates its status</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="id" type="xsd:unsignedInt" use="required">
+			<xsd:annotation>
+				<xsd:documentation>id of the request message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="origin" type="xsd:string" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Originating system of the request message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="originType" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Type of the originating system for the request message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="destination" type="xsd:string" use="optional" default="all">
+			<xsd:annotation>
+				<xsd:documentation>Intended destination for the request message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="dateTime" type="xsd:dateTime" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Date and time of generation of the request message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="status" type="statusType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the result of processing the request</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:simpleType name="messageType">
+		<xsd:annotation>
+			<xsd:documentation>Possible message types</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="information">
+				<xsd:annotation>
+					<xsd:documentation>This message is for information only and no reply is expected</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="request">
+				<xsd:annotation>
+					<xsd:documentation>A reply to this message is expected</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="reply">
+				<xsd:annotation>
+					<xsd:documentation>This message is a reply to a previous request. It contains a PmcpReply element.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>

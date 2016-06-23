@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v2004 rel. 4 U (http://www.xmlspy.com) by Yong Ho Kim (ETRI) -->
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:include schemaLocation="essencemetadata.xsd"/>
+	<xsd:simpleType name="psipEventIdType">
+		<xsd:annotation>
+			<xsd:documentation>Type for a PSIP Event_id</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort">
+			<xsd:maxExclusive value="16384"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="PmcpEventIdType">
+		<xsd:annotation>
+			<xsd:documentation>Unique event identifier assigned by the creator of an event. Preferred referencing method</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="creator" type="xsd:string" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Device name of the initial event creator</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="id" type="xsd:unsignedInt" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Number assigned by the creator</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="InitialScheduleType">
+		<xsd:annotation>
+			<xsd:documentation>Communicates the initial scheduled start time. May be used to reference an event when no other ID is known.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="startTime" type="xsd:dateTime" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Start time initially scheduled for the event.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="PsipEventIdType">
+		<xsd:attribute name="eventId" type="psipEventIdType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Event_id as defined by PSIP and carried in the EIT</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="PsipDataIdType">
+		<xsd:attribute name="dataId" type="psipEventIdType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Data_id as defined by A/90 and carried in the DET</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="EventIdType">
+		<xsd:annotation>
+			<xsd:documentation>Event Identification. Provides several mechanisms for labeling and referencing events.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:choice>
+			<xsd:element name="Current">
+				<xsd:annotation>
+					<xsd:documentation>References the current event of the channel, when no other identification method is known</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Default">
+				<xsd:annotation>
+					<xsd:documentation>References the default event of the channel, used by the PSIP Generator when no other event information is known about a time slot</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:sequence>
+				<xsd:element name="PmcpEventId" type="PmcpEventIdType">
+					<xsd:annotation>
+						<xsd:documentation>Unique event identifier assigned by the creator of an event. Preferred referencing method</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="InitialSchedule" type="InitialScheduleType" minOccurs="0"/>
+				<xsd:element name="PsipEventId" type="PsipEventIdType" minOccurs="0"/>
+			</xsd:sequence>
+			<xsd:sequence>
+				<xsd:element name="InitialSchedule" type="InitialScheduleType">
+					<xsd:annotation>
+						<xsd:documentation>Communicates the initial scheduled start time. May be used to reference an event when no other ID is known.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="PsipEventId" type="PsipEventIdType" minOccurs="0"/>
+			</xsd:sequence>
+			<xsd:element name="PsipEventId" type="PsipEventIdType">
+				<xsd:annotation>
+					<xsd:documentation>PSIP event ID assigned and broadcast by the PSIP Generator in the EITs (A/65B 6.5)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:choice>
+		<xsd:attribute name="channelNumber" type="channelNumberType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Channel number of the channel that carries the event</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="tsid" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>TSID of the transport stream that carries the event, used if the channel number is not unique in the system</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="network" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Network identifier of the channel that carries the event, used when the TSID is not unique in the system</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="PsipEventType">
+		<xsd:annotation>
+			<xsd:documentation>Describes a PSIP "Event", i.e. an element of the program guide.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="EventId" type="EventIdType">
+				<xsd:annotation>
+					<xsd:documentation>Allows referencing an event using one or more methods</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ContentId" type="ContentIdType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>References a show or specifies the content ID of the event</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapContentId" type="ContentIdType" minOccurs="0">
+			    <xsd:annotation>
+					<xsd:documentation>References a show or specifies the content ID of the data event</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ShowData" type="ShowDataType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Show information of the PSIP event</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="EitPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the event loop of the EIT (A/65B 6.5)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="EitDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the event loop of the EIT (A/65B 6.5)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PrivatePmcpInformation" type="PrivatePmcpInformationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Event-level PMCP-private information</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="startTime" type="xsd:dateTime" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Actual start time of the event (A/65B 6.5), when different from the scheduled start time</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="startFrame" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Frame count for the actual start time of the event, when a one-second accuracy is not sufficient.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="duration" type="xsd:duration" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Duration of the event (A/65B 6.5)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="durationFrame" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Additional frames for the actual duration of the event, when a one-second accuracy is not sufficient.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="alternateScheduleNumber" type="xsd:positiveInteger" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates that the event is part of an alternate schedule and is not carried in PSIP</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="fromStart" type="xsd:duration" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the offset between the beginning of the material and the beginning of the event, e.g. the tape or the file. Not carried in PSIP.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="fromStartFrame" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Additional frames for the material offset, when a one-second accuracy is not sufficient.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="essenceSource" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Not carried in PSIP. Indicates where the essence comes from or how it is generated. Communicates implicit authority. The allowed values are defined during the setup process.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DataIdType">
+		<xsd:annotation>
+			<xsd:documentation>Data event Identification. Provides several mechanisms for labeling and referencing events.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:choice>
+			<xsd:element name="Current">
+				<xsd:annotation>
+					<xsd:documentation>References the current data event of the channel, when no other identification method is known</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Default">
+				<xsd:annotation>
+					<xsd:documentation>References the default data event of the channel, used by the PSIP Generator when no other data event information is known about a time slot</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:sequence>
+				<xsd:element name="PmcpDataId" type="PmcpEventIdType">
+					<xsd:annotation>
+						<xsd:documentation>Unique data event identifier assigned by the creator of an data event. Preferred referencing method</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="InitialSchedule" type="InitialScheduleType" minOccurs="0"/>
+				<xsd:element name="PsipDataId" type="PsipDataIdType" minOccurs="0"/>
+			</xsd:sequence>
+			<xsd:sequence>
+				<xsd:element name="InitialSchedule" type="InitialScheduleType">
+					<xsd:annotation>
+						<xsd:documentation>Communicates the initial scheduled start time. May be used to reference an event when no other ID is known.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="PsipDataId" type="PsipDataIdType" minOccurs="0"/>
+			</xsd:sequence>
+			<xsd:element name="PsipDataId" type="PsipDataIdType">
+				<xsd:annotation>
+					<xsd:documentation>PSIP data ID assigned and broadcast by the PSIP Generator in the DETs (A/90 11.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:choice>
+		<xsd:attribute name="channelNumber" type="channelNumberType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Channel number of the channel that carries the data event</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="tsid" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>TSID of the transport stream that carries the data event, used if the channel number is not unique in the system</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="network" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Network identifier of the channel that carries the data event, used when the TSID is not unique in the system</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="PsipDataEventType">
+		<xsd:annotation>
+			<xsd:documentation>Describes a PSIP "Data event", i.e. an element of the data program guide.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="DataId" type="DataIdType">
+				<xsd:annotation>
+					<xsd:documentation>Allows referencing a data event using one or more methods</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapContentId" type="ContentIdType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>References a show or specifies the content ID of the data event</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Name" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Multiple-language title of the data event (A/90 11.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Description" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Multiple-language description of the data event carried in the data event ETT (A/90 11.4)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DataBroadcast" type="DataBroadcastType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Data Broadcasting Descriptor</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DetPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the data event loop of the DET</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DetDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the data event loop of the DET</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PrivatePmcpInformation" type="PrivatePmcpInformationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Data event-level PMCP-private information</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="startTime" type="xsd:dateTime" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Actual start time of the data event (A/90 11.3), when different from the scheduled start time</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="duration" type="xsd:duration" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Duration of the data event (A/90 11.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="alternateScheduleNumber" type="xsd:positiveInteger" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates that the data event is part of an alternate schedule and is not carried in PSIP</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="fromStart" type="xsd:duration" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the offset between the beginning of the material and the beginning of the data event. Not carried in PSIP.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="essenceSource" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Not carried in PSIP. Indicates where the essence comes from or how it is generated. Communicates implicit authority. The allowed values are defined during the setup process.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+</xsd:schema>

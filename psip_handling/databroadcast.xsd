@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<xsd:include schemaLocation="pmcptype.xsd"/>
+	<xsd:simpleType name="carouselTypeIdType">
+		<xsd:annotation>
+			<xsd:documentation>Indicates which kind of carousel is used</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="one_layer"/>
+			<xsd:enumeration value="two_layer"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="leakRateType">
+		<xsd:annotation>
+			<xsd:documentation>Indicates the leak rate Rxn of the data carousel decoder model that is applied by the service</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedInt">
+			<xsd:maxExclusive value="4194303"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="DataBroadcastType">
+		<xsd:annotation>
+			<xsd:documentation>Data Broadcasting Descriptor</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Description" type="TextType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Indicates text description of the data component</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ObjectName" type="TextType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Indicates the name of the object to be used to start up the higher layer protocols</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="dataBroadcastId" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the data broadcast specification that is used to broadcast the data in the broadcast network</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="componentTag" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the component stream for associating it</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="carouselTypeId" type="carouselTypeIdType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates which kind of carousel is used</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="transactionId" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the same value as the transactionId value of the DownloadServerInitiate message that carries the object reference of the service gateway</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="time_out_value_DSI" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the recommended time out period in milliseconds that receivers should use to time out the acquisition of the DownloadServerInitiate message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="time_out_value_DII" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the recommended time out period in milliseconds that receivers should use to time out the acquisition of the DownloadInfoIndication message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="leakRate" type="leakRateType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the leak rate Rxn of the data carousel decoder model that is applied by the service</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+</xsd:schema>

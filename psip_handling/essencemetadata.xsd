@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:include schemaLocation="contentid.xsd"/>
+	<xsd:include schemaLocation="audios.xsd"/>
+	<xsd:include schemaLocation="captions.xsd"/>
+	<xsd:include schemaLocation="regionrating.xsd"/>
+	<xsd:include schemaLocation="databroadcast.xsd"/>
+	<xsd:complexType name="ShowType">
+		<xsd:annotation>
+			<xsd:documentation>Describes a show, i.e. an abstract entity which becomes a PSIP Event when it is scheduled</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="ContentId" type="ContentIdType">
+				<xsd:annotation>
+					<xsd:documentation>Communicates at least one of the possible IDs for the show</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ShowData" type="ShowDataType">
+				<xsd:annotation>
+					<xsd:documentation>Carries the actual information about the show</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PrivatePmcpInformation" type="PrivatePmcpInformationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Show-level PMCP-private information</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ShowDataType">
+		<xsd:annotation>
+			<xsd:documentation>Describes the metadata of a show</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Name" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Multiple-language title of the show (A/65B 6.5)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Description" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Multiple-language description of the show carried in the Event ETT (A/65B 6.6)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ParentalRating" type="ParentalRatingType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Parental rating of the show for one region</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Audios" type="AudiosType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Audio services associated with the show</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Captions" type="CaptionsType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Caption services associated with the show</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="RedistributionControl" type="RedistributionControlType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Sets the "broadcast flag" of the show</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DataBroadcast" type="DataBroadcastType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Data Broadcasting Descriptor</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+</xsd:schema>

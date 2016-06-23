@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+<xsd:include schemaLocation="pmcptype.xsd"/>
+	<xsd:simpleType name="ccServiceType">
+		<xsd:annotation>
+			<xsd:documentation>Type for 708 caption service number (A/65B 6.9.3 caption_service_number)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedByte">
+			<xsd:minInclusive value="1"/>
+			<xsd:maxInclusive value="63"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="Caption608Type">
+		<xsd:annotation>
+			<xsd:documentation>Used to indicate the presence of 608 line 21 analog captions</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="Caption708Type">
+		<xsd:annotation>
+			<xsd:documentation>Describes a 708 DTVCC digital captions service</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="service" type="ccServiceType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>708 captions service number</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="lang" type="languageType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Language of the caption service</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="wideAspectRatio" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the aspect ratio for which the caption service has been formatted</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="easyReader" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates if the caption service is formatted for beginner readers.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+
+	<xsd:complexType name="CaptionsType">
+		<xsd:annotation>
+			<xsd:documentation>Caption Service Descriptor (A/65B 6.9.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:choice>
+			<xsd:element name="Null" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Means that there is no caption service</xsd:documentation>
+				</xsd:annotation>
+				<xsd:complexType/>
+			</xsd:element>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="Caption608" type="Caption608Type" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Indicates that analog captions are present</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="Caption708" type="Caption708Type" minOccurs="0" maxOccurs="16">
+					<xsd:annotation>
+						<xsd:documentation>Describe digital captions services</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:choice>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+
+</xsd:schema>

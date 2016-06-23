@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:include schemaLocation="isan.xsd"/>
+	<xsd:complexType name="ContentIdType">
+		<xsd:annotation>
+			<xsd:documentation>Groups several content IDs that may be used simultaneously to label and reference a show</xsd:documentation>
+		</xsd:annotation>
+		<xsd:choice>
+			<xsd:sequence>
+				<xsd:element name="Isan" type="IsanType">
+					<xsd:annotation>
+						<xsd:documentation>V-ISAN, as defined by ISO.</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="HouseNumber" type="HouseNumberType" minOccurs="0"/>
+				<xsd:element name="AlternateId" type="AlternateIdType" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+			<xsd:sequence>
+				<xsd:element name="HouseNumber" type="HouseNumberType">
+					<xsd:annotation>
+						<xsd:documentation>Legacy string used to identify the material locally to a station</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="AlternateId" type="AlternateIdType" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+			<xsd:element name="AlternateId" type="AlternateIdType" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Any proprietary string other than the house number used to identify the material locally or globally</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:choice>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="HouseNumberType">
+		<xsd:annotation>
+			<xsd:documentation>Legacy string used to identify the material locally to a station</xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:string">
+				<xsd:attribute name="action" type="actionType" use="optional"/>
+				<xsd:attribute name="error" type="errorType" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+	<xsd:complexType name="AlternateIdType">
+		<xsd:annotation>
+			<xsd:documentation>Any proprietary string other than the house number used to identify the material locally or globally</xsd:documentation>
+		</xsd:annotation>
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:string">
+				<xsd:attribute name="idType" type="xsd:string" use="required">
+					<xsd:annotation>
+						<xsd:documentation>This attribute uniquely identifies the type of alternate Id communicated in the element</xsd:documentation>
+					</xsd:annotation>
+				</xsd:attribute>
+				<xsd:attribute name="action" type="actionType" use="optional"/>
+				<xsd:attribute name="error" type="errorType" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+	</xsd:complexType>
+</xsd:schema>

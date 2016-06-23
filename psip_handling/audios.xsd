@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v2004 rel. 4 U (http://www.xmlspy.com) by Minsik Park (ETRI) -->
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<xsd:include schemaLocation="pmcptype.xsd"/>
+	<xsd:simpleType name="audioServiceType">
+		<xsd:annotation>
+			<xsd:documentation>Possible audio service types (A/65B 6.9.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="complete_main"/>
+			<xsd:enumeration value="music_and_effects"/>
+			<xsd:enumeration value="visually_impaired"/>
+			<xsd:enumeration value="hearing_impaired"/>
+			<xsd:enumeration value="dialogue"/>
+			<xsd:enumeration value="commentary"/>
+			<xsd:enumeration value="emergency"/>
+			<xsd:enumeration value="voice_over"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="numChannelsType">
+		<xsd:annotation>
+			<xsd:documentation>Possible values for the number of audio channels in an AC-3 elementary stream (A/65B 6.9.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="1/0"/>
+			<xsd:enumeration value="2/0"/>
+			<xsd:enumeration value="3/0"/>
+			<xsd:enumeration value="2/1"/>
+			<xsd:enumeration value="3/1"/>
+			<xsd:enumeration value="2/2"/>
+			<xsd:enumeration value="3/2"/>
+			<xsd:enumeration value="1"/>
+			<xsd:enumeration value="2_or_less"/>
+			<xsd:enumeration value="3_or_less"/>
+			<xsd:enumeration value="4_or_less"/>
+			<xsd:enumeration value="5_or_less"/>
+			<xsd:enumeration value="6_or_less"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="bitRateKbpsType">
+		<xsd:annotation>
+			<xsd:documentation>Type for bit rate of AC-3 elementary stream in kbps (A/65B 6.9.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort">
+			<xsd:maxInclusive value="448"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="mainidType">
+		<xsd:annotation>
+			<xsd:documentation>Type for mainid of an AC-3 audio stream (A/65B 6.9.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedByte">
+			<xsd:maxExclusive value="8"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="bsidType">
+		<xsd:annotation>
+			<xsd:documentation>Type for version of AC-3 standard used by an AC-3 audio stream (A/65B 6.9.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedByte">
+			<xsd:maxExclusive value="32"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="AudiosType">
+		<xsd:annotation>
+			<xsd:documentation>List of audio services</xsd:documentation>
+		</xsd:annotation>
+		<xsd:choice>
+			<xsd:element name="Null">
+				<xsd:annotation>
+					<xsd:documentation>Means that there is no audio service</xsd:documentation>
+				</xsd:annotation>
+				<xsd:complexType/>
+			</xsd:element>
+			<xsd:element name="Ac3Audio" type="Ac3AudioType" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Individual audio service</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:choice>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="Ac3AudioType">
+		<xsd:annotation>
+			<xsd:documentation>Communicates all the parameters of an audio stream.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="audioId" type="audioIdType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>ID of the audio service in the virtual channel. Links to an elementary stream.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="lang" type="languageType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Language of the audio stream carried in the ISO_639_language_descriptor</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="serviceType" type="audioServiceType" use="optional" default="complete_main">
+			<xsd:annotation>
+				<xsd:documentation>Audio service type. Complete_main is the default (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="numChannels" type="numChannelsType" use="optional" default="2/0">
+			<xsd:annotation>
+				<xsd:documentation>Number of audio channels in the elementary stream (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="bitRateKbps" type="bitRateKbpsType" use="optional" default="448">
+			<xsd:annotation>
+				<xsd:documentation>Bit rate of the elementary stream in kbps (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="exactBitRate" type="xsd:boolean" use="optional" default="false">
+			<xsd:annotation>
+				<xsd:documentation>Indicates if bitRateKbps is an exact value or an upper bound (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="surround" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates if the audio service is surround (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="fullSvc" type="xsd:boolean" use="optional" default="true">
+			<xsd:annotation>
+				<xsd:documentation>Indicates whether the elementary stream can be decoded alone or must be presented along with other audio streams (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="mainid" type="mainidType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>ID of the audio stream, if its fullsvc flag is set to true (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="asvcflags" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>If the fullsvc flag is set to false, each bit in this byte indicates with which main audio streams this elementary stream can be presented (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="bsid" type="bsidType" use="optional" default="8">
+			<xsd:annotation>
+				<xsd:documentation>Version of the AC-3 standard used by the audio stream. Default is 8 (A/65B 6.9.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+</xsd:schema>

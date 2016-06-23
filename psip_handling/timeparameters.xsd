@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+<xsd:include schemaLocation="pmcptype.xsd"/>
+	<xsd:simpleType name="dsDayOfMonthType">
+		<xsd:annotation>
+			<xsd:documentation>Number of day in month (A/65B 6.1 and Annex A)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedByte">
+			<xsd:maxInclusive value="31"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="dsHourType">
+		<xsd:annotation>
+			<xsd:documentation>Hour of the day (A/65B 6.1 and Annex A)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedByte">
+			<xsd:maxInclusive value="18"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="TimeParametersType">
+		<xsd:annotation>
+			<xsd:documentation>Declares the parameters that go into the System Time Table (A/65B 6.1), except for the time itself, which is communicated through other means</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="SttPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the STT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="SttDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the STT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="gpsUtcOffset" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Current GPS UTC offset, as published by the International Earth Rotation Service (A/65B 6.1)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="dsStatus" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Current daylight savings status (A/65B 6.1 and Annex A)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="dsDayOfMonth" type="dsDayOfMonthType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>If DST is to change within a month, day of change (A/65B 6.1 and Annex A)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="dsHour" type="dsHourType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>If DST is to change within a month, hour of change (A/65B 6.1 and Annex A)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+
+
+</xsd:schema>

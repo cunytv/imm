@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:include schemaLocation="pmcptype.xsd"/>
+	<xsd:complexType name="ElementaryStreamType">
+		<xsd:annotation>
+			<xsd:documentation>Defines an elementary stream, i.e. an MPEG-2 PID. Used to build the service location descriptor and the PMT.</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Name" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Elementary stream name, carried in the component name descriptor (A/65B 6.9.8)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ConditionalAccess" type="ConditionalAccessType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Defines the CA systems in use for the elementary stream and the corresponding ECM PIDs</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="CarouselIdentifier" type="CarouselIdentifierType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Identify the elementary stream that carries the DSI messages of an object carousel (A/101 10.6.2.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ApplicationSignaling" type="ApplicationSignalingType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Identify the Program Element that contains the AIT (A/101 10.6.2.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DataBroadcastId" type="DataBroadcastIdType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Identify the elementary stream that carries the principal component of an object carousel (A/101 10.6.2.4)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="StreamIdentifier" type="StreamIdentifierType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Defines the association between a component_tag and a PID (ETSI EN 300 468 V1.5.1 6.2.36)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AssociationTag" type="AssociationTagType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Defines the Association between an association_tag and a PID (ISO/IEC 13818-6 11.5.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PmtPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the inner loop of the PMT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PmtDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the inner loop of the PMT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="pid" type="pidType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>PID used to carry the elementary stream</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="type" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>stream_type as defined by MPEG-2 and ATSC and carried in the PMT and service location descriptor</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="audioId" type="audioIdType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>ID of an audio stream in a channel. Links to an Ac3Audio element.</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="CarouselIdentifierType">
+		<xsd:annotation>
+			<xsd:documentation>Carousel Identifier Descriptor (A/101 10.6.2.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="carouselId" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the data carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="formatId" type="formatIdType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>identify whether the carousel supports the enhanced boot mechanism or not</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="moduleId" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifier of the module in the carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="blockSize" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>the size in bytes of every block in the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="moduleSize" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>the size of the module in bytes</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="compressionMethod" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>compression algorithm defined in IETF RFC 1950</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="originalSize" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>the size of the data (in bytes) carried by the module before it was compressed</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="timeOut" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>timeout in seconds for acquisition of all blocks of the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identify the BIOP messae that is the ServiceGateway message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ApplicationSignalingType">
+		<xsd:annotation>
+			<xsd:documentation>Application Signalling Descriptor (A/101 10.6.2.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="applicationType" type="applicationTypeType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>the application type of an Application Information Table sub-table that is on this elementary stream</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DataBroadcastIdType">
+		<xsd:annotation>
+			<xsd:documentation>Data Broadcast Id Descriptor (A/101 10.6.2.4)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="ApplicationTypes" type="ApplicationTypesType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Describes the Information about application types contained in the descriptor</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="StreamIdentifierType">
+		<xsd:annotation>
+			<xsd:documentation>Stream Identifier Descriptor (ETSI EN 300 468 V1.5.1 6.2.36)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="componentTag" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the component stream for associating it</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="AssociationTagType">
+		<xsd:annotation>
+			<xsd:documentation>Association Tag Descriptor (ISO/IEC 13818-6 11.5.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="associationTag" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the connection on which the DII message is broadcast</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="AssociationTagsType">
+		<xsd:annotation>
+			<xsd:documentation>List of the association tag</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="associationTag" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the connection on which the DII message is broadcast</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ApplicationTypesType">
+		<xsd:annotation>
+			<xsd:documentation>List of the application type</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="applicationType" type="applicationTypeType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Indicate the type of the application</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:simpleType name="formatIdType">
+		<xsd:annotation>
+			<xsd:documentation>indentify whether the carousel supports the enhanced boot mechanism or not</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="standard_boot"/>
+			<xsd:enumeration value="enhanced_boot"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<xsd:include schemaLocation="pmcptype.xsd"/>
+	<xsd:simpleType name="networkTypeType">
+		<xsd:annotation>
+			<xsd:documentation>Possible network types</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="terrestrial"/>
+			<xsd:enumeration value="cable"/>
+			<xsd:enumeration value="satellite"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="modulationType">
+		<xsd:annotation>
+			<xsd:documentation>Possible modulations</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="analog"/>
+			<xsd:enumeration value="SCTE_mode_1"/>
+			<xsd:enumeration value="SCTE_mode_2"/>
+			<xsd:enumeration value="8_VSB"/>
+			<xsd:enumeration value="16_VSB"/>
+			<xsd:enumeration value="private"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="pathSelectType">
+		<xsd:annotation>
+			<xsd:documentation>Possible paths for cable systems with multiple cables</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="path_1"/>
+			<xsd:enumeration value="path_2"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="TableType">
+		<xsd:annotation>
+			<xsd:documentation>Contains the information about a PSIP table, used to build the MGT (A/65B 6.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="MgtPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the inner loop of the MGT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="MgtDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the inner loop of the MGT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="tableType" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>MGT table type (A/65B 6.2)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="tablePid" type="pidType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>PID used to carry the table (A/65B 6.2)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="periodMs" type="xsd:positiveInteger" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Repetition period of the table, in milliseconds</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="TransportStreamType">
+		<xsd:annotation>
+			<xsd:documentation>Used to define the parameters of a transport stream</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Name" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Name of the transport stream. Not used in PSIP. </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ConditionalAccess" type="ConditionalAccessType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Defines the CA systems in use and the corresponding EMM PIDs</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Table" type="TableType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Defines the broadcast parameters of a PSIP table.</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="MgtPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the MGT (A/65B 6.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="VctPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the VCT (A/65B 6.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="MgtDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the MGT (A/65B 6.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="VctDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the VCT (A/65B 6.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PrivatePmcpInformation" type="PrivatePmcpInformationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Transport Stream-level PMCP-private information</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="tsid" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>TSID of the transport stream (A/65B 6.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="network" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Network identifier, used when the TSID is not unique in the system</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="frequency" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>RF frequency occupied by the transport stream (A/65B 6.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="networkType" type="networkTypeType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Type of the network where the transport stream is carried</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="modulation" type="modulationType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Modulation used to carry the tranport stream (A/65B 6.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pathSelect" type="pathSelectType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>For cable systems with two separate cables, indicates which one carries the transport stream (A/65B 6.3.2)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+</xsd:schema>

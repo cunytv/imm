@@ -1,0 +1,1237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xsd:include schemaLocation="contentid.xsd"/>
+	<xsd:complexType name="AcapDataServiceType">
+		<xsd:annotation>
+			<xsd:documentation>Information about the transport protocol associated  with ACAP data broadcast service</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="AcapContentId" type="ContentIdType" minOccurs="1" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>References a ACAP data broadcasting service</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapApplication" type="AcapApplicationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Describes the information about AIT</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapObjectCarousel" type="AcapObjectCarouselType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Describes the information about Object Carousel</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PrivatePmcpInformation" type="PrivatePmcpInformationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Acap data service-level PMCP-private information</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="AcapApplicationType">
+		<xsd:annotation>
+			<xsd:documentation>Description of the Information about AIT (A/101 10.6.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Application" type="ApplicationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Specific information of each applications</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="TransportProtocol" type="TransportProtocolType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about the transport protocol associated with a service component (A/101 10.6.3.1.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DiiLocation" type="DiiLocationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Listing the locations of DII messages associated with the object carousel (A/101 10.6.3.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AitPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the AIT (A/101 10.6.3.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AitDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the outer loop of the AIT (A/101 10.6.3.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="applicationType" type="applicationTypeType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Type of the application described in this AIT sub_table</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="testApplicationFlag" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>The value can be one, which Indicates a test application</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ApplicationType">
+		<xsd:annotation>
+			<xsd:documentation>Application loop information of the AIT (ETSI TS 101 812 V1.3.1 10.4.6)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Name" type="TextType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Name of the application (A/101 10.6.4.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ApplicationInfo" type="ApplicationInfoType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Generic information of the application (A/101 10.6.4.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Icon" type="IconType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about the icons associated with the application (A/101 10.6.4.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Prefetch" type="PrefetchType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information used for prefetching modules that have the indicated labels (Only for the case of object carousel used) (A/101 10.6.4.4)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DiiLocation" type="DiiLocationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Listing the locations of DII messages associated with the object carousel (A/101 10.6.4.5)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapJApp" type="AcapJAppType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about the application startup parameter (A/101 10.6.5.1.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapJAppLocation" type="AcapJAppLocationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information through which the implementation resolves the location of the ACAP-J application (A/101 10.6.5.1.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapXApp" type="AcapXAppType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about the application startup parameter (A/101 10.6.5.2.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapXAppLocation" type="AcapXAppLocationType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information through which the implementation resolves the location of the ACAP-X application (A/101 10.6.5.2.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AcapXAppBoundary" type="AcapXAppBoundaryType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about regular expressions that define data elements that form the application (A/101 10.6.5.2.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AitPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the inner loop of the AIT (A/101 10.6.4, 10.6.5)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="AitDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the inner loop of the AIT (A/101 10.6.4, 10.6.5)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="organizationId" type="xsd:unsignedInt" use="required">
+			<xsd:annotation>
+				<xsd:documentation>A globally unique value identifying the organization that is responsible for the application</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="applicationId" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>uniquely identifies the application function</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="controlCode" type="controlCodeType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>controls the state of the application</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="TransportProtocolType">
+		<xsd:annotation>
+			<xsd:documentation>Transport Protocol Descriptor (ETSI TS 101 812 V1.3.1 10.8.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="protocolLabel" type="xsd:unsignedByte" use="required">
+			<xsd:annotation>
+				<xsd:documentation>unique identifier for a transport protocol within this AIT</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="remoteConnection" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>indicates that the transport connection is provided by a service that is different to the one carrying the AIT</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="sourceId" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>SourceId resolves to a virtual channel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="componentTag" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indication the elementary stream that carries the DSI of the object carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DiiLocationType">
+		<xsd:annotation>
+			<xsd:documentation>DII Location Descriptor (ETSI TS 101 812 V1.3.1 10.8.3.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="DiiList" type="DiiListType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about the DII message</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="protocolLabel" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>unique identifier for a transport protocol within this AIT</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ApplicationInfoType">
+		<xsd:annotation>
+			<xsd:documentation>Application Descriptor (ETSI TS 101 812 V1.3.1 10.7.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Profiles" type="ProfilesType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about the application profile loop</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ProtocolLabels" type="ProtocolLabelsType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Identifies the transport protocol that delivers the application</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="serviceBound" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>whether the application is only associated with the current service</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="visibility" type="visibilityType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>specifies whether the application is suitable to be offered to the end-user for them to decide if the application should be launched</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="priority" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifies a relative priority between the applications signaled in this service</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="IconType">
+		<xsd:annotation>
+			<xsd:documentation>Application Icons Descriptor (ETSI TS 101 812 V1.3.1 10.7.4.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="locator" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the icon locator string</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="iconFlags" type="iconFlagsType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Represents the icon size</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="PrefetchType">
+		<xsd:annotation>
+			<xsd:documentation>Pre-fech Descriptor (ETSI TS 101 812 V1.3.1 10.8.3.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Labels" type="LabelsType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Loop of the pre-fetch descriptor</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="protocolLabel" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the transport protocol descriptor that specifies the object carousel that delivers the modules to which this prefetch descriptor refers</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="AcapJAppType">
+		<xsd:annotation>
+			<xsd:documentation>ACAP-J Application Descriptor (A/101 10.6.5.1.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="parameter" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Startup parameter string (UTF-8 encoding)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="AcapJAppLocationType">
+		<xsd:annotation>
+			<xsd:documentation>ACAP-J Application Location Descriptor (A/101 10.6.5.1.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="baseDirectory" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Representing the base directory</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="classpathExtension" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>The string that specifies the alternative locations for the classpath</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="initialClass" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>The parameter string that the receiver appends to the initial path</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="AcapXAppType">
+		<xsd:annotation>
+			<xsd:documentation>ACAP-X Application Descriptor (A/101 10.3.4.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="parameter" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Startup parameter string (UTF-8 encoding)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="AcapXAppLocationType">
+		<xsd:annotation>
+			<xsd:documentation>ACAP-X Application Location Descriptor (A/101 10.3.4.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="physicalRoot" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>String that specifies the path to the root directory of the application (UTF-8 encoding)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="initialPath" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>String that specifies the relative path to either the ACAP-X application Metadata Resource(ARM) file or the ACAP-X initial entity (i.e. XDML Family Document)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="AcapXAppBoundaryType">
+		<xsd:annotation>
+			<xsd:documentation>ACAP-X Application Boundary Descriptor (A/101 10.3.4.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="label" type="xsd:string" use="required">
+			<xsd:annotation>
+				<xsd:documentation>match the label in DII</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="regularExpression" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>String that specifies a regular expression (UTF-8 encoding)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DiiListType">
+		<xsd:annotation>
+			<xsd:documentation>Information about the DII message</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="identification" type="identificationType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>The identification portion of the transactionId</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="associationTag" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the connection (i.e. elementary stream) on which the DII message is broadcast</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:complexType name="ProfilesType">
+		<xsd:annotation>
+			<xsd:documentation>Information about the application profile loop of the application descriptor</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="profile" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Represent the application type specific profile</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="versionMajor" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the major sub-field of the profile version number</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="versionMinor" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the minor sub-field of the profile version number</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="versionMicro" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the micro sub-field of the profile version number</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ProtocolLabelsType">
+		<xsd:annotation>
+			<xsd:documentation>Information about the transport protocol labels loop of the application descriptor</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="protocolLabel" type="xsd:unsignedByte" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the transport protocol that delivers the application</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:complexType name="LabelsType">
+		<xsd:annotation>
+			<xsd:documentation>Information about the labels loop of the prefetch descriptor</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="label" type="xsd:string" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the module label</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="priority" type="priorityType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Describes the prefetching priority (1-100)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:complexType name="AcapObjectCarouselType">
+		<xsd:annotation>
+			<xsd:documentation>Description of ACAP Object Carousel</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="DataCarousel" type="DataCarouselType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about Data Carousel that carries BIOP messages in Modules</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="ObjectCarousel" type="ObjectCarouselType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about BIOP messages of Object Carousel</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="carouselId" type="xsd:unsignedInt" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the data carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DataCarouselType">
+		<xsd:annotation>
+			<xsd:documentation>Information about Data Carousel that carries BIOP messages in Modules</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Dsi" type="DsiType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about the Download Server Initiate message</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Dii" type="DiiType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about the Download Info Indication message</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="PidList" type="PidListType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>List of PIDs that carries the data carousel</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ObjectCarouselType">
+		<xsd:annotation>
+			<xsd:documentation>Information about BIOP messages of Object Carousel</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="ServiceGateway" type="ServiceGatewayType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Defines the Service Gateway Object Message of Object Carousel</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Directory" type="DirectoryType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Defines the Directory Object Message of the Object Carousel</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="File" type="FileType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Defines the File Object Message of the Object Carousel</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Stream" type="StreamType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Defines the Stream Object Message of the Object Carousel</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="StreamEvent" type="StreamEventType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Defines the Stream Event  Object Message of the Object Carousel</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DsiType">
+		<xsd:annotation>
+			<xsd:documentation>Download Server Initiate Message (A/101 10.5.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="DsiPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the DSI (A/101 10.5.3.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DsiDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the DSI (A/101 10.5.3.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="moduleId" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the module within the data carousel that carries the service gateway object</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object within the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="associationTag" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indication the elementary stream that carries the DII message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="timeOut" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>the time out period in microseconds that may be used to time out the acquisition of the Download Server Initiate message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DiiType">
+		<xsd:annotation>
+			<xsd:documentation>Download Info Indication message (A/101 10.5.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Module" type="ModuleType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Module that is referenced in the DII message</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="Identification" type="identificationType" use="required">
+			<xsd:annotation>
+				<xsd:documentation>The identification portion of the transactionId</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="blockSize" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Length in bytes of the data in every block carried in the DownloadDataBlock messages, except for the last block of each module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="PidListType">
+		<xsd:annotation>
+			<xsd:documentation>List of PIDs that carries the data carousel</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="associationTag" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the PID that carries the elementary stream</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pid" type="pidType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>PID used to carry the data carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ServiceGatewayType">
+		<xsd:annotation>
+			<xsd:documentation>BIOP ServiceGateway Message (A/101 10.4.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Bindings" type="BindingsType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Binding information between object messages</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="objectId" type="xsd:unsignedLong" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object in an object carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object within the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="DirectoryType">
+		<xsd:annotation>
+			<xsd:documentation>BIOP Directory Message (A/101 10.4.3)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Bindings" type="BindingsType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Binding information between object messages</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="objectId" type="xsd:unsignedLong" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object in an object carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object within the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="name" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the name of this direcotory message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pathName" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the path name of this directory message, it is linked to pathName of the LiteOptionsProfileBody</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="FileType">
+		<xsd:annotation>
+			<xsd:documentation>BIOP File Message (A/101 10.4.5)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="ContentType" type="ContentTypeType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Signals the format of this file</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="FilePrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the File Message (A/101 10.4.5.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="FileDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the File Message (A/101 10.4.5.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="objectId" type="xsd:unsignedLong" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object in an object carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object within the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="name" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the name of this direcotory message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pathName" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the path name of this directory message, it is linked to pathName of the LiteOptionsProfileBody</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="contentSize" type="xsd:unsignedLong" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the content size of this file object</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="fileId" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the content file delivered with payload of this file message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="StreamType">
+		<xsd:annotation>
+			<xsd:documentation>BIOP Stream Message (A/101 10.4.6)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Tap" type="TapType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about the streams that are associated with this stream object</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="objectId" type="xsd:unsignedLong" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object in an object carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object within the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="name" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the name of this direcotory message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pathName" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the path name of this directory message, it is linked to pathName of the LiteOptionsProfileBody</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="durationSeconds" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Defines the duration in seconds</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="durationMicroSeconds" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Defines the duration in microseconds</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="audio" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates whether this stream contains audio stream or not</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="video" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates whether this object contains video stream or not</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="data" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates whether this object contains data stream or not</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="StreamEventType">
+		<xsd:annotation>
+			<xsd:documentation>BIOP Stream Event Message (A/101 10.4.7)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="Tap" type="TapType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about the streams that are associated with this stream object</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="EventList" type="EventListType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about the name for each DSMCC stream event</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="objectId" type="xsd:unsignedLong" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object in an object carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object within the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="name" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the name of this direcotory message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pathName" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the path name of this directory message, it is linked to pathName of the LiteOptionsProfileBody</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="durationSeconds" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Defines the duration in seconds</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="durationMicroSeconds" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Define the duration in microseconds</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="audio" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates whether this stream contains audio stream or not</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="video" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates whether this object contains video stream or not</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="data" type="xsd:boolean" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates whether this object contains data stream or not</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ModuleType">
+		<xsd:annotation>
+			<xsd:documentation>Module that is referenced in the DII message</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="ObjectList" type="ObjectListType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>List of the object within the module</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="CompressedModule" type="CompressedModuleType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about the data in the module has the 'zlib' structure as defined in IETF RFC 1950 (A/101 10.5.2.3.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="Label" type="LabelType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>Information about the label to the corresponding module (A/101 10.5.2.3.2)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="CachingPriority" type="CachingPriorityType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about the priority value for the caching (A/101 10.5.2.3.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DiiPrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the DII (A/101 10.5.2.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="DiiDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the DII (A/101 10.5.2.3)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="moduleId" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identifier of the module in the carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="moduleSize" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the length in bytes of the current module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="moduleTimeOut" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the time out value in microseconds that may be used to time out the acquisition of all blocks of the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="blockTimeOut" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the time out value in microseconds that may be used to time out the reception of the next block of the after a block has been acquired</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="minBlockTime" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the minimum time period that exists between the delivery of two subsequent blocks of the described module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="associationTag" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indication the elementary stream that carries the DDB message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ObjectListType">
+		<xsd:annotation>
+			<xsd:documentation>List of the object key</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object within the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectId" type="xsd:unsignedLong" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object in an object carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="CompressedModuleType">
+		<xsd:annotation>
+			<xsd:documentation>Compressed Module Descriptor (ETSI TS 101 812 V1.3.1 B.2.9)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="compressionMethod" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>compression algorithm defined in IETF RFC 1950</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="originalSize" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>the size of the data (in bytes) carried by the module before it was compressed</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="LabelType">
+		<xsd:annotation>
+			<xsd:documentation>Label Descriptor (ETSI TS 101 812 V1.3.1 B.2.2.4.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="label" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates current module label</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="CachingPriorityType">
+		<xsd:annotation>
+			<xsd:documentation>Caching Priority Descriptor (ETSI TS 101 812 V1.3.1 B.2.2.4.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="priorityValue" type="xsd:unsignedByte" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the caching priority for the objects within this module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="transparencyLabel" type="transparencyLabelType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates transparency level of caching</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="ContentTypeType">
+		<xsd:annotation>
+			<xsd:documentation>Content Type Descriptor (A/101 10.4.5.2.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="contentTypeData" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the MIME content type of the object</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="transparencyLabel" type="transparencyLabelType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates transparency level of caching</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="BindingsType">
+		<xsd:annotation>
+			<xsd:documentation>Binding information between object messages</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:choice>
+				<xsd:element name="BiopProfileBody" type="BiopProfileBodyType">
+					<xsd:annotation>
+						<xsd:documentation>Information used for reference to a object within the same object carousel</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="LiteOptionsProfileBody" type="LiteOptionsProfileBodyType">
+					<xsd:annotation>
+						<xsd:documentation>Information used for reference to object carried in other object carousel</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="HttpProfileBody" type="HttpProfileBodyType">
+					<xsd:annotation>
+						<xsd:documentation>Information for the location of the file content on the interaction channel</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+			</xsd:choice>
+			<xsd:element name="Label" type="LabelType" minOccurs="0">
+				<xsd:annotation>
+					<xsd:documentation>Information about the label for File message which is binding in servicegateway message  (A/101 10.4.2.2.1)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="MessagePrivateInformation" type="PrivateInformationType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the Binding loop of the ServiceGateway or Directory Message (A/101 10.4.2.2, 10.4.4)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="MessageDescriptor" type="DescriptorType" minOccurs="0" maxOccurs="unbounded">
+				<xsd:annotation>
+					<xsd:documentation>These descriptors go into the Binding loop of the ServiceGateway or Directory Message (A/101 10.4.2.2, 10.4.4)</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="objectId" type="xsd:unsignedLong" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object in an object carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="name" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the name of this binding message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="kind" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the kind of this binding message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="contentSize" type="xsd:unsignedLong" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the content size of this file object</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="BiopProfileBodyType">
+		<xsd:annotation>
+			<xsd:documentation>BIOP Profile Body (ETSI TS 101 812 V1.3.1 B.2.3.7.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="carouselId" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the data carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="moduleId" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifier of the module in the carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the object within the module</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="associationTag" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the PID that carries the elementary stream</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="identification" type="identificationType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>The identification portion of the transactionId</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="timeOut" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>the time out period in microseconds that may be used to time out the acquisition of this message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="LiteOptionsProfileBodyType">
+		<xsd:annotation>
+			<xsd:documentation>Lite Options Profile Body (ETSI TS 101 812 V1.3.1 B.2.3.7.2)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="carouselId" type="xsd:unsignedInt" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Identification of the data carousel</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="sourceId" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>PSIP source_id (A/65B 6.3)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="pathName" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the path name of this binding message</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="HttpProfileBodyType">
+		<xsd:annotation>
+			<xsd:documentation>Http Profile Body (A/101 10.2.3.1)</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="hostData" type="xsd:anyURI" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the fully qualified domain name, or the decimal shorthand(e.g "129.145.166.188)</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="port" type="xsd:unsignedShort" use="optional" default="80">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the port at which the service side listens</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="objectKey" type="xsd:string" use="optional">
+			<xsd:annotation>
+				<xsd:documentation>Indicates the path that identifies the service side implementation</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="TapType">
+		<xsd:annotation>
+			<xsd:documentation>Facilitates a reference to a particular network connection by means of an association tag or a component tag</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="associationTag" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation>Identifies the PID that carries the elementary stream</xsd:documentation>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="id" type="xsd:unsignedShort" use="optional">
+			<xsd:annotation>
+				<xsd:documentation/>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="use" type="useType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation/>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:complexType name="EventListType">
+		<xsd:annotation>
+			<xsd:documentation>Information about the name for each DSMCC stream event</xsd:documentation>
+		</xsd:annotation>
+		<xsd:attribute name="eventId" type="xsd:unsignedShort" use="required">
+			<xsd:annotation>
+				<xsd:documentation/>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="eventName" type="xsd:string" use="required">
+			<xsd:annotation>
+				<xsd:documentation/>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="eventNPT" type="eventNPTType" use="optional">
+			<xsd:annotation>
+				<xsd:documentation/>
+			</xsd:annotation>
+		</xsd:attribute>
+		<xsd:attribute name="action" type="actionType" use="optional"/>
+		<xsd:attribute name="error" type="errorType" use="optional"/>
+	</xsd:complexType>
+	<xsd:simpleType name="controlCodeType">
+		<xsd:annotation>
+			<xsd:documentation>controls the state of the application</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="AUTOSTART"/>
+			<xsd:enumeration value="PRESENT"/>
+			<xsd:enumeration value="DESTROY"/>
+			<xsd:enumeration value="KILL"/>
+			<xsd:enumeration value="PREFETCH"/>
+			<xsd:enumeration value="REMOTE"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="visibilityType">
+		<xsd:annotation>
+			<xsd:documentation>specifies whether the application is suitable to be offered to the end-user for them to decide if the application should be launched</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedByte">
+			<xsd:maxExclusive value="4"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="iconFlagsType">
+		<xsd:annotation>
+			<xsd:documentation>identifies the icons that are provided for the application</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="32x32_square"/>
+			<xsd:enumeration value="32x32_broadcast_4:3"/>
+			<xsd:enumeration value="24x32_broadcast_16:9"/>
+			<xsd:enumeration value="64x64_square"/>
+			<xsd:enumeration value="64x64_broadcast_4:3"/>
+			<xsd:enumeration value="48x64_broadcast_16:9"/>
+			<xsd:enumeration value="128x128_square"/>
+			<xsd:enumeration value="128x128_broadcast_4:3"/>
+			<xsd:enumeration value="96x128_broadcast_16:9"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="priorityType">
+		<xsd:annotation>
+			<xsd:documentation>expresses a prefetching hint of the modules with the corresponding label using the specified priority</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedByte">
+			<xsd:minInclusive value="1"/>
+			<xsd:maxInclusive value="100"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="identificationType">
+		<xsd:annotation>
+			<xsd:documentation>The identification portion of the transactionId</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedShort">
+			<xsd:maxExclusive value="32768"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="transparencyLabelType">
+		<xsd:annotation>
+			<xsd:documentation>identifies the transparency level of the caching</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Transparent"/>
+			<xsd:enumeration value="Semi-transparent"/>
+			<xsd:enumeration value="Static"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="useType">
+		<xsd:annotation>
+			<xsd:documentation>Usage of the Tap</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="STR_NPT_USE"/>
+			<xsd:enumeration value="BIOP_PROGRAM_USE"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="eventNPTType">
+		<xsd:annotation>
+			<xsd:documentation>The value of the NPT when the event occurred, or the value of the NPT when the event will occur</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:unsignedLong">
+			<xsd:maxInclusive value="8589934592"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>
