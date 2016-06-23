@@ -1,0 +1,184 @@
+#!/usr/bin/perl -w
+# 2013-04-06 - Perl Script to check for new XML files for PSIP consolidation
+# Description:
+#							 This script will search through the listed folders for new
+#							 XML files that have been uploaded to the SFTP server from
+#							 external sources.
+
+use strict;
+use warnings;
+use File::stat;
+use Time::localtime;
+use FileHandle;
+
+# Define folders to search for updated XML files
+my $debug			= 1;
+my(@psips)		= (
+[ "psipcunytv", "/SFTP_CUNY/psip/uploads/CUNYTV/" ],
+[ "psipnycmg", "/SFTP_CUNY/psip/uploads/NYCMG/" ]
+);
+
+my($condir)		= "/SFTP_CUNY/psip/CONSOLIDATED/";
+my($confile)	= "CUNYTV_PSIP_merged.xml";
+my($schema)		= "/usr/local/sbin/pmcp31.xsd";
+my($xsltfile)	= "/usr/local/sbin/psipmerger.xsl";
+my($tmpfile)	= "/var/tmp/CUNYTV_PSIP_merged.xml";
+my($mailbody)	= "";
+my($ds)				= `date +%Y-%m-%d_%H-%M-%S`;
+my($starttime)	= `date`;
+chomp($starttime);
+my($ffound)		= 0;
+my($error)		= 0;
+
+# Search each directory from the list above for the newest XML file
+my $line			= 0;
+
+sub dbug
+{
+	if ($debug) { print $_[0]; }
+}
+
+# Setup the basic email body message
+$mailbody = "\
+The PSIP scan & merge script was started at $starttime.\
+\
+Directories scanned:\
+";
+
+SEARCH: {
+	foreach my $items (@psips)
+	{
+		dbug("Item: $items\n");
+		$ffound = 0;
+		# Get the list of files in the directory
+		my(@dir) = `ls @$items[1]`;
+		# my(@dir) = `'ls' -l @$items[1] | cut -d' ' -f 12- | grep "^."`;
+		my($cpath) = @$items[1];
+		# Loop through the directory and get the newest file
+		my($newest) = 0;
+		my($newfile) = "";
+		foreach (@dir)
+		{
+			dbug("Directory search: $_\n");
+			chomp;
+			my($file) = $cpath . $_;
+			# Check if the file is a valid XML file for PSIP
+			my($valid) = `xmllint --noout --schema $schema "$file" 2>&1 > /dev/null | grep -c "validates"`;
+			if ( $valid == "1" ) 
+			{
+				$ffound = 1;
+				# Get the timestamp of the file
+				open my $FH,"<$file";
+				my($ts) = stat($FH)->mtime;
+				dbug("File: $file [$ts]\n");
+				# print "File timestamp: $ts\n";
+				close $FH;
+				# Compare the timestamp with the last timestamp and keep the newer one
+				if ($ts > $newest) 
+				{
+					$newest = $ts;
+					$newfile = $file;
+					# Convert spaces to %20 for XML processing
+					$newfile =~ s/ /%20/g;
+				}
+				# print "Timestamp: $ts\n";
+			}
+			else
+			{
+				dbug("File: $file is NOT a valid XML file!\n");
+			}
+		}
+		if ($ffound == 1)
+		{
+			dbug("[$line] Found new files in $items, using $newfile for merge.\n");
+			push @{ $psips[$line] }, $newfile;
+			$psips[$line][3] = "1";
+			$mailbody .= "$psips[$line][1]: Valid XML found...\n";
+			# print "[$psips[$line][0]] Most recent:\n$psips[$line][2]\n[" . ctime($newest) . "]\n";
+		}
+		else
+		{
+			$psips[$line][3] = "0";
+			$error = 1;
+			$mailbody .= "\
+No valid XML files were found in the $psips[$line][1] folder.\
+
+The script has terminated prematurely due to this error.
+";	
+			last SEARCH;
+		}
+		$line++;
+	}
+}
+
+if ($psips[0][3] == "0" || $psips[1][3] == "0")
+{
+	dbug("One or both input files are missing, exiting from script.\n");
+	exit;
+}
+# disabling file modification for now
+# if( 0 )
+dbug("psips[0][0] = " . $psips[0][0] . "\n");
+dbug("psips[1][0] = " . $psips[1][0] . "\n");
+dbug("psips[1][2] = " . $psips[1][2] . "\n");
+dbug("psips[0][2] = " . $psips[0][2] . "\n");
+if( $error == 0 )
+{
+	# Files used for merge, sent in e-mail
+	if (exists $psips[0][2]) { $mailbody .= "$psips[0][1]: File to be merged [$psips[0][2]]\n"; }
+	if (exists $psips[1][2]) { $mailbody .= "$psips[1][1]: File to be merged [$psips[1][2]]\n"; }
+	# Perform XML merge with most recent files
+	dbug("xsltproc --stringparam " . $psips[1][0] . " \"" . $psips[1][2] . "\" $xsltfile \"" . $psips[0][2] . "\" > " . $tmpfile);
+	my($merge) = `xsltproc --stringparam $psips[1][0] "$psips[1][2]" $xsltfile "$psips[0][2]" > $tmpfile`;
+	
+	# Validate that the XML is good
+	$merge = `xmllint --noout --schema $schema "$tmpfile" 2>&1 > /dev/null | grep -c "validates"`;
+	if ($merge == "1")
+	{
+		$mailbody .= "\nThe PSIP XML merge was successful.\n";
+	}
+	else
+	{
+		$error = 1;
+		$mailbody .= "\nThe PSIP XML merge has failed.\n";
+	}
+	
+	if( $error == 0 )
+	{
+		# Compare the current XML to the new XML
+		my($ok) = "";
+		my($filecheck) = `diff $tmpfile $condir$confile| wc -l`;
+		if ($filecheck != "0") 
+		{
+			# print "Information has been changed since last check.	Overwriting old XML file.\n";
+			$ok = `mv $condir$confile $condir$confile.$ds`;
+			$ok = `mv $tmpfile $condir$confile`;
+			`chown psip:10010 $condir$confile`;
+			$mailbody .= "\
+New information has been found. The XML file has been updated.\
+Old XML File: $condir$confile.$ds\
+New XML File: $condir$confile\
+";
+		}
+		else
+		{
+			# print "No changes since last file check.\n"
+			$mailbody .= "\
+No new information has been found, keeping the old XML file.\
+";
+			$ok = `rm $tmpfile`;
+		}
+	}
+}
+# print "Current mail body:$mailbody\n\n";
+
+my($result) = "SUCCESS";
+if ( $error == 1 ) { $result = "FAILED"; }
+open my $FH,">/var/tmp/mailbody";
+print $FH $mailbody;
+close $FH;
+# temporarily only sending to josh
+my($ok) = `mail -r "PSIP Daily Script<sftp\@cunytv.lan>" -s "PSIP XML Script: $result" -c dave\@cuny.tv josh\@cuny.tv < /var/tmp/mailbody`;
+# my($ok) = `mail -r "PSIP Daily Script<sftp\@cunytv.lan>" -s "PSIP XML Script: $result" josh\@cuny.tv < /var/tmp/mailbody`;
+# print "mail -s \"PSIP XML Script: $result\" josh\@cuny.tv < /var/tmp/mailbody\n";
+# $ok = `rm /var/tmp/mailbody`;

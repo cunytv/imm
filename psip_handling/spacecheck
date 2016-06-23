@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+# 2015-05-18 - Script to check the free space on /SFTP_CUNY
+#
+
+use strict;
+use warnings;
+
+# Number of gigs below which to send a warning email to library
+my $warn = 100;
+# Number of gigs below which to send a critical space email to library
+my $crit = 50;
+my $toList = "josh\@cuny.tv dave\@cuny.tv oksana\@cuny.tv catriona\@cuny.tv";
+my $from = "SFTP Daily Space Check<sftp\@cunytv.lan>";
+my $body = "";
+my $subj = "";
+my $tmpfile = "/var/tmp/mailbody.txt";
+my $free = `df -h | grep "\/SFTP_CUNY" | awk '{print \$3}'`;
+
+$free =~ s/G//;
+
+# print("Free space: $free\n");
+if($free < $crit)
+{
+	$subj = "CRITICAL: VERY low disk space (less than " . $crit . "G) on SFTP_CUNY";
+	$body = "There is less than $crit gigabytes free disk space on the CUNY SFTP server.\n" .
+"Please clear up space to make room for new SFTP uploads.\nHere is the current usage:\n" .
+"-------------------------------------------------\n";
+	my $du = `du --max-depth=1 -h \/SFTP_CUNY`;
+	$du =~ s/\t\/SFTP_CUNY\// -- /g;
+	$body .= $du;
+	open my $FH,">$tmpfile";
+	print $FH $body;
+	close $FH;
+
+	print("CRITICAL SPACE ISSUE!  LESS THAN " . $crit . "G FREE!\n");
+	my($ok) = `mail -r "$from" -s "$subj" -c $toList < $tmpfile`;
+}
+elsif($free < $warn)
+{
+	$subj = "WARNING: Low disk space (less than " . $warn. "G) on SFTP_CUNY";
+	$body = "There is less than $warn gigabytes free disk space on the CUNY SFTP server.\n" .
+"Please clear up space to make room for new SFTP uploads.\nHere is the current usage:\n" .
+"-------------------------------------------------\n";
+	my $du = `du --max-depth=1 -h \/SFTP_CUNY`;
+	$du =~ s/\t\/SFTP_CUNY\// -- /g;
+	$body .= $du;
+	open my $FH,">$tmpfile";
+	print $FH $body;
+	close $FH;
+
+	print("WARNING!  LESS THAN " . $warn . "G FREE!\n");
+	my($ok) = `mail -r "$from" -s "$subj" -c $toList < $tmpfile`;
+}
