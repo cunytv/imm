@@ -380,11 +380,11 @@ for i in `cat "${NYCMG_NEARLINE_BY_SIZE}" | sed 's/ /,/g'` ; do
     csvdata=`grep "^${name}," "${NYCMG_MEDIAID_CSV}"`
     echo "${i},${csvdata}"
 done > "${NYCMG_NEARLINE_BY_SIZE_WITH_INFO}"
-for i in `cat "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" | sed 's/ /,/g'` ; do
+for i in `cat "/$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline.txt" | sed 's/ /,/g'` ; do
     name=`echo "$i" | cut -d. -f1`
     csvdata=`grep "^${name}," "${NYCMG_MEDIAID_CSV}"`
     echo "${i},${csvdata}"
-done > "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size_and_info.csv"
+done > "/$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline_and_info.csv"
 
 cat "${IDS_NYCMG}" | while read line ; do echo "${line} " ; done > /tmp/all.txt
 cat "${NYCMG_ON_OMNEON}" | while read line ; do echo "$line omneon" ; done | tr "\r" "\n" > /tmp/omneon.txt
