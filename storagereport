@@ -135,19 +135,20 @@ abouttoruns=(/Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volum
 
 #outputs
 REPORTDIR="$HOME/Desktop/REPORTS/$TODAY"
+INTERNALDIR="${REPORTDIR}/internal"
 REPORTDIRNYC="${NYCMG_ROOT}/reports"
-NYCMG_ABOUT_TO_RUN_DIR="${REPORTDIR}/nycmg-about-to-runs"
-IDS_NYCMG="$REPORTDIR/protrack/nycmg_ids_all.txt"
-IDS_CUNYTV="$REPORTDIR/protrack/cunytv_ids_all.txt"
-IDS_BOTH="$REPORTDIR/protrack/cunytv_and_nycmg_ids_all.txt"
-ON_OMNEON_FILES_STAT="$REPORTDIR/omneon/what_is_on_the_omneon_stat.txt"
-ON_OMNEON_IDS="$REPORTDIR/omneon/what_is_on_the_omneon_ids_only.txt"
-ON_OMNEON_IDS_OLD="$REPORTDIR/omneon/what_is_on_the_omneon_and_old_ids_only.txt"
-ON_OMNEON_IDS_NO_EVERGREEN="$REPORTDIR/omneon/what_is_on_the_omneon_and_old_ids_only_no_evergreen.txt"
-NYCMG4AIR="$REPORTDIR/pebblebeach/nycmg_ids_in_upcoming_air.txt"
-CUNYTV4AIR="$REPORTDIR/cunytv_ids_in_upcoming_air.txt"
-NYCMG_FILLER_IDS="$REPORTDIR/protrack/nycmg_ids_of_filler.txt"
-CUNYTV_FILLER_IDS="$REPORTDIR/protrack/cunytv_ids_of_filler.txt"
+NYCMG_ABOUT_TO_RUN_DIR="${INTERNALDIR}/nycmg-about-to-runs"
+IDS_NYCMG="$INTERNALDIR/nycmg_ids_all.txt"
+IDS_CUNYTV="$INTERNALDIR/cunytv_ids_all.txt"
+IDS_BOTH="$INTERNALDIR/cunytv_and_nycmg_ids_all.txt"
+ON_OMNEON_FILES_STAT="$INTERNALDIR/what_is_on_the_omneon_stat.txt"
+ON_OMNEON_IDS="$INTERNALDIR/what_is_on_the_omneon_ids_only.txt"
+ON_OMNEON_IDS_OLD="$INTERNALDIR/what_is_on_the_omneon_and_old_ids_only.txt"
+ON_OMNEON_IDS_NO_EVERGREEN="$INTERNALDIR/what_is_on_the_omneon_and_old_ids_only_no_evergreen.txt"
+NYCMG4AIR="$INTERNALDIR/nycmg_ids_in_upcoming_air.txt"
+CUNYTV4AIR="$INTERNALDIR/cunytv_ids_in_upcoming_air.txt"
+NYCMG_FILLER_IDS="$INTERNALDIR/nycmg_ids_of_filler.txt"
+CUNYTV_FILLER_IDS="$INTERNALDIR/cunytv_ids_of_filler.txt"
 ORPHANS="$REPORTDIR/orphans.txt"
 ORPHANPATHS="$REPORTDIR/orphans_fullpath.txt"
 ORPHANSDETAIL="$REPORTDIR/orphans_details.csv"
@@ -186,7 +187,7 @@ NYCMG_EXPIRED_IDS_ONLINE_WITH_INFO="$REPORTDIR/nycmg_expired_online_with_protrac
 NYCMG_STORAGE_SUMMARY="$REPORTDIR/nycmg_storage_summary.txt"
 
 # set up reporting directories
-_mkdir2 "$REPORTDIR" "$REPORTDIR/protrack" "$REPORTDIR/pebblebeach" "$REPORTDIR/omneon" "$REPORTDIRNYC" "${NYCMG_ABOUT_TO_RUN_DIR}"
+_mkdir2 "$REPORTDIR" "$INTERNALDIR" "${SNAPSHOTDIR}" "$REPORTDIR/protrack" "$REPORTDIR/pebblebeach" "$REPORTDIR/omneon" "$REPORTDIR/snapshots" "$REPORTDIRNYC" "${NYCMG_ABOUT_TO_RUN_DIR}"
 
 ### REPORT ON MEDIAIDS IN UPCOMING AIR
 # get CUNYTV mediaids that are needed for air
