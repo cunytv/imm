@@ -63,7 +63,7 @@ SEARCH: {
 			chomp;
 			my($file) = $cpath . $_;
 			# Check if the file is a valid XML file for PSIP
-			my($valid) = `xmllint --noout --schema $schema "$file" 2>&1 > /dev/null | grep -c "validates"`;
+			my($valid) = `sed 's|lang="n/a"|lang="und"|g' "$file" | xmllint --noout --schema $schema - 2>&1 > /dev/null | grep -c "validates"`;
 			if ( $valid == "1" ) 
 			{
 				$ffound = 1;
