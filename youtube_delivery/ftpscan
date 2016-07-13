@@ -95,6 +95,7 @@ my @noGoList = (
 "PTSBL",
 "SCIU",
 "SPEC",
+"SPLT"
 "STRP",
 "SWTB",
 "THTK",
