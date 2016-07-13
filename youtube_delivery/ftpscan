@@ -72,7 +72,7 @@ my $saveFile = "/Users/cunytvadmin/ftpscan.hash";
 my $ytOut = "/tmp/youtube-upload.stdout";
 my $ytErr = "/tmp/youtube-upload.stderr";
 my @noGoList = (
-"AALE",
+"AAL",
 "AALF",
 "AITC",
 "BLAM",
