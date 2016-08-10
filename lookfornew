@@ -1,0 +1,17 @@
+#!/bin/bash
+searchdirectory="$1"
+timefile=$HOME/.timefile_$(basename "${searchdirectory}")
+
+if [ ! -f "${timefile}" ] ; then 
+    filelist=$(find "${searchdirectory}" -type f ! -name .DS_Store)
+else
+    filelist=$(find "${searchdirectory}" -cnewer "${timefile}" -type f ! -name .DS_Store) 
+fi
+touch "${timefile}"
+if [ -n "${filelist}" ] ; then 
+    echo -e "Subject: [New Files on $(basename "${searchdirectory}")]\n
+These files showed up in $(basename "${searchdirectory}") \n
+${filelist}\n
+Enjoy!" | sendmail -f "catriona@cuny.tv" -F "library@cuny.tv" "library@cuny.tv"
+fi 
+
