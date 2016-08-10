@@ -1,4 +1,5 @@
 #!/bin/bash
+# This script sends an email when a new file is dropped off in the To Library folder. A cron job is set up to read the folder every 10 minutes. To edit the cron job, type crontab -e in the Terminal. 
 searchdirectory="$1"
 timefile=$HOME/.timefile_$(basename "${searchdirectory}")
 
