@@ -101,7 +101,8 @@ my @noGoList = (
 "THTK",
 "TKHL",
 "TNGD",
-"TEST"
+"TEST",
+"WW"
 );
 
 sub logit
