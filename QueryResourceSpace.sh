@@ -4,6 +4,9 @@
 
 SCRIPTDIR=$(dirname $(which "${0}"))
 . "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
+CONF_FILE="${SCRIPTDIR}/pbpro.conf"
+. "${CONF_FILE}" || { echo "Missing ${CONF_FILE}. Exiting." ; exit 1 ;};
+
 REPORTDATE=$(date '+%F')
 
 #ID list is the list of everything on the omneon that belongs to CUNY TV
@@ -39,7 +42,7 @@ do
         ROOTNAME="${ID}"
     fi
     echo -n "Working on ${ROOTNAME}"
-    RESULTS="$(curl "http://10.10.200.28/fmi/xml/FMPXMLRESULT.xml?-db=CUNY_TV_archive&-lay=resource_data&-find&resource_type_field=51&value=${ROOTNAME}" 2>/dev/null | xml sel -T -t -m _:FMPXMLRESULT/_:RESULTSET -v @FOUND -n 2>/dev/null)"
+    RESULTS="$(mysql -BNr -h "${RESOURCESPACE_DB_HOST}" -u "${RESOURCESPACE_DB_USER}" -p"${RESOURCESPACE_DB_PW}" -D "${RESOURCESPACE_DB_NAME}" -e "SELECT COUNT(resource) FROM resource_data WHERE resource_type_field=8 and value='${ROOTNAME}' ;")"
     echo "  and found ${RESULTS} records in resourcespace."
     #if the result is 1, the item has been uploaded into resource space. If the result is 0, the file must be transcoded and uploaded to resource space
     if [ "${RESULTS}" == 0 ] ; then
