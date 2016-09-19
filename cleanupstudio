@@ -1,6 +1,5 @@
 #!/bin/bash
-#Clean up 
-# Used to clean up files that are more than a month old
+#This script is used to clean up files that are more than a month old from the studio folder on the XSan Video. 
 
 Cleanupdir="$1"
 find "$Cleanupdir" -type f -mtime +30d -path "*Line_Cut*" ! -path "*Line_Cuts_to_archive*" ! -path "*ISOs_to_delete*"| while read file ; do
