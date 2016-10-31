@@ -43,6 +43,8 @@
 # 2016-03-03 - Adding new show to the allowed: BLAM
 #
 # 2016-04-08 - No longer upload: EDCA
+#
+# 2016-04-08 - Adding new show to the allowed: SDSW
 #----------------------------------------------------------------------------
 
 use strict;
@@ -94,6 +96,7 @@ my @noGoList = (
 "OTOO",
 "PTSBL",
 "SCIU",
+"SDSW",
 "SPEC",
 "SPLT"
 "STRP",
