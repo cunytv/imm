@@ -182,6 +182,11 @@ NYCMG_EXPIRED_IDS_ONLINE="$REPORTDIR/nycmg_expired_online.csv"
 NYCMG_EXPIRED_IDS_ONLINE_WITH_INFO="$REPORTDIR/nycmg_expired_online_with_protrack_info.csv"
 NYCMG_STORAGE_SUMMARY="$REPORTDIR/nycmg_storage_summary.txt"
 
+_getfullpath(){
+  filenameroot="$1"
+  grep "clip.dir/${filenameroot}.m" "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1
+}
+
 # set up reporting directories
 _mkdir2 "$REPORTDIR" "$INTERNALDIR" "${SNAPSHOTDIR}" "$REPORTDIR/protrack" "$REPORTDIR/pebblebeach" "$REPORTDIR/omneon" "$REPORTDIR/snapshots" "$REPORTDIRNYC" "${NYCMG_ABOUT_TO_RUN_DIR}"
 
@@ -341,13 +346,9 @@ if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_bas
     echo
 fi
 
-echo -n "" > "${ORPHANPATHS}"
+echo "filename,recport,recdate,source" > "$ORPHANSDETAIL"
 while read orphan ; do
-    grep "clip.dir/${orphan}.m" "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- >> "${ORPHANPATHS}"
-done < "${ORPHANS}"
-
-echo "filename,recport,recdate,recname" > "$ORPHANSDETAIL"
-while read orphanpath ; do
+    orphanpath=$(_getfullpath "${orphan}")
     omdata=$(head -c 10000 "${orphanpath}" | strings | grep clip.dir | head -n 1)
     recport=$(echo "$omdata" | cut -d";" -f2)
     recdate=$(echo "$omdata" | cut -d";" -f9)
@@ -355,8 +356,8 @@ while read orphanpath ; do
     if [[ "${orphanpath}" == "${recname}" ]] ;then
         recname=""
     fi
-    echo "${orphanpath},${recport},${recdate},${recname}" >> "${ORPHANSDETAIL}"
-done < "${ORPHANPATHS}"
+    echo "$(basename "${orphanpath}"),${recport},${recdate},$(basename "${recname}")" >> "${ORPHANSDETAIL}"
+done < "${ORPHANS}"
 cat "${ORPHANSDETAIL}" | grep -v ",MR-[11-20]," > "${ORPHANSDETAIL_CUNYONLY}"
 cat "${ORPHANSDETAIL}" | grep -v ",MR-[1-9],\|,MR-[10]," > "${ORPHANSDETAIL_NYCMGONLY}"
 cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | grep -v "^$" | awk -F "," '{print $1 "," $(NF-2) }' | sed 's/T-//' | sed 's|/1||' | sed 's/.........$//' | sort -t, -k2 -r | sort -t, -u -k1,1 | sort -t, -k2 | awk -v d=$(date "+%F") -F, '$2 < d' > "${NYCMG_EXPIRED_IDS}"
