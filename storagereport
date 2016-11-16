@@ -55,7 +55,6 @@ _report(){
     local NC="$(tput sgr0)"       # No Color
     local COLOR=""
     local STARTMESSAGE=""
-    local ENDMESSAGE=""
     local ECHOOPT=""
     local LOG_MESSAGE=""
     OPTIND=1
@@ -174,11 +173,6 @@ CUNYTV_REMOVAL_CANDIDATES="$REPORTDIR/cunytv_omneon_removal_candidates.txt"
 CUNYTV_REMOVAL_CANDIDATES_NEARLINE="$REPORTDIR/cunytv_omneon_removal_candidates_already_on_nearline.txt"
 CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE="$REPORTDIR/cunytv_omneon_removal_candidates_not_on_nearline.txt"
 CUNYTV_TO_RESTORE="$REPORTDIR/cunytv_to_recall.txt"
-NYCMG_TO_RESTORE="$REPORTDIR/nycmg_to_recall.txt"
-CUNYTV_TO_RESTORE_FROM_LTO="$REPORTDIR/cunytv_to_recall_from_lto.txt"
-NYCMG_TO_RESTORE_FROM_LTO="$REPORTDIR/nycmg_to_recall_from_lto.txt"
-CUNYTV_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/cunytv_to_recall_from_lto_detail.txt"
-NYCMG_TO_RESTORE_FROM_LTO_DETAIL="$REPORTDIR/nycmg_to_recall_from_lto_detail.txt"
 NYCMG_ON_LTO_SIZE_EXT="/$REPORTDIR/nycmg_lto_with_extension_and_size.txt"
 NYCMG_ON_LTO_PATH="/$REPORTDIR/nycmg_lto_with_path.txt"
 CUNYTV_ON_LTO_SIZE_EXT="$REPORTDIR/cunytv_lto_with_extension_and_size.txt"
@@ -306,8 +300,6 @@ comm -1 -2 "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_s
 
 # recall list
 comm -2 -3 "${CUNYTV4AIR}" "${CUNYTV_ON_OMNEON}" > "${CUNYTV_TO_RESTORE}"
-#comm -1 -2 "${CUNYTV_TO_RESTORE}" "$CUNYTV_ON_LTO_SIZE_EXT" > "${CUNYTV_TO_RESTORE_FROM_LTO}"
-#while read i ; do grep -h "${i}[^_]" ~/Documents/A00*.txt done < "${CUNYTV_TO_RESTORE_FROM_LTO}" | grep -v "metadata" | grep -v "objects" | grep -v "txt$" | sort > "${CUNYTV_TO_RESTORE_FROM_LTO_DETAIL}" 
 
 echo
 if [[ -s "${CONFLICTS}" ]] ; then
