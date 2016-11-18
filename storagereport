@@ -388,7 +388,7 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
         if [[ "${orphanpath}" == "${nlrecname}" ]] ;then
             nlrecname=""
         fi
-        echo "${omname},${ommediainfo},${omrecport},${omrecdate},${omrecname},${omsize},${omencdate},${nlname},${nlmediainfo},${nlrecport},${nlrecdate},${nlrecname},${nlsize},${nlencdate}" >> "/$REPORTDIR/filenameconflicts.csv"
+        echo "${omname},${ommediainfo},${omrecport},${omrecdate},$(basename "${omrecname}"),${omsize},${omencdate},${nlname},${nlmediainfo},${nlrecport},${nlrecdate},$(basename "${nlrecname}"),${nlsize},${nlencdate}" >> "/$REPORTDIR/filenameconflicts.csv"
     done
 fi
 
