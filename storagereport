@@ -111,9 +111,9 @@ TODAY=$(date '+%F')
 
 ##inputs
 # protrack csv export from NYCMG
-NYCMG_MEDIAID_CSV="$HOME/Desktop/REPORTS/NYCLIFE01011980.csv"
+NYCMG_MEDIAID_CSV="${HOME}/Desktop/REPORTS/NYCLIFE01011980.csv"
 # files to not remove
-EVERGREEN_LIST="$HOME/Desktop/REPORTS/EVERGREEN.txt"
+EVERGREEN_LIST="${HOME}/Desktop/REPORTS/EVERGREEN.txt"
 # directory where cunytv protrack database reports to
 CUNY_PROTRACK_REPORT_DIR="/Volumes/XsanFileserver2/CUNY TV files/From library/schedules/"
 # files from the filemaker protracker report database
@@ -133,66 +133,66 @@ OMNEON_PATH="/Volumes/fs0/clip.dir"
 abouttoruns=(/Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml)
 
 #outputs
-REPORTDIR="$HOME/Desktop/REPORTS/$TODAY"
+REPORTDIR="${HOME}/Desktop/REPORTS/${TODAY}"
 INTERNALDIR="${REPORTDIR}/internal"
 SNAPSHOTDIR="${REPORTDIR}/snapshots"
 REPORTDIRNYC="${NYCMG_ROOT}/reports"
 NYCMG_ABOUT_TO_RUN_DIR="${INTERNALDIR}/nycmg-about-to-runs"
-IDS_NYCMG="$INTERNALDIR/nycmg_ids_all.txt"
-IDS_CUNYTV="$INTERNALDIR/cunytv_ids_all.txt"
-IDS_BOTH="$INTERNALDIR/cunytv_and_nycmg_ids_all.txt"
-ON_OMNEON_FILES_STAT="$INTERNALDIR/what_is_on_the_omneon_stat.txt"
-ON_OMNEON_FILES_STAT_SNAPSHOT="$SNAPSHOTDIR/what_is_on_the_omneon_stat_$(_get_iso8601_c).txt"
-ON_OMNEON_IDS="$INTERNALDIR/what_is_on_the_omneon_ids_only.txt"
-ON_OMNEON_IDS_OLD="$INTERNALDIR/what_is_on_the_omneon_and_old_ids_only.txt"
-ON_OMNEON_IDS_NO_EVERGREEN="$INTERNALDIR/what_is_on_the_omneon_and_old_ids_only_no_evergreen.txt"
-NYCMG4AIR="$INTERNALDIR/nycmg_ids_in_upcoming_air.txt"
-CUNYTV4AIR="$INTERNALDIR/cunytv_ids_in_upcoming_air.txt"
-NYCMG_FILLER_IDS="$INTERNALDIR/nycmg_ids_of_filler.txt"
-CUNYTV_FILLER_IDS="$INTERNALDIR/cunytv_ids_of_filler.txt"
-ORPHANS="$REPORTDIR/orphans.txt"
-ORPHANPATHS="$REPORTDIR/orphans_fullpath.txt"
-ORPHANSDETAIL="$REPORTDIR/orphans_details.csv"
-ORPHANSDETAIL_CUNYONLY="$REPORTDIR/orphans_details_cunyonly.csv"
-ORPHANSDETAIL_NYCMGONLY="$REPORTDIR/orphans_details_maybe_nycmg.csv"
-CONFLICTS="$REPORTDIR/conflicts.txt"
-NYCMG_ON_OMNEON="$REPORTDIR/omneon/what_is_on_the_omneon_ids_only_nycmg_only.txt"
-CUNYTV_ON_OMNEON="$REPORTDIR/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
-NYCMG_ON_OMNEON_NOT_FILLER="$REPORTDIR/omneon/what_is_on_the_omneon_ids_only_nycmg_only_not_filler.txt"
-CUNYTV_ON_OMNEON_NOT_FILLER="$REPORTDIR/omneon/what_is_on_the_omneon_ids_only_cunytv_only_not_filler.txt"
-NYCMG_NEARLINE="$REPORTDIR/nycmg_on_nearline.txt"
-NYCMG_NEARLINE_STAT="$REPORTDIR/nycmg_on_nearline_stat.txt"
-NYCMG_NEARLINE_BY_SIZE="$REPORTDIR/nycmg_on_nearline_by_filesize.txt"
-NYCMG_NEARLINE_BY_SIZE_WITH_INFO="$REPORTDIR/nycmg_on_nearline_by_filesize_with_protrack_info.csv"
-NYCMG_REMOVAL_CANDIDATES="$REPORTDIR/nycmg_omneon_removal_candidates.txt"
-NYCMG_REMOVAL_CANDIDATES_NEARLINE="$REPORTDIR/nycmg_omneon_removal_candidates_already_on_nearline.txt"
-NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE="$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline.txt"
-CUNYTV_NEARLINE="$REPORTDIR/cunytv_on_nearline.txt"
-CUNYTV_NEARLINE_STAT="$REPORTDIR/cunytv_on_nearline_stat.txt"
-CUNYTV_REMOVAL_CANDIDATES="$REPORTDIR/cunytv_omneon_removal_candidates.txt"
-CUNYTV_REMOVAL_CANDIDATES_NEARLINE="$REPORTDIR/cunytv_omneon_removal_candidates_already_on_nearline.txt"
-CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE="$REPORTDIR/cunytv_omneon_removal_candidates_not_on_nearline.txt"
-CUNYTV_TO_RESTORE="$REPORTDIR/cunytv_to_recall.txt"
-NYCMG_ON_LTO_SIZE_EXT="/$REPORTDIR/nycmg_lto_with_extension_and_size.txt"
-NYCMG_ON_LTO_PATH="/$REPORTDIR/nycmg_lto_with_path.txt"
-CUNYTV_ON_LTO_SIZE_EXT="$REPORTDIR/cunytv_lto_with_extension_and_size.txt"
-BAD_FILENAMES="$REPORTDIR/bad_filenames.txt"
-NYCMG_EXPIRED_IDS="$REPORTDIR/nycmg_expired_all.txt"
-NYCMG_EXPIRED_IDS_ONLINE="$REPORTDIR/nycmg_expired_online.csv"
-NYCMG_EXPIRED_IDS_ONLINE_WITH_INFO="$REPORTDIR/nycmg_expired_online_with_protrack_info.csv"
-NYCMG_STORAGE_SUMMARY="$REPORTDIR/nycmg_storage_summary.txt"
+IDS_NYCMG="${INTERNALDIR}/nycmg_ids_all.txt"
+IDS_CUNYTV="${INTERNALDIR}/cunytv_ids_all.txt"
+IDS_BOTH="${INTERNALDIR}/cunytv_and_nycmg_ids_all.txt"
+ON_OMNEON_FILES_STAT="${INTERNALDIR}/what_is_on_the_omneon_stat.txt"
+ON_OMNEON_FILES_STAT_SNAPSHOT="${SNAPSHOTDIR}/what_is_on_the_omneon_stat_$(_get_iso8601_c).txt"
+ON_OMNEON_IDS="${INTERNALDIR}/what_is_on_the_omneon_ids_only.txt"
+ON_OMNEON_IDS_OLD="${INTERNALDIR}/what_is_on_the_omneon_and_old_ids_only.txt"
+ON_OMNEON_IDS_NO_EVERGREEN="${INTERNALDIR}/what_is_on_the_omneon_and_old_ids_only_no_evergreen.txt"
+NYCMG4AIR="${INTERNALDIR}/nycmg_ids_in_upcoming_air.txt"
+CUNYTV4AIR="${INTERNALDIR}/cunytv_ids_in_upcoming_air.txt"
+NYCMG_FILLER_IDS="${INTERNALDIR}/nycmg_ids_of_filler.txt"
+CUNYTV_FILLER_IDS="${INTERNALDIR}/cunytv_ids_of_filler.txt"
+ORPHANS="${REPORTDIR}/orphans.txt"
+ORPHANPATHS="${REPORTDIR}/orphans_fullpath.txt"
+ORPHANSDETAIL="${REPORTDIR}/orphans_details.csv"
+ORPHANSDETAIL_CUNYONLY="${REPORTDIR}/orphans_details_cunyonly.csv"
+ORPHANSDETAIL_NYCMGONLY="${REPORTDIR}/orphans_details_maybe_nycmg.csv"
+CONFLICTS="${REPORTDIR}/conflicts.txt"
+NYCMG_ON_OMNEON="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_nycmg_only.txt"
+CUNYTV_ON_OMNEON="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
+NYCMG_ON_OMNEON_NOT_FILLER="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_nycmg_only_not_filler.txt"
+CUNYTV_ON_OMNEON_NOT_FILLER="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_cunytv_only_not_filler.txt"
+NYCMG_NEARLINE="${REPORTDIR}/nycmg_on_nearline.txt"
+NYCMG_NEARLINE_STAT="${REPORTDIR}/nycmg_on_nearline_stat.txt"
+NYCMG_NEARLINE_BY_SIZE="${REPORTDIR}/nycmg_on_nearline_by_filesize.txt"
+NYCMG_NEARLINE_BY_SIZE_WITH_INFO="${REPORTDIR}/nycmg_on_nearline_by_filesize_with_protrack_info.csv"
+NYCMG_REMOVAL_CANDIDATES="${REPORTDIR}/nycmg_omneon_removal_candidates.txt"
+NYCMG_REMOVAL_CANDIDATES_NEARLINE="${REPORTDIR}/nycmg_omneon_removal_candidates_already_on_nearline.txt"
+NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE="${REPORTDIR}/nycmg_omneon_removal_candidates_not_on_nearline.txt"
+CUNYTV_NEARLINE="${REPORTDIR}/cunytv_on_nearline.txt"
+CUNYTV_NEARLINE_STAT="${REPORTDIR}/cunytv_on_nearline_stat.txt"
+CUNYTV_REMOVAL_CANDIDATES="${REPORTDIR}/cunytv_omneon_removal_candidates.txt"
+CUNYTV_REMOVAL_CANDIDATES_NEARLINE="${REPORTDIR}/cunytv_omneon_removal_candidates_already_on_nearline.txt"
+CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE="${REPORTDIR}/cunytv_omneon_removal_candidates_not_on_nearline.txt"
+CUNYTV_TO_RESTORE="${REPORTDIR}/cunytv_to_recall.txt"
+NYCMG_ON_LTO_SIZE_EXT="/${REPORTDIR}/nycmg_lto_with_extension_and_size.txt"
+NYCMG_ON_LTO_PATH="/${REPORTDIR}/nycmg_lto_with_path.txt"
+CUNYTV_ON_LTO_SIZE_EXT="${REPORTDIR}/cunytv_lto_with_extension_and_size.txt"
+BAD_FILENAMES="${REPORTDIR}/bad_filenames.txt"
+NYCMG_EXPIRED_IDS="${REPORTDIR}/nycmg_expired_all.txt"
+NYCMG_EXPIRED_IDS_ONLINE="${REPORTDIR}/nycmg_expired_online.csv"
+NYCMG_EXPIRED_IDS_ONLINE_WITH_INFO="${REPORTDIR}/nycmg_expired_online_with_protrack_info.csv"
+NYCMG_STORAGE_SUMMARY="${REPORTDIR}/nycmg_storage_summary.txt"
 
 _getfullpath(){
-  filenameroot="$1"
+  filenameroot="${1}"
   grep "clip.dir/${filenameroot}.m" "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1
 }
 
 # set up reporting directories
-_mkdir2 "$REPORTDIR" "$INTERNALDIR" "${SNAPSHOTDIR}" "$REPORTDIR/protrack" "$REPORTDIR/pebblebeach" "$REPORTDIR/omneon" "$REPORTDIR/snapshots" "$REPORTDIRNYC" "${NYCMG_ABOUT_TO_RUN_DIR}"
+_mkdir2 "${REPORTDIR}" "${INTERNALDIR}" "${SNAPSHOTDIR}" "${REPORTDIR}/protrack" "${REPORTDIR}/pebblebeach" "${REPORTDIR}/omneon" "${REPORTDIR}/snapshots" "${REPORTDIRNYC}" "${NYCMG_ABOUT_TO_RUN_DIR}"
 
 ### REPORT ON MEDIAIDS IN UPCOMING AIR
 # get CUNYTV mediaids that are needed for air
-cat "$CUNYTV_TOAIRALL" "$CUNYTV_TOAIR" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" > "$CUNYTV4AIR"
+cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV4AIR}"
 _report "STORAGE REPORT - $(_get_iso8601)"
 echo
 _report -d "Omneon status information:"
@@ -224,35 +224,35 @@ printf "%-32s %12d %20s \n" "NYCMG (all)" "$(cat "${NYCMG4AIR}" | wc -l )" ""
 # 'T-' and '/1' are temporary prefixes and suffixes of NYCMG mediaids and are removed when filematching
 echo
 _report -d "Total Known IDs"
-cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "$IDS_NYCMG"
-printf "%-32s %12d %20s \n"  "NYCMG" "$(cat "$IDS_NYCMG" | wc -l)" "$(stat -F -l -t '%FT%T' "$NYCMG_MEDIAID_CSV" | awk '{print $6}')"
-cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u | grep -v "^$" > "$NYCMG_FILLER_IDS"
-printf "%-32s %12d %20s \n" "NYCMG (interstitial)" "$(cat "$NYCMG_FILLER_IDS" | wc -l)" ""
+cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "${IDS_NYCMG}"
+printf "%-32s %12d %20s \n"  "NYCMG" "$(cat "${IDS_NYCMG}" | wc -l)" "$(stat -F -l -t '%FT%T' "${NYCMG_MEDIAID_CSV}" | awk '{print $6}')"
+cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u | grep -v "^$" > "${NYCMG_FILLER_IDS}"
+printf "%-32s %12d %20s \n" "NYCMG (interstitial)" "$(cat "${NYCMG_FILLER_IDS}" | wc -l)" ""
 # list all CUNYTV ProTrack IDs (Programs, Segments, and Filler)
-cat "$CUNY_FILLERS" "$CUNY_PROGRAMS" "$CUNY_SEGMENTS" | tr "\r" "\n" | awk '{print $1}' | grep -v "^$" | sort -u > "$IDS_CUNYTV"
-printf "%-32s %12d %20s \n" "CUNYTV" "$(cat "$IDS_CUNYTV" | wc -l)" ""
-cat "$CUNY_FILLERS" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "$CUNYTV_FILLER_IDS"
-printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "$CUNYTV_FILLER_IDS" | wc -l)" ""
+cat "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}" | tr "\r" "\n" | awk '{print $1}' | grep -v "^$" | sort -u > "${IDS_CUNYTV}"
+printf "%-32s %12d %20s \n" "CUNYTV" "$(cat "${IDS_CUNYTV}" | wc -l)" ""
+cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV_FILLER_IDS}"
+printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "${CUNYTV_FILLER_IDS}" | wc -l)" ""
 # list all ProTrack IDs, both systems
-cat "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u | grep -v "^$" > "$IDS_BOTH"
+cat "${IDS_NYCMG}" "${IDS_CUNYTV}" | sort -u | grep -v "^$" > "${IDS_BOTH}"
 
 ### REPORT ON OMNEON FILES
 # list all Omneon files
 echo
 _report -d "Omneon Storage stats"
-stat -F -l -t '%FT%T' "$OMNEON_PATH/"* | grep -v "/$" | sed 's/*//g' > "$ON_OMNEON_FILES_STAT"
-cp "$ON_OMNEON_FILES_STAT" "$ON_OMNEON_FILES_STAT_SNAPSHOT"
-cut -d " " -f 7- "$ON_OMNEON_FILES_STAT" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$ON_OMNEON_IDS"
+stat -F -l -t '%FT%T' "${OMNEON_PATH}/"* | grep -v "/$" | sed 's/*//g' > "${ON_OMNEON_FILES_STAT}"
+cp "${ON_OMNEON_FILES_STAT}" "${ON_OMNEON_FILES_STAT_SNAPSHOT}"
+cut -d " " -f 7- "${ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${ON_OMNEON_IDS}"
 printf "%-32s %12d %20s \n" "File Count (all omneon)" "$(cat "${ON_OMNEON_IDS}" | wc -l)" ""
-awk -v date="$AGED_DATE" '$6 <= date' "$ON_OMNEON_FILES_STAT" | cut -d " " -f 7- |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "$ON_OMNEON_IDS_OLD"
-comm -2 -3 "$ON_OMNEON_IDS_OLD" <(sort "$EVERGREEN_LIST") > "$ON_OMNEON_IDS_NO_EVERGREEN"
+awk -v date="${AGED_DATE}" '$6 <= date' "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${ON_OMNEON_IDS_OLD}"
+comm -2 -3 "${ON_OMNEON_IDS_OLD}" <(sort "${EVERGREEN_LIST}") > "$ON_OMNEON_IDS_NO_EVERGREEN"
 printf "%-32s %12d %20s \n" "File Count (+${keepnewforXdays} days old)" "$(cat "${ON_OMNEON_IDS_OLD}" | wc -l)" ""
 # associate omneon files to custodians
-comm -1 -2 "$ON_OMNEON_IDS_NO_EVERGREEN" "$IDS_NYCMG" > "$NYCMG_ON_OMNEON"
+comm -1 -2 "${ON_OMNEON_IDS_NO_EVERGREEN}" "${IDS_NYCMG}" > "${NYCMG_ON_OMNEON}"
 printf "%-32s %12d %20s \n" "File Count (NYCMG)" "$(cat "${NYCMG_ON_OMNEON}" | wc -l)" ""
-comm -1 -2 "$ON_OMNEON_IDS_NO_EVERGREEN" "$IDS_CUNYTV" > "$CUNYTV_ON_OMNEON"
+comm -1 -2 "${ON_OMNEON_IDS_NO_EVERGREEN}" "${IDS_CUNYTV}" > "${CUNYTV_ON_OMNEON}"
 printf "%-32s %12d %20s \n" "File Count (CUNYTV)" "$(cat "${CUNYTV_ON_OMNEON}" | wc -l)" ""
-comm -2 -3 "$ON_OMNEON_IDS" "$IDS_BOTH" > "$ORPHANS"
+comm -2 -3 "${ON_OMNEON_IDS}" "${IDS_BOTH}" > "${ORPHANS}"
 printf "%-32s %12d %20s \n" "File Count (evergreen)" "$(cat "${EVERGREEN_LIST}" | wc -l)" ""
 printf "%-32s %12d %20s \n" "File Count (orphans)" "$(cat "${ORPHANS}" | wc -l)" ""
 
@@ -260,7 +260,7 @@ cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.
 if [ -s "${BAD_FILENAMES}" ] ; then
     printf "%-32s %12d %20s \n" "File Count (bad filename)" "$(cat "${BAD_FILENAMES}" | wc -l)" ""
 fi
-comm -1 -2 "$IDS_NYCMG" "$IDS_CUNYTV" | sort -u > "${CONFLICTS}"
+comm -1 -2 "${IDS_NYCMG}" "${IDS_CUNYTV}" | sort -u > "${CONFLICTS}"
 if [ -s "${CONFLICTS}" ] ; then
     printf "%-32s %12d %20s \n" "File Count (conflicts!)" "$(cat "${CONFLICTS}" | wc -l)" ""
 fi
@@ -269,12 +269,12 @@ fi
 echo
 _report -d "Nearline Storage stats"
 # find what is on nearline - nycmg
-stat -F -l -t '%FT%T' "$NYCMG_NEARLINE_PATH/"* | grep -v "/$" | sed 's:*::g' > "$NYCMG_NEARLINE_STAT"
-cut -d " " -f 7- "$NYCMG_NEARLINE_STAT" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "$NYCMG_NEARLINE"
+stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"* | grep -v "/$" | sed 's:*::g' > "${NYCMG_NEARLINE_STAT}"
+cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "${NYCMG_NEARLINE}"
 printf "%-32s %12d %20s \n" "File Count (nycmg)" "$(cat "${NYCMG_NEARLINE}" | wc -l)" ""
 # find what is on nearline - cunytv
-find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; > "$CUNYTV_NEARLINE_STAT"
-cut -d " " -f 7- "$CUNYTV_NEARLINE_STAT" | cut -d/ -f8 | cut -d. -f1 | sort | grep -v "^$" > "$CUNYTV_NEARLINE"
+find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; > "${CUNYTV_NEARLINE_STAT}"
+cut -d " " -f 7- "${CUNYTV_NEARLINE_STAT}" | cut -d/ -f8 | cut -d. -f1 | sort | grep -v "^$" > "${CUNYTV_NEARLINE}"
 printf "%-32s %12d %20s \n" "File Count (cunytv)" "$(cat "${CUNYTV_NEARLINE}" | wc -l)" ""
 
 # LTO reports
@@ -283,25 +283,25 @@ cat ~/Documents/lto_indexes/C0*_index.txt | sort > "${NYCMG_ON_LTO_PATH}"
 cat ~/Documents/lto_indexes/A0*_namesize.txt ~/Documents/lto_indexes/E0*_namesize.txt | sort > "${CUNYTV_ON_LTO_SIZE_EXT}"
 
 # find NYCMG removal candidates
-comm -2 -3 "$NYCMG_ON_OMNEON" "$NYCMG_FILLER_IDS" > "$NYCMG_ON_OMNEON_NOT_FILLER"
-comm -2 -3 "$NYCMG_ON_OMNEON_NOT_FILLER" "$NYCMG4AIR" > "$NYCMG_REMOVAL_CANDIDATES"
-comm -1 -2 "$NYCMG_NEARLINE" "$NYCMG_REMOVAL_CANDIDATES" > "$NYCMG_REMOVAL_CANDIDATES_NEARLINE"
-comm -1 -3 "$NYCMG_NEARLINE" "$NYCMG_REMOVAL_CANDIDATES" > "$NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE"
+comm -2 -3 "${NYCMG_ON_OMNEON}" "${NYCMG_FILLER_IDS}" > "${NYCMG_ON_OMNEON_NOT_FILLER}"
+comm -2 -3 "${NYCMG_ON_OMNEON_NOT_FILLER}" "${NYCMG4AIR}" > "${NYCMG_REMOVAL_CANDIDATES}"
+comm -1 -2 "${NYCMG_NEARLINE}" "${NYCMG_REMOVAL_CANDIDATES}" > "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}"
+comm -1 -3 "${NYCMG_NEARLINE}" "${NYCMG_REMOVAL_CANDIDATES}" > "${NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE}"
 
-for i in `cat "$NYCMG_REMOVAL_CANDIDATES_NEARLINE"` ; do grep "/${i}\." "$ON_OMNEON_FILES_STAT" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt"
-for i in `cat "$NYCMG_REMOVAL_CANDIDATES_NEARLINE"` ; do grep "/${i}\." "$NYCMG_NEARLINE_STAT" | awk '{print $7 " " $5}' | sed 's:/Volumes/NYCM_Media/media/::g' ; done > "/$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt"
-diff -y "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
+for i in `cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}"` ; do grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt"
+for i in `cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}"` ; do grep "/${i}\." "${NYCMG_NEARLINE_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/NYCM_Media/media/::g' ; done > "/$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt"
+diff -y "/${REPORTDIR}/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "${REPORTDIR}/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
 
 # find CUNYTV removal candidates
-comm -2 -3 "$CUNYTV_ON_OMNEON" "$CUNYTV_FILLER_IDS" > "$CUNYTV_ON_OMNEON_NOT_FILLER"
-comm -2 -3 "$CUNYTV_ON_OMNEON_NOT_FILLER" "$CUNYTV4AIR" > "$CUNYTV_REMOVAL_CANDIDATES"
-comm -1 -2 "$CUNYTV_NEARLINE" "$CUNYTV_REMOVAL_CANDIDATES" > "$CUNYTV_REMOVAL_CANDIDATES_NEARLINE"
-comm -1 -3 "$CUNYTV_NEARLINE" "$CUNYTV_REMOVAL_CANDIDATES" > "$CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE"
+comm -2 -3 "${CUNYTV_ON_OMNEON}" "${CUNYTV_FILLER_IDS}" > "${CUNYTV_ON_OMNEON_NOT_FILLER}"
+comm -2 -3 "${CUNYTV_ON_OMNEON_NOT_FILLER}" "${CUNYTV4AIR}" > "${CUNYTV_REMOVAL_CANDIDATES}"
+comm -1 -2 "${CUNYTV_NEARLINE}" "${CUNYTV_REMOVAL_CANDIDATES}" > "${CUNYTV_REMOVAL_CANDIDATES_NEARLINE}"
+comm -1 -3 "${CUNYTV_NEARLINE}" "${CUNYTV_REMOVAL_CANDIDATES}" > "${CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE}"
 
-for i in `cat "$CUNYTV_REMOVAL_CANDIDATES"` ; do grep "/${i}\." "$ON_OMNEON_FILES_STAT" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt"
-for i in `cat "$CUNYTV_REMOVAL_CANDIDATES_NEARLINE"` ; do grep "/${i}\." "$CUNYTV_NEARLINE_STAT" | awk '{print $7 " " $5}' | cut -d/ -f8- | sed 's/*//' ; done > "/$REPORTDIR/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt"
-diff -y "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "$REPORTDIR/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
-comm -1 -2 "/$REPORTDIR/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "$CUNYTV_ON_LTO_SIZE_EXT" | cut -d " " -f1 > "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt"
+for i in `cat "${CUNYTV_REMOVAL_CANDIDATES}"` ; do grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "/${REPORTDIR}/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt"
+for i in `cat "${CUNYTV_REMOVAL_CANDIDATES_NEARLINE}"` ; do grep "/${i}\." "${CUNYTV_NEARLINE_STAT}" | awk '{print $7 " " $5}' | cut -d/ -f8- | sed 's/*//' ; done > "/${REPORTDIR}/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt"
+diff -y "/${REPORTDIR}/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "${REPORTDIR}/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
+comm -1 -2 "/${REPORTDIR}/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "${CUNYTV_ON_LTO_SIZE_EXT}" | cut -d " " -f1 > "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt"
 
 # recall list
 comm -2 -3 "${CUNYTV4AIR}" "${CUNYTV_ON_OMNEON}" > "${CUNYTV_TO_RESTORE}"
@@ -323,36 +323,36 @@ echo
 fi
 if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC) ]] ; then
     echo
-    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
+    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
     _report -d "To remove nycmg files that are not new, not filler, not about-to-air, that are already on nearline run:"
     echo
-    _report -w "  pushd "${OMNEON_PATH}" && rm -i $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC | xargs) && popd"
+    _report -w "  pushd "${OMNEON_PATH}" && rm -i $(cat "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC | xargs) && popd"
     echo
 fi
-if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt") ]] ; then
+if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt") ]] ; then
     echo
-    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
+    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
     _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on nearline run:"
     echo
-    _report -w "  pushd "${OMNEON_PATH}" && rm -i $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) && popd"
+    _report -w "  pushd "${OMNEON_PATH}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) && popd"
     echo
 fi
-if [[ $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt") ]] ; then
+if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt") ]] ; then
     echo
-    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
+    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
     _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on LTO tape run:"
     echo
-    _report -w "  pushd "${OMNEON_PATH}" && rm -i $(cat "$REPORTDIR/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) && popd"
+    _report -w "  pushd "${OMNEON_PATH}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) && popd"
     echo
 fi
 
-echo "filename,recport,recdate,source" > "$ORPHANSDETAIL"
+echo "filename,recport,recdate,source" > "${ORPHANSDETAIL}"
 while read orphan ; do
-    orphanpath=$(_getfullpath "${orphan}")
+  orphanpath=$(_getfullpath "${orphan}")
     omdata=$(head -c 10000 "${orphanpath}" | strings | grep clip.dir | head -n 1)
-    recport=$(echo "$omdata" | cut -d";" -f2)
-    recdate=$(echo "$omdata" | cut -d";" -f9)
-    recname=$(echo "$omdata" | cut -d";" -f6)
+    recport=$(echo "${omdata}" | cut -d";" -f2)
+    recdate=$(echo "${omdata}" | cut -d";" -f9)
+    recname=$(echo "${omdata}" | cut -d";" -f6)
     if [[ "${orphanpath}" == "${recname}" ]] ;then
         recname=""
     fi
@@ -380,24 +380,24 @@ for i in `cat "/$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline.txt" 
 done > "/$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline_and_info.csv"
 
 cat "${IDS_NYCMG}" | while read line ; do echo "${line} " ; done > /tmp/all.txt
-cat "${NYCMG_ON_OMNEON}" | while read line ; do echo "$line omneon" ; done | tr "\r" "\n" > /tmp/omneon.txt
-cat "${NYCMG_NEARLINE}" | while read line ; do echo "$line nearline" ; done | sort | tr "\r" "\n" > /tmp/nearline.txt
+cat "${NYCMG_ON_OMNEON}" | while read line ; do echo "${line} omneon" ; done | tr "\r" "\n" > /tmp/omneon.txt
+cat "${NYCMG_NEARLINE}" | while read line ; do echo "${line} nearline" ; done | sort | tr "\r" "\n" > /tmp/nearline.txt
 cat "${NYCMG_ON_LTO_PATH}" | awk -F "/" '{print $NF " " $(NF-1)}' | sed 's/.mxf//g' | sed 's/.mov//g' | grep -v '^\.' | sort | tr "\r" "\n" > /tmp/lto.txt
 join -a1 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
 join -a1 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
 join -a1 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
-rsync -rtv --perms --chmod=777  "$ORPHANSDETAIL" "$NYCMG_NEARLINE" "$NYCMG_ON_OMNEON" "$CUNYTV_ON_OMNEON" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "$REPORTDIRNYC/"
+rsync -rtv --perms --chmod=777  "${ORPHANSDETAIL}" "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" "${CUNYTV_ON_OMNEON}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
 
-if [ ! -f "/$REPORTDIR/filenameconflicts.csv" ] ; then
-    echo "om_filename,om_duration,om_modtime,om_encode_time,om_recport,om_recdate,om_recname,om_size,om_encdate,nl_name,nl_duration,nl_modtime,nl_encode_time,nl_recport,nl_recdate,nl_recname,nl_size,nl_encdate" > "/$REPORTDIR/filenameconflicts.csv"
-    diff -y "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "/$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep "|" | while read conflictnameline ; do
+if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
+    echo "om_filename,om_duration,om_modtime,om_encode_time,om_recport,om_recdate,om_recname,om_size,om_encdate,nl_name,nl_duration,nl_modtime,nl_encode_time,nl_recport,nl_recdate,nl_recname,nl_size,nl_encdate" > "/${REPORTDIR}/filenameconflicts.csv"
+    diff -y "/${REPORTDIR}/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "/${REPORTDIR}/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep "|" | while read conflictnameline ; do
         omname=$(echo "${conflictnameline}" | awk '{print $1}')
         ommediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${OMNEON_PATH}/${omname}")
         omdata=$(head -c 10000 "${OMNEON_PATH}/${omname}" | strings | grep clip.dir | head -n 1)
-        omrecport=$(echo "$omdata" | cut -d";" -f2)
-        omrecdate=$(echo "$omdata" | cut -d";" -f9)
-        omrecname=$(echo "$omdata" | cut -d";" -f6)
+        omrecport=$(echo "${omdata}" | cut -d";" -f2)
+        omrecdate=$(echo "${omdata}" | cut -d";" -f9)
+        omrecname=$(echo "${omdata}" | cut -d";" -f6)
         omencdate=$(ffprobe 2>/dev/null -i "${OMNEON_PATH}/${omname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
         omsize=$(ls -l "${OMNEON_PATH}/${omname}" | awk '{print $5}')
         if [[ "${orphanpath}" == "${omrecname}" ]] ;then
@@ -406,9 +406,9 @@ if [ ! -f "/$REPORTDIR/filenameconflicts.csv" ] ; then
         nlname=$(echo "${conflictnameline}" | awk '{print $4}')
         nlmediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${NYCMG_NEARLINE_PATH}/${nlname}")
         nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep clip.dir | head -n 1)
-        nlrecport=$(echo "$nldata" | cut -d";" -f2)
-        nlrecdate=$(echo "$nldata" | cut -d";" -f9)
-        nlrecname=$(echo "$nldata" | cut -d";" -f6)
+        nlrecport=$(echo "${nldata}" | cut -d";" -f2)
+        nlrecdate=$(echo "${nldata}" | cut -d";" -f9)
+        nlrecname=$(echo "${nldata}" | cut -d";" -f6)
         nlencdate=$(ffprobe 2>/dev/null -i "${NYCMG_NEARLINE_PATH}/${nlname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
         nlsize=$(ls -l "${NYCMG_NEARLINE_PATH}/${nlname}" | awk '{print $5}')
         if [[ "${orphanpath}" == "${nlrecname}" ]] ;then
@@ -420,10 +420,10 @@ fi
 
 # make nycmg pull list
 comm -2 -3 "${NYCMG4AIR}"  "${ON_OMNEON_IDS}" > /tmp/nycmg_pulllist_temp.txt
-for i in `cat /tmp/nycmg_pulllist_temp.txt` ; do grep "$i" "${NYCMG_STORAGE_SUMMARY}" ; done > "/$REPORTDIR/nycmg_pulllist.csv"
+for i in `cat /tmp/nycmg_pulllist_temp.txt` ; do grep "$i" "${NYCMG_STORAGE_SUMMARY}" ; done > "/${REPORTDIR}/nycmg_pulllist.csv"
 
 ls -l /Volumes/NYCM_Media/media/ | awk '{print $9 " " $5 }' | sort > /tmp/nearline.txt
 for i in ~/Documents/lto_indexes/C*.schema ; do
     xml sel -t -m ".//file" -v name -o " " -v length -n "$i" | sort -u
 done | sort > /tmp/ltosizes.txt
-comm -1 -2 /tmp/nearline.txt /tmp/ltosizes.txt | cut -d " " -f1 > "/$REPORTDIR/nycmg_on_lto_and_nearline_sizename_match.txt"
+comm -1 -2 /tmp/nearline.txt /tmp/ltosizes.txt | cut -d " " -f1 > "/${REPORTDIR}/nycmg_on_lto_and_nearline_sizename_match.txt"
