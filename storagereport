@@ -9,31 +9,6 @@ _get_iso8601_c(){
     date +%Y%m%d-%H%M%S
 }
 
-_log(){
-    MMLOGNAME="mm.log"
-    MMLOGDIR="${CUSTOM_LOG_DIR:-/tmp}"
-    MMLOGFILE="${MMLOGDIR}/${MMLOGNAME}"
-    if [ ! -d "${MMLOGDIR}" ] ; then
-        _mkdir2 "${MMLOGDIR}"
-        if [ "${?}" -ne 0 ]; then
-            echo "${0}: Can't create log directory at ${MMLOGDIR}, exiting... Use mmconfig to change logging directory."
-            exit 1
-        fi
-    fi
-    OPTIND=1
-    while getopts ":beac" OPT; do
-        case "${OPT}" in
-            b) STATUS="start" ;;              # script is beginning
-            e) STATUS="end"   ;;              # script is ending
-            a) STATUS="abort" ;;              # script is aborted
-            c) STATUS="comment" ;;            # comment about what script is doing
-            w) STATUS+"warning" ;;            # warning information
-        esac
-    done
-    shift $(( ${OPTIND} - 1 ))
-    NOTE="${1}"
-    echo $(_get_iso8601)", $(basename "${0}"), ${STATUS}, ${OP}, ${MEDIAID}, ${NOTE}" >> "${MMLOGFILE}"
-}
 _mkdir2(){
     local DIR2MAKE=""
     while [ "${*}" != "" ] ; do
@@ -71,7 +46,6 @@ _report(){
     shift $(( ${OPTIND} - 1 ))
     MESSAGE="${1}"
     echo "${ECHOOPT}" "${COLOR}${STARTMESSAGE[@]}${MESSAGE}${NC}"
-    [ "${LOG_MESSAGE}" = "Y" ] && _log -w "${MESSAGE}"
 }
 _check4mount(){
     # check to see if a requested volume is mount and warn if not
