@@ -69,9 +69,7 @@ keepnewforXdays=7
 
 ## connect to Autosaved folder if not already
 if [ $(mount | grep -c /Volumes/Autosaved) = 0 ] ; then
-    if [ ! -d /Volumes/Autosaved ] ; then
-        mkdir /Volumes/Autosaved
-    fi
+    _mkdir2 /Volumes/Autosaved
     sudo route -nv add 10.25.0.0/16 10.25.104.1
     mount -t smbfs "smb://archivesxsan@10.25.102.55/Autosaved" /Volumes/Autosaved
 fi
