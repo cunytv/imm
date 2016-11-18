@@ -349,6 +349,7 @@ fi
 echo "filename,recport,recdate,source" > "${ORPHANSDETAIL}"
 while read orphan ; do
   orphanpath=$(_getfullpath "${orphan}")
+  if [ -f "${orphanpath}" ] ; then
     omdata=$(head -c 10000 "${orphanpath}" | strings | grep clip.dir | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
@@ -357,6 +358,7 @@ while read orphan ; do
         recname=""
     fi
     echo "$(basename "${orphanpath}"),${recport},${recdate},$(basename "${recname}")" >> "${ORPHANSDETAIL}"
+  fi
 done < "${ORPHANS}"
 cat "${ORPHANSDETAIL}" | grep -v ",MR-[11-20]," > "${ORPHANSDETAIL_CUNYONLY}"
 cat "${ORPHANSDETAIL}" | grep -v ",MR-[1-9],\|,MR-[10]," > "${ORPHANSDETAIL_NYCMGONLY}"
