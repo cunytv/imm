@@ -96,13 +96,14 @@ NYCMG_ROOT="/Volumes/NYCM_Media"
 NYCMG_NEARLINE_PATH="${NYCMG_ROOT}/media"
 # nearline folder of CUNYTV files
 CUNYTV_DIGACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
+CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/acquisitions"
 # omneon path
 OMNEON_PATH="/Volumes/fs0/clip.dir"
 # array of about-to-runs
 abouttoruns=(/Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml)
 
 ## connect to nearline volumes
-_check4mount "${CUNYTV_DIGACQ_PATH}" "${NYCMG_ROOT}" "${OMNEON_PATH}"
+_check4mount "${CUNYTV_DIGACQ_PATH}" "${CUNYTV_NEARLINE_PATH}" "${NYCMG_ROOT}" "${OMNEON_PATH}"
 
 #outputs
 REPORTDIR="${HOME}/Desktop/REPORTS/${TODAY}"
@@ -246,6 +247,7 @@ cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | g
 printf "%-32s %12d %20s \n" "File Count (nycmg)" "$(cat "${NYCMG_NEARLINE}" | wc -l)" ""
 # find what is on nearline - cunytv
 find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; > "${CUNYTV_NEARLINE_STAT}"
+find "${CUNYTV_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; >> "${CUNYTV_NEARLINE_STAT}"
 cut -d " " -f 7- "${CUNYTV_NEARLINE_STAT}" | cut -d/ -f8 | cut -d. -f1 | sort | grep -v "^$" > "${CUNYTV_NEARLINE}"
 printf "%-32s %12d %20s \n" "File Count (cunytv)" "$(cat "${CUNYTV_NEARLINE}" | wc -l)" ""
 
