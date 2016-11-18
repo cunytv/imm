@@ -168,7 +168,7 @@ cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" 
 _report "STORAGE REPORT - $(_get_iso8601)"
 echo
 _report -d "Omneon status information:"
-df -h "${OMNEON_PATH}"
+df -Ph "${OMNEON_PATH}"
 _report -d "The omneon is at $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $5}') capacity."
 _report -d "The omneon has $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $4}') available."
 echo
