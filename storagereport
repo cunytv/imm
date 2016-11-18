@@ -232,9 +232,9 @@ cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.
 if [ -s "${BAD_FILENAMES}" ] ; then
     printf "%-32s %12d %20s \n" "File Count (bad filename)" "$(cat "${BAD_FILENAMES}" | wc -l)" ""
 fi
-comm -1 -2 "${IDS_NYCMG}" "${IDS_CUNYTV}" | sort -u > "${CONFLICTS}"
+comm -1 -2 "${IDS_NYCMG}" "${CUNYTV4AIR}" | sort -u > "${CONFLICTS}"
 if [ -s "${CONFLICTS}" ] ; then
-    printf "%-32s %12d %20s \n" "File Count (conflicts!)" "$(cat "${CONFLICTS}" | wc -l)" ""
+    printf "%-32s %12d %20s \n" "File Count (conflicts! between NYCMG and future CUNYTV airing)" "$(cat "${CONFLICTS}" | wc -l)" ""
 fi
 
 ### REPORT ON NEARLINE FILES
