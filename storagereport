@@ -48,11 +48,11 @@ _report(){
     echo "${ECHOOPT}" "${COLOR}${STARTMESSAGE[@]}${MESSAGE}${NC}"
 }
 _check4mount(){
-    # check to see if a requested volume is mount and warn if not
+    # check to see if a requested volume is mounted and warn if not
     local VOLUME=""
     while [ "${*}" != "" ] ; do
         VOLUME="${1}"
-        if [ $(mount | grep -c ${VOLUME}) = 0 ] ; then
+        if [ $(df "${VOLUME}" | tail -n +2 | awk '{print length($9)}') -le 1 ] ; then
             echo
             echo
             _report -wt "Please connect to ${VOLUME} on $(uname -n)"
