@@ -74,9 +74,6 @@ if [ $(mount | grep -c /Volumes/Autosaved) = 0 ] ; then
     mount -t smbfs "smb://archivesxsan@10.25.102.55/Autosaved" /Volumes/Autosaved
 fi
 
-## connect to nearline volumes
-_check4mount /Volumes/CUNYTV_Media /Volumes/NYCM_Media /Volumes/fs0
-
 # shortcuts
 AGED_DATE=$(date -v-${keepnewforXdays}d '+%F')
 TODAY=$(date '+%F')
@@ -103,6 +100,9 @@ CUNYTV_DIGACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
 OMNEON_PATH="/Volumes/fs0/clip.dir"
 # array of about-to-runs
 abouttoruns=(/Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml)
+
+## connect to nearline volumes
+_check4mount "${CUNYTV_DIGACQ_PATH}" "${NYCMG_ROOT}" "${OMNEON_PATH}"
 
 #outputs
 REPORTDIR="${HOME}/Desktop/REPORTS/${TODAY}"
