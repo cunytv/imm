@@ -96,7 +96,7 @@ NYCMG_ROOT="/Volumes/NYCM_Media"
 NYCMG_NEARLINE_PATH="${NYCMG_ROOT}/media"
 # nearline folder of CUNYTV files
 CUNYTV_DIGACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
-CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/acquisitions"
+CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/nearline"
 # omneon path
 OMNEON_PATH="/Volumes/fs0/clip.dir"
 # array of about-to-runs
