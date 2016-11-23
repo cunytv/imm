@@ -242,13 +242,13 @@ fi
 echo
 _report -d "Nearline Storage stats"
 # find what is on nearline - nycmg
-stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"* | grep -v "/$" | sed 's:*::g' > "${NYCMG_NEARLINE_STAT}"
+stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"* | grep -v "/$" | sed 's:*$::g' > "${NYCMG_NEARLINE_STAT}"
 cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "${NYCMG_NEARLINE}"
 printf "%-32s %12d %20s \n" "File Count (nycmg)" "$(cat "${NYCMG_NEARLINE}" | wc -l)" ""
 # find what is on nearline - cunytv
-find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; > "${CUNYTV_NEARLINE_STAT}"
-find "${CUNYTV_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; >> "${CUNYTV_NEARLINE_STAT}"
-cut -d " " -f 7- "${CUNYTV_NEARLINE_STAT}" | cut -d/ -f8 | cut -d. -f1 | sort | grep -v "^$" > "${CUNYTV_NEARLINE}"
+find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_NEARLINE_STAT}"
+find "${CUNYTV_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' >> "${CUNYTV_NEARLINE_STAT}"
+cut -d " " -f 7- "${CUNYTV_NEARLINE_STAT}" | while read path ; do basename "$path" ; done | cut -d. -f1 | sort -u | grep -v "^$" > "${CUNYTV_NEARLINE}"
 printf "%-32s %12d %20s \n" "File Count (cunytv)" "$(cat "${CUNYTV_NEARLINE}" | wc -l)" ""
 
 # LTO reports
@@ -273,7 +273,7 @@ comm -1 -2 "${CUNYTV_NEARLINE}" "${CUNYTV_REMOVAL_CANDIDATES}" > "${CUNYTV_REMOV
 comm -1 -3 "${CUNYTV_NEARLINE}" "${CUNYTV_REMOVAL_CANDIDATES}" > "${CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE}"
 
 for i in $(cat "${CUNYTV_REMOVAL_CANDIDATES}") ; do grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "/${REPORTDIR}/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt"
-for i in $(cat "${CUNYTV_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${CUNYTV_NEARLINE_STAT}" | awk '{print $7 " " $5}' | cut -d/ -f8- | sed 's/*//' ; done > "/${REPORTDIR}/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt"
+for i in $(cat "${CUNYTV_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${CUNYTV_NEARLINE_STAT}" | awk '{n=split ($7,a,/\//); print a[n] " " $5}' ; done > "/${REPORTDIR}/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt"
 diff -y "/${REPORTDIR}/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "${REPORTDIR}/cunytv_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
 comm -1 -2 "/${REPORTDIR}/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt" "${CUNYTV_ON_LTO_SIZE_EXT}" | cut -d " " -f1 > "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt"
 
