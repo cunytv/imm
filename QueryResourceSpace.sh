@@ -50,11 +50,9 @@ do
     else
         ROOTNAME="${ID}"
     fi
-    echo -n "Working on ${ROOTNAME}"
-    RESULTS="$(mysql -BNr -h "${RESOURCESPACE_DB_HOST}" -u "${RESOURCESPACE_DB_USER}" -p"${RESOURCESPACE_DB_PW}" -D "${RESOURCESPACE_DB_NAME}" -e "SELECT COUNT(resource) FROM resource_data WHERE resource_type_field=8 and value='${ROOTNAME}' ;")"
-    echo "  and found ${RESULTS} records in resourcespace."
-    #if the result is 1, the item has been uploaded into resource space. If the result is 0, the file must be transcoded and uploaded to resource space
-    if [ "${RESULTS}" == 0 ] ; then
+    RS_ID=$(rs_search "${ROOTNAME}")
+    if [ -z "${RS_ID}" ] ; then
+        _report -dt "${ROOTNAME} will be processed and uploaded to resourcespace."
         if [ -d "${1}" ] ; then
             FILELOCATION="${ID}"
         else
@@ -67,6 +65,8 @@ do
             chmod 777 "${PREPPING}/${ROOTNAME}.mp4"
             mv -n -v "${PREPPING}/${ROOTNAME}.mp4" "${PREPDIR}"
         fi
+    else
+        _report -wt "${ROOTNAME} is already represented at pages/view.php?ref=${RS_ID}, skipping."
     fi
 done 3< "${IDLIST}"
 if [ -f "${IDLIST}" ] ; then
