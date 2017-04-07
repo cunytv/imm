@@ -12,5 +12,8 @@ while read file ; do
         echo "Something went wrong and ${MEDIAID} does not appear to be in resourcespace."
     else
         echo "Cleaning up and removing ${file} which is now at pages/view.php?ref=${RS_ID}."
+        if [[ -f "${file}" ]] ; then
+            rm -v "${file}"
+        fi
     fi
 done < <(find "${PREPDIR}" -type f -size +0)
