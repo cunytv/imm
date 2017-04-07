@@ -18,6 +18,17 @@ _maketemp(){
     fi
 }
 
+_cleanup(){
+    _report -wt "Cleaning up and removing the following files:"
+    if [[ -f "${EXPECTEDOUTPUT}" ]] ; then
+        rm -v "${EXPECTEDOUTPUT}"
+    fi
+    if [[ -f "${CLAIMTURF}" ]] ; then
+        rm -v "${CLAIMTURF}"
+    fi
+    exit 1
+}
+
 #ID list is the list of everything on the omneon that belongs to CUNY TV
 if [ -d "${1}" ] ; then
     IDLIST=$(_maketemp)
@@ -45,6 +56,7 @@ fi
 #comparing the IDs of everything on the omneon to what has been uploaded so far into resource space
 while read ID <&3
 do
+    trap _cleanup SIGHUP SIGINT SIGTERM
     if [ -d "${1}" ] ; then
         ROOTNAME=$(basename "${ID%.*}")
     else
