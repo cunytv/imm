@@ -9,10 +9,19 @@ CONF_FILE="${SCRIPTDIR}/pbpro.conf"
 
 REPORTDATE=$(date '+%F')
 
+_maketemp(){
+    mktemp -q "/tmp/$(basename "${0}").XXXXXX"
+    if [ "${?}" -ne 0 ]; then
+        echo "${0}: Can't create temp file, exiting..."
+        _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
+        exit 1
+    fi
+}
+
 #ID list is the list of everything on the omneon that belongs to CUNY TV
 if [ -d "${1}" ] ; then
-    IDLIST=/tmp/querylist.txt
-    find "${1}" -type f -mindepth 1 -maxdepth 1 > /tmp/querylist.txt
+    IDLIST=$(_maketemp)
+    find "${1}" -type f -mindepth 1 -maxdepth 1 > "${IDLIST}"
 elif [ -f "${HOME}/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt" ] ; then
     IDLIST="${HOME}/Desktop/REPORTS/${REPORTDATE}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
     STATLIST="${HOME}/Desktop/REPORTS/${REPORTDATE}/internal/what_is_on_the_omneon_stat.txt"
@@ -60,6 +69,6 @@ do
         fi
     fi
 done 3< "${IDLIST}"
-if [ -f /tmp/querylist.txt ] ; then
-    rm -v /tmp/querylist.txt
+if [ -f "${IDLIST}" ] ; then
+    rm -v "${IDLIST}"
 fi
