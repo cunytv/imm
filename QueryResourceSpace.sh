@@ -59,11 +59,22 @@ do
             FILELOCATION=$(grep "clip.dir/${ROOTNAME}.m" "$STATLIST" | head -n 1 | cut -d " " -f 7)
         fi
         _report -dt "Encoding ${FILELOCATION}"
-        if [ -s "${FILELOCATION}" ] ; then 
-            makeresourcespace -o "${PREPPING}" "${FILELOCATION}"
-            #modify permissions and move file to different directory
-            chmod 777 "${PREPPING}/${ROOTNAME}.mp4"
-            mv -n -v "${PREPPING}/${ROOTNAME}.mp4" "${PREPDIR}"
+        if [ -s "${FILELOCATION}" ] ; then
+            EXPECTEDOUTPUT="${PREPPING}/$(basename "${FILELOCATION%.*}").mp4"
+            CLAIMTURF="${EXPECTEDOUTPUT}.workingonit.txt"
+            _report -dt "writing to ${EXPECTEDOUTPUT}"
+            if [[ -f "${CLAIMTURF}" ]] ; then
+                _report -wt "${EXPECTEDOUTPUT} is already being worked on, skipping"
+            else
+                if [[ -f "${PREPDIR}/$(basename "${EXPECTEDOUTPUT}")" ]] ; then
+                    _report -wt "${ROOTNAME} is already in ${PREPDIR}, skipping."
+                else
+                    echo "$(uname -a)" > "${CLAIMTURF}"
+                    makeresourcespace -o "${PREPPING}" "${FILELOCATION}"
+                    mv -v -n "${EXPECTEDOUTPUT}" "${PREPDIR}"
+                    rm -v "${CLAIMTURF}"
+                fi
+            fi
         fi
     else
         _report -wt "${ROOTNAME} is already represented at pages/view.php?ref=${RS_ID}, skipping."
