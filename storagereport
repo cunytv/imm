@@ -134,6 +134,7 @@ CUNYTV_ON_OMNEON="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_cunytv_only
 NYCMG_ON_OMNEON_NOT_FILLER="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_nycmg_only_not_filler.txt"
 CUNYTV_ON_OMNEON_NOT_FILLER="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_cunytv_only_not_filler.txt"
 NYCMG_NEARLINE="${REPORTDIR}/nycmg_on_nearline.txt"
+NYCMG_NEARLINE_NOT_FILLER="${REPORTDIR}/nycmg_on_nearline_not_filler.txt"
 NYCMG_NEARLINE_STAT="${REPORTDIR}/nycmg_on_nearline_stat.txt"
 NYCMG_NEARLINE_BY_SIZE="${REPORTDIR}/nycmg_on_nearline_by_filesize.txt"
 NYCMG_NEARLINE_BY_SIZE_WITH_INFO="${REPORTDIR}/nycmg_on_nearline_by_filesize_with_protrack_info.csv"
@@ -244,6 +245,7 @@ _report -d "Nearline Storage stats"
 # find what is on nearline - nycmg
 stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"* | grep -v "/$" | sed 's:*$::g' > "${NYCMG_NEARLINE_STAT}"
 cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "${NYCMG_NEARLINE}"
+comm -2 -3 "${NYCMG_NEARLINE}" "${NYCMG_FILLER_IDS}" > "${NYCMG_NEARLINE_NOT_FILLER}"
 printf "%-32s %12d %20s \n" "File Count (nycmg)" "$(cat "${NYCMG_NEARLINE}" | wc -l)" ""
 # find what is on nearline - cunytv
 find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_NEARLINE_STAT}"
