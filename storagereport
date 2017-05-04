@@ -81,6 +81,7 @@ TODAY=$(date '+%F')
 ##inputs
 # protrack csv export from NYCMG
 NYCMG_MEDIAID_CSV="${HOME}/Desktop/REPORTS/NYCLIFE01011980.csv"
+AIR_DATE_REPORT="${HOME}/Desktop/REPORTS/AirDateSchedule.txt"
 # files to not remove
 EVERGREEN_LIST="${HOME}/Desktop/REPORTS/EVERGREEN.txt"
 # directory where cunytv protrack database reports to
@@ -120,6 +121,7 @@ ON_OMNEON_IDS="${INTERNALDIR}/what_is_on_the_omneon_ids_only.txt"
 ON_OMNEON_IDS_OLD="${INTERNALDIR}/what_is_on_the_omneon_and_old_ids_only.txt"
 ON_OMNEON_IDS_NO_EVERGREEN="${INTERNALDIR}/what_is_on_the_omneon_and_old_ids_only_no_evergreen.txt"
 NYCMG4AIR="${INTERNALDIR}/nycmg_ids_in_upcoming_air.txt"
+NYCMGPROTRACK4AIR="${INTERNALDIR}/nycmg_ids_in_upcoming_air_protrack.txt"
 CUNYTV4AIR="${INTERNALDIR}/cunytv_ids_in_upcoming_air.txt"
 NYCMG_FILLER_IDS="${INTERNALDIR}/nycmg_ids_of_filler.txt"
 CUNYTV_FILLER_IDS="${INTERNALDIR}/cunytv_ids_of_filler.txt"
@@ -320,6 +322,16 @@ if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_b
     echo
     _report -w "  pushd "${OMNEON_PATH}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) && popd"
     echo
+fi
+
+if [[ -f "${AIR_DATE_REPORT}" ]] ; then
+    echo "Air Date Report found"
+    cat "${AIR_DATE_REPORT}" | grep ":[0-9][0-9]:" | cut -c 132- | grep -v "MEDIA UNASSIGNED" | sed 's/ //g' | tr -d "\r" | sort -u > "${NYCMGPROTRACK4AIR}"
+    comm -2 -3 "${NYCMG_NEARLINE_NOT_FILLER}" "${NYCMGPROTRACK4AIR}" > "${REPORTDIR}/nycmg_nearline_suggestions_to_lto_stat.txt"
+    echo > "${REPORTDIR}/nycmg_nearline_suggestions_to_lto_stat.txt"
+    for id in $(comm -2 -3 "${NYCMG_NEARLINE_NOT_FILLER}" "${NYCMGPROTRACK4AIR}") ; do
+        grep "media/${id}.m" "${NYCMG_NEARLINE_STAT}" >> "${REPORTDIR}/nycmg_nearline_suggestions_to_lto_stat.txt"
+    done
 fi
 
 echo "filename,recport,recdate,source" > "${ORPHANSDETAIL}"
