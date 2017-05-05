@@ -62,6 +62,15 @@ _check4mount(){
     done
 }
 
+_maketemp(){
+    mktemp -q "/tmp/$(basename "${0}").XXXXXX"
+    if [ "${?}" -ne 0 ]; then
+        echo "${0}: Can't create temp file, exiting..."
+        _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
+        exit 1
+    fi
+}
+
 ## local variables
 # declare an age in days under which files will be excluded from being removal candidates
 keepnewforXdays=7
@@ -270,9 +279,12 @@ comm -2 -3 "${NYCMG_ON_OMNEON_NOT_FILLER}" "${NYCMG4AIR}" > "${NYCMG_REMOVAL_CAN
 comm -1 -2 "${NYCMG_NEARLINE}" "${NYCMG_REMOVAL_CANDIDATES}" > "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}"
 comm -1 -3 "${NYCMG_NEARLINE}" "${NYCMG_REMOVAL_CANDIDATES}" > "${NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE}"
 
-for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "/$REPORTDIR/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt"
-for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${NYCMG_NEARLINE_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/NYCM_Media/media/::g' ; done > "/$REPORTDIR/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt"
-diff -y "/${REPORTDIR}/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "${REPORTDIR}/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
+# list files to remove from the omneon for nycmg and report on filename conflicts
+nycmg_removal_candidates_on_omneon_with_extension_and_size=$(_maketemp)
+nycmg_removal_candidates_on_nearline_with_extension_and_size=$(_maketemp)
+for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "${nycmg_removal_candidates_on_omneon_with_extension_and_size}"
+for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${NYCMG_NEARLINE_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/NYCM_Media/media/::g' ; done > "${nycmg_removal_candidates_on_nearline_with_extension_and_size}"
+diff -y "${nycmg_removal_candidates_on_nearline_with_extension_and_size}" "${nycmg_removal_candidates_on_omneon_with_extension_and_size}" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
 
 # find CUNYTV removal candidates
 comm -2 -3 "${CUNYTV_ON_OMNEON}" "${CUNYTV_FILLER_IDS}" > "${CUNYTV_ON_OMNEON_NOT_FILLER}"
