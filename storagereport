@@ -285,6 +285,34 @@ nycmg_removal_candidates_on_nearline_with_extension_and_size=$(_maketemp)
 for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "${nycmg_removal_candidates_on_omneon_with_extension_and_size}"
 for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${NYCMG_NEARLINE_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/NYCM_Media/media/::g' ; done > "${nycmg_removal_candidates_on_nearline_with_extension_and_size}"
 diff -y "${nycmg_removal_candidates_on_nearline_with_extension_and_size}" "${nycmg_removal_candidates_on_omneon_with_extension_and_size}" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
+if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
+    echo "om_filename,om_duration,om_modtime,om_encode_time,om_recport,om_recdate,om_recname,om_size,om_encdate,nl_name,nl_duration,nl_modtime,nl_encode_time,nl_recport,nl_recdate,nl_recname,nl_size,nl_encdate" > "/${REPORTDIR}/filenameconflicts.csv"
+    diff -y "${nycmg_removal_candidates_on_nearline_with_extension_and_size}" "${nycmg_removal_candidates_on_omneon_with_extension_and_size}" | grep "|" | while read conflictnameline ; do
+        omname=$(echo "${conflictnameline}" | awk '{print $1}')
+        ommediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${OMNEON_PATH}/${omname}")
+        omdata=$(head -c 10000 "${OMNEON_PATH}/${omname}" | strings | grep clip.dir | head -n 1)
+        omrecport=$(echo "${omdata}" | cut -d";" -f2)
+        omrecdate=$(echo "${omdata}" | cut -d";" -f9)
+        omrecname=$(echo "${omdata}" | cut -d";" -f6)
+        omencdate=$(ffprobe 2>/dev/null -i "${OMNEON_PATH}/${omname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
+        omsize=$(ls -l "${OMNEON_PATH}/${omname}" | awk '{print $5}')
+        if [[ "${orphanpath}" == "${omrecname}" ]] ;then
+            omrecname=""
+        fi
+        nlname=$(echo "${conflictnameline}" | awk '{print $4}')
+        nlmediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${NYCMG_NEARLINE_PATH}/${nlname}")
+        nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep clip.dir | head -n 1)
+        nlrecport=$(echo "${nldata}" | cut -d";" -f2)
+        nlrecdate=$(echo "${nldata}" | cut -d";" -f9)
+        nlrecname=$(echo "${nldata}" | cut -d";" -f6)
+        nlencdate=$(ffprobe 2>/dev/null -i "${NYCMG_NEARLINE_PATH}/${nlname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
+        nlsize=$(ls -l "${NYCMG_NEARLINE_PATH}/${nlname}" | awk '{print $5}')
+        if [[ "${orphanpath}" == "${nlrecname}" ]] ;then
+            nlrecname=""
+        fi
+        echo "${omname},${ommediainfo},${omrecport},${omrecdate},$(basename "${omrecname}"),${omsize},${omencdate},${nlname},${nlmediainfo},${nlrecport},${nlrecdate},$(basename "${nlrecname}"),${nlsize},${nlencdate}" >> "/$REPORTDIR/filenameconflicts.csv"
+    done
+fi
 
 # find CUNYTV removal candidates
 comm -2 -3 "${CUNYTV_ON_OMNEON}" "${CUNYTV_FILLER_IDS}" > "${CUNYTV_ON_OMNEON_NOT_FILLER}"
@@ -398,35 +426,6 @@ join -a1 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
 join -a1 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
 rsync -rtv --perms --chmod=777  "${ORPHANSDETAIL}" "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" "${CUNYTV_ON_OMNEON}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
-
-if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
-    echo "om_filename,om_duration,om_modtime,om_encode_time,om_recport,om_recdate,om_recname,om_size,om_encdate,nl_name,nl_duration,nl_modtime,nl_encode_time,nl_recport,nl_recdate,nl_recname,nl_size,nl_encdate" > "/${REPORTDIR}/filenameconflicts.csv"
-    diff -y "/${REPORTDIR}/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt" "/${REPORTDIR}/nycmg_removal_candidates_on_nearline_with_extension_and_size.txt" | grep "|" | while read conflictnameline ; do
-        omname=$(echo "${conflictnameline}" | awk '{print $1}')
-        ommediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${OMNEON_PATH}/${omname}")
-        omdata=$(head -c 10000 "${OMNEON_PATH}/${omname}" | strings | grep clip.dir | head -n 1)
-        omrecport=$(echo "${omdata}" | cut -d";" -f2)
-        omrecdate=$(echo "${omdata}" | cut -d";" -f9)
-        omrecname=$(echo "${omdata}" | cut -d";" -f6)
-        omencdate=$(ffprobe 2>/dev/null -i "${OMNEON_PATH}/${omname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
-        omsize=$(ls -l "${OMNEON_PATH}/${omname}" | awk '{print $5}')
-        if [[ "${orphanpath}" == "${omrecname}" ]] ;then
-            omrecname=""
-        fi
-        nlname=$(echo "${conflictnameline}" | awk '{print $4}')
-        nlmediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${NYCMG_NEARLINE_PATH}/${nlname}")
-        nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep clip.dir | head -n 1)
-        nlrecport=$(echo "${nldata}" | cut -d";" -f2)
-        nlrecdate=$(echo "${nldata}" | cut -d";" -f9)
-        nlrecname=$(echo "${nldata}" | cut -d";" -f6)
-        nlencdate=$(ffprobe 2>/dev/null -i "${NYCMG_NEARLINE_PATH}/${nlname}" -select_streams v:0 -show_entries stream_tags=creation_time -of csv | cut -d"," -f2-)
-        nlsize=$(ls -l "${NYCMG_NEARLINE_PATH}/${nlname}" | awk '{print $5}')
-        if [[ "${orphanpath}" == "${nlrecname}" ]] ;then
-            nlrecname=""
-        fi
-        echo "${omname},${ommediainfo},${omrecport},${omrecdate},$(basename "${omrecname}"),${omsize},${omencdate},${nlname},${nlmediainfo},${nlrecport},${nlrecdate},$(basename "${nlrecname}"),${nlsize},${nlencdate}" >> "/$REPORTDIR/filenameconflicts.csv"
-    done
-fi
 
 # make nycmg pull list
 comm -2 -3 "${NYCMG4AIR}"  "${ON_OMNEON_IDS}" > /tmp/nycmg_pulllist_temp.txt
