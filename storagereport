@@ -184,7 +184,7 @@ cat "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}" | tr "\r" "\n" | awk
 cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV_FILLER_IDS}"
 cat "${IDS_NYCMG}" "${IDS_CUNYTV}" | sort -u | grep -v "^$" > "${IDS_BOTH}"
 
-printf "Media ID counts\n"
+_report -d "Media ID counts"
 printf "%-32s %12s %20s \n" "Schedule" "Media Count" "Last Update"
 printf "%-32s %12d %20s \n" "CUNYTV (final)" "$(cat "${CUNYTV_TOAIRALL}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIRALL}" | awk '{print $6}')"
 printf "%-32s %12d %20s \n" "CUNYTV (future)" "$(cat "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIR}" | awk '{print $6}')"
