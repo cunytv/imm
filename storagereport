@@ -244,9 +244,11 @@ fi
 stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"* | grep -v "/$" | sed 's:*$::g' > "${NYCMG_NEARLINE_STAT}"
 cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "${NYCMG_NEARLINE}"
 comm -2 -3 "${NYCMG_NEARLINE}" "${NYCMG_FILLER_IDS}" > "${NYCMG_NEARLINE_NOT_FILLER}"
-find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_NEARLINE_STAT}"
-find "${CUNYTV_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' >> "${CUNYTV_NEARLINE_STAT}"
-cut -d " " -f 7- "${CUNYTV_NEARLINE_STAT}" | while read path ; do basename "$path" ; done | cut -d. -f1 | sort -u | grep -v "^$" > "${CUNYTV_NEARLINE}"
+if [ ! -f "${CUNYTV_NEARLINE_STAT}" ] ; then
+    find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_NEARLINE_STAT}"
+    find "${CUNYTV_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' >> "${CUNYTV_NEARLINE_STAT}"
+    cut -d " " -f 7- "${CUNYTV_NEARLINE_STAT}" | while read path ; do basename "$path" ; done | cut -d. -f1 | sort -u | grep -v "^$" > "${CUNYTV_NEARLINE}"
+fi
 
 echo
 _report -d "Nearline Storage stats"
