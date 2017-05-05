@@ -288,18 +288,18 @@ comm -2 -3 "${CUNYTV4AIR}" "${CUNYTV_ON_OMNEON}" > "${CUNYTV_TO_RESTORE}"
 
 echo
 if [[ -s "${CONFLICTS}" ]] ; then
-_report -w "Please note these mediaid conflicts: $(cat "${CONFLICTS}" | xargs)"
-echo
+    _report -w "Please note these mediaid conflicts: $(cat "${CONFLICTS}" | xargs)"
+    echo
 fi
 if [[ -s "${BAD_FILENAMES}" ]] ; then
-_report -w "Please note these bad filenames:"
-cat "${BAD_FILENAMES}"
-echo
+    _report -w "Please note these bad filenames:"
+    cat "${BAD_FILENAMES}"
+    echo
 fi
 if [[ $(cat "${ORPHANS}") ]] ; then
-_report -d "Please note there are $(cat "${ORPHANS}" | wc -l) orphans, to see them run:"
-_report -w "  cat ${ORPHANS}"
-echo
+    _report -d "Please note there are $(cat "${ORPHANS}" | wc -l) orphans, to see them run:"
+    _report -w "  cat ${ORPHANS}"
+    echo
 fi
 if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC) ]] ; then
     echo
