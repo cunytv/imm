@@ -301,7 +301,7 @@ if [[ -s "${BAD_FILENAMES}" ]] ; then
     echo
 fi
 if [[ $(cat "${ORPHANS}") ]] ; then
-    _report -d "Please note there are $(cat "${ORPHANS}" | wc -l) orphans, to see them run:"
+    _report -d "Please note there are $(cat "${ORPHANS}" | wc -l | sed 's/ //g') orphans, to see them run:"
     _report -w "  cat ${ORPHANS}"
     echo
 fi
