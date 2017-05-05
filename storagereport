@@ -164,15 +164,22 @@ _getfullpath(){
 # set up reporting directories
 _mkdir2 "${REPORTDIR}" "${INTERNALDIR}" "${SNAPSHOTDIR}" "${REPORTDIR}/protrack" "${REPORTDIR}/pebblebeach" "${REPORTDIR}/omneon" "${REPORTDIR}/snapshots" "${REPORTDIRNYC}" "${NYCMG_ABOUT_TO_RUN_DIR}"
 
+# report on station identifiers
+cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV4AIR}"
+xml sel -t -v //mediaid "${abouttoruns[@]}" | grep -v "^$" | sort -u > "${NYCMG4AIR}"
+cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "${IDS_NYCMG}"
+cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u | grep -v "^$" > "${NYCMG_FILLER_IDS}"
+cat "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}" | tr "\r" "\n" | awk '{print $1}' | grep -v "^$" | sort -u > "${IDS_CUNYTV}"
+cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV_FILLER_IDS}"
+cat "${IDS_NYCMG}" "${IDS_CUNYTV}" | sort -u | grep -v "^$" > "${IDS_BOTH}"
+
 ### REPORT ON MEDIAIDS IN UPCOMING AIR
 # get CUNYTV mediaids that are needed for air
-cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV4AIR}"
 _report "STORAGE REPORT - $(_get_iso8601)"
 echo
 _report -d "Omneon status information:"
-df -Ph "${OMNEON_PATH}"
-_report -d "The omneon is at $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $5}') capacity."
-_report -d "The omneon has $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $4}') available."
+_report -d "The omneon is at ** $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $5}') ** capacity."
+_report -d "The omneon has ** $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $4}') ** available."
 echo
 _report -d "Storage reports have been written to: ${REPORTDIR}"
 echo
@@ -190,25 +197,17 @@ for abouttorun in "${abouttoruns[@]}" ; do
         _report -w "WARNING ${abouttorun} is expected but is not found."
     fi
 done
-xml sel -t -v //mediaid "${abouttoruns[@]}" | grep -v "^$" | sort -u > "${NYCMG4AIR}"
 printf "%-32s %12d %20s \n" "NYCMG (all)" "$(cat "${NYCMG4AIR}" | wc -l )" ""
-
 ### REPORT ON PROTRACK REGISTERED MEDIAIDS
 # list all NYCMG ProTrack IDs (Programs and Filler)
 # 'T-' and '/1' are temporary prefixes and suffixes of NYCMG mediaids and are removed when filematching
 echo
 _report -d "Total Known IDs"
-cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "${IDS_NYCMG}"
 printf "%-32s %12d %20s \n"  "NYCMG" "$(cat "${IDS_NYCMG}" | wc -l)" "$(stat -F -l -t '%FT%T' "${NYCMG_MEDIAID_CSV}" | awk '{print $6}')"
-cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u | grep -v "^$" > "${NYCMG_FILLER_IDS}"
 printf "%-32s %12d %20s \n" "NYCMG (interstitial)" "$(cat "${NYCMG_FILLER_IDS}" | wc -l)" ""
 # list all CUNYTV ProTrack IDs (Programs, Segments, and Filler)
-cat "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}" | tr "\r" "\n" | awk '{print $1}' | grep -v "^$" | sort -u > "${IDS_CUNYTV}"
 printf "%-32s %12d %20s \n" "CUNYTV" "$(cat "${IDS_CUNYTV}" | wc -l)" ""
-cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV_FILLER_IDS}"
 printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "${CUNYTV_FILLER_IDS}" | wc -l)" ""
-# list all ProTrack IDs, both systems
-cat "${IDS_NYCMG}" "${IDS_CUNYTV}" | sort -u | grep -v "^$" > "${IDS_BOTH}"
 
 ### REPORT ON OMNEON FILES
 # list all Omneon files
