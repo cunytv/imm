@@ -260,7 +260,9 @@ printf "%-32s %12d %20s \n" "File Count (cunytv)" "$(cat "${CUNYTV_NEARLINE}" | 
 # LTO reports
 cat ~/Documents/lto_indexes/C0*_namesize.txt | sort > "${NYCMG_ON_LTO_SIZE_EXT}"
 cat ~/Documents/lto_indexes/C0*_index.txt | sort > "${NYCMG_ON_LTO_PATH}"
-cat ~/Documents/lto_indexes/A0*_namesize.txt ~/Documents/lto_indexes/E0*_namesize.txt | sort > "${CUNYTV_ON_LTO_SIZE_EXT}"
+if [[ ! -f "${CUNYTV_ON_LTO_SIZE_EXT}" ]] ; then
+    grep --no-filename ".mov \|.mxf " ~/Documents/lto_indexes/A0*_namesize.txt ~/Documents/lto_indexes/E0*_namesize.txt | sort -u > "${CUNYTV_ON_LTO_SIZE_EXT}"
+fi
 
 # find NYCMG removal candidates
 comm -2 -3 "${NYCMG_ON_OMNEON}" "${NYCMG_FILLER_IDS}" > "${NYCMG_ON_OMNEON_NOT_FILLER}"
