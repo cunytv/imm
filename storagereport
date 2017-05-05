@@ -31,13 +31,12 @@ _report(){
     local COLOR=""
     local STARTMESSAGE=""
     local ECHOOPT=""
-    local LOG_MESSAGE=""
     OPTIND=1
     while getopts ":qdwstn" OPT; do
         case "${OPT}" in
             q) COLOR="${BLUE}" ;;                         # question mode, use color blue
             d) COLOR="${GREEN}" ;;                        # declaration mode, use color green
-            w) COLOR="${RED}" ; LOG_MESSAGE="Y";;                 # warning mode, use color red
+            w) COLOR="${RED}" ;;                          # warning mode, use color red
             s) STARTMESSAGE+=([$(basename "${0}")] ) ;;     # prepend scriptname to the message
             t) STARTMESSAGE+=($(_get_iso8601) '- ' ) ;;     # prepend timestamp to the message
             n) ECHOOPT="-n" ;;                          # to avoid line breaks after echo
@@ -126,7 +125,6 @@ CUNYTV4AIR="${INTERNALDIR}/cunytv_ids_in_upcoming_air.txt"
 NYCMG_FILLER_IDS="${INTERNALDIR}/nycmg_ids_of_filler.txt"
 CUNYTV_FILLER_IDS="${INTERNALDIR}/cunytv_ids_of_filler.txt"
 ORPHANS="${REPORTDIR}/orphans.txt"
-ORPHANPATHS="${REPORTDIR}/orphans_fullpath.txt"
 ORPHANSDETAIL="${REPORTDIR}/orphans_details.csv"
 ORPHANSDETAIL_CUNYONLY="${REPORTDIR}/orphans_details_cunyonly.csv"
 ORPHANSDETAIL_NYCMGONLY="${REPORTDIR}/orphans_details_maybe_nycmg.csv"
