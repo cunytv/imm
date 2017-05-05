@@ -161,6 +161,17 @@ _getfullpath(){
   grep "clip.dir/${filenameroot}.m" "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1
 }
 
+### REPORT ON MEDIAIDS IN UPCOMING AIR
+# get CUNYTV mediaids that are needed for air
+_report "STORAGE REPORT - $(_get_iso8601)"
+echo
+_report -d "Omneon status information:"
+_report -d "The omneon is at ** $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $5}') ** capacity."
+_report -d "The omneon has ** $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $4}') ** available."
+echo
+_report -d "Storage reports have been written to: ${REPORTDIR}"
+echo
+
 # set up reporting directories
 _mkdir2 "${REPORTDIR}" "${INTERNALDIR}" "${SNAPSHOTDIR}" "${REPORTDIR}/protrack" "${REPORTDIR}/pebblebeach" "${REPORTDIR}/omneon" "${REPORTDIR}/snapshots" "${REPORTDIRNYC}" "${NYCMG_ABOUT_TO_RUN_DIR}"
 
@@ -173,16 +184,6 @@ cat "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}" | tr "\r" "\n" | awk
 cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV_FILLER_IDS}"
 cat "${IDS_NYCMG}" "${IDS_CUNYTV}" | sort -u | grep -v "^$" > "${IDS_BOTH}"
 
-### REPORT ON MEDIAIDS IN UPCOMING AIR
-# get CUNYTV mediaids that are needed for air
-_report "STORAGE REPORT - $(_get_iso8601)"
-echo
-_report -d "Omneon status information:"
-_report -d "The omneon is at ** $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $5}') ** capacity."
-_report -d "The omneon has ** $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $4}') ** available."
-echo
-_report -d "Storage reports have been written to: ${REPORTDIR}"
-echo
 printf "Media ID counts\n"
 printf "%-32s %12s %20s \n" "Schedule" "Media Count" "Last Update"
 printf "%-32s %12d %20s \n" "CUNYTV (final)" "$(cat "${CUNYTV_TOAIRALL}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIRALL}" | awk '{print $6}')"
@@ -211,45 +212,47 @@ printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "${CUNYTV_FILLER_IDS}
 
 ### REPORT ON OMNEON FILES
 # list all Omneon files
-echo
-_report -d "Omneon Storage stats"
-stat -F -l -t '%FT%T' "${OMNEON_PATH}/"* | grep -v "/$" | sed 's/*//g' > "${ON_OMNEON_FILES_STAT}"
+
+stat -F -l -t '%FT%T' "${OMNEON_PATH}/"* | grep -v "/$" | sed 's:*$::g' > "${ON_OMNEON_FILES_STAT}"
 cp "${ON_OMNEON_FILES_STAT}" "${ON_OMNEON_FILES_STAT_SNAPSHOT}"
 cut -d " " -f 7- "${ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${ON_OMNEON_IDS}"
-printf "%-32s %12d %20s \n" "File Count (all omneon)" "$(cat "${ON_OMNEON_IDS}" | wc -l)" ""
 awk -v date="${AGED_DATE}" '$6 <= date' "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${ON_OMNEON_IDS_OLD}"
 comm -2 -3 "${ON_OMNEON_IDS_OLD}" <(sort "${EVERGREEN_LIST}") > "$ON_OMNEON_IDS_NO_EVERGREEN"
-printf "%-32s %12d %20s \n" "File Count (+${keepnewforXdays} days old)" "$(cat "${ON_OMNEON_IDS_OLD}" | wc -l)" ""
-# associate omneon files to custodians
 comm -1 -2 "${ON_OMNEON_IDS_NO_EVERGREEN}" "${IDS_NYCMG}" > "${NYCMG_ON_OMNEON}"
-printf "%-32s %12d %20s \n" "File Count (NYCMG)" "$(cat "${NYCMG_ON_OMNEON}" | wc -l)" ""
 comm -1 -2 "${ON_OMNEON_IDS_NO_EVERGREEN}" "${IDS_CUNYTV}" > "${CUNYTV_ON_OMNEON}"
-printf "%-32s %12d %20s \n" "File Count (CUNYTV)" "$(cat "${CUNYTV_ON_OMNEON}" | wc -l)" ""
 comm -2 -3 "${ON_OMNEON_IDS}" "${IDS_BOTH}" > "${ORPHANS}"
-printf "%-32s %12d %20s \n" "File Count (evergreen)" "$(cat "${EVERGREEN_LIST}" | wc -l)" ""
-printf "%-32s %12d %20s \n" "File Count (orphans)" "$(cat "${ORPHANS}" | wc -l)" ""
-
 cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.mxf\)$" | cut -d " " -f 7- | cut -d/ -f 5- > "${BAD_FILENAMES}"
+comm -1 -2 "${IDS_NYCMG}" "${CUNYTV4AIR}" | sort -u > "${CONFLICTS}"
+
+echo
+_report -d "Omneon Storage stats"
+printf "%-32s %12d %20s \n" "File Count (all omneon)" "$(cat "${ON_OMNEON_IDS}" | wc -l)" ""
+printf "%-32s %12d %20s \n" "File Count (+${keepnewforXdays} days old)" "$(cat "${ON_OMNEON_IDS_OLD}" | wc -l)" ""
+printf "%-32s %12d %20s \n" "File Count (evergreen)" "$(cat "${EVERGREEN_LIST}" | wc -l)" ""
+# associate omneon files to custodians
+printf "%-32s %12d %20s \n" "File Count (NYCMG)" "$(cat "${NYCMG_ON_OMNEON}" | wc -l)" ""
+printf "%-32s %12d %20s \n" "File Count (CUNYTV)" "$(cat "${CUNYTV_ON_OMNEON}" | wc -l)" ""
+printf "%-32s %12d %20s \n" "File Count (orphans)" "$(cat "${ORPHANS}" | wc -l)" ""
 if [ -s "${BAD_FILENAMES}" ] ; then
     printf "%-32s %12d %20s \n" "File Count (bad filename)" "$(cat "${BAD_FILENAMES}" | wc -l)" ""
 fi
-comm -1 -2 "${IDS_NYCMG}" "${CUNYTV4AIR}" | sort -u > "${CONFLICTS}"
 if [ -s "${CONFLICTS}" ] ; then
     printf "%-32s %12d %20s \n" "File Count (conflicts! between NYCMG and future CUNYTV airing)" "$(cat "${CONFLICTS}" | wc -l)" ""
 fi
 
 ### REPORT ON NEARLINE FILES
-echo
-_report -d "Nearline Storage stats"
-# find what is on nearline - nycmg
 stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"* | grep -v "/$" | sed 's:*$::g' > "${NYCMG_NEARLINE_STAT}"
 cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "${NYCMG_NEARLINE}"
 comm -2 -3 "${NYCMG_NEARLINE}" "${NYCMG_FILLER_IDS}" > "${NYCMG_NEARLINE_NOT_FILLER}"
-printf "%-32s %12d %20s \n" "File Count (nycmg)" "$(cat "${NYCMG_NEARLINE}" | wc -l)" ""
-# find what is on nearline - cunytv
 find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_NEARLINE_STAT}"
 find "${CUNYTV_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' >> "${CUNYTV_NEARLINE_STAT}"
 cut -d " " -f 7- "${CUNYTV_NEARLINE_STAT}" | while read path ; do basename "$path" ; done | cut -d. -f1 | sort -u | grep -v "^$" > "${CUNYTV_NEARLINE}"
+
+echo
+_report -d "Nearline Storage stats"
+# find what is on nearline - nycmg
+printf "%-32s %12d %20s \n" "File Count (nycmg)" "$(cat "${NYCMG_NEARLINE}" | wc -l)" ""
+# find what is on nearline - cunytv
 printf "%-32s %12d %20s \n" "File Count (cunytv)" "$(cat "${CUNYTV_NEARLINE}" | wc -l)" ""
 
 # LTO reports
