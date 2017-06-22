@@ -68,7 +68,7 @@ do
         if [ -d "${1}" ] ; then
             FILELOCATION="${ID}"
         else
-            FILELOCATION=$(grep "clip.dir/${ROOTNAME}.m" "$STATLIST" | head -n 1 | cut -d " " -f 7)
+            FILELOCATION=$(grep "cunytv.dir/${ROOTNAME}.m" "$STATLIST" | head -n 1 | cut -d " " -f 7)
         fi
         _report -dt "Encoding ${FILELOCATION}"
         if [ -s "${FILELOCATION}" ] ; then
