@@ -7,6 +7,10 @@ OMNEON_ROOT="/Volumes/fs0/"
 OMNEON_PATH_CUNY="${OMNEON_ROOT}/${OMNEON_DIR_CUNY}"
 OMNEON_PATH_NYCM="${OMNEON_ROOT}/${OMNEON_DIR_NYCM}"
 
+## local variables
+# declare an age in days under which files will be excluded from being removal candidates
+keepnewforXdays=7
+
 # internal functions
 _get_iso8601(){
     date +%FT%T
@@ -77,10 +81,6 @@ _maketemp(){
         exit 1
     fi
 }
-
-## local variables
-# declare an age in days under which files will be excluded from being removal candidates
-keepnewforXdays=7
 
 ## connect to Autosaved folder if not already
 if [ $(mount | grep -c /Volumes/Autosaved) = 0 ] ; then
