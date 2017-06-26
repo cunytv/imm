@@ -137,10 +137,10 @@ NYCMGPROTRACK4AIR="${INTERNALDIR}/nycmg_ids_in_upcoming_air_protrack.txt"
 CUNYTV4AIR="${INTERNALDIR}/cunytv_ids_in_upcoming_air.txt"
 NYCMG_FILLER_IDS="${INTERNALDIR}/nycmg_ids_of_filler.txt"
 CUNYTV_FILLER_IDS="${INTERNALDIR}/cunytv_ids_of_filler.txt"
-ORPHANS="${REPORTDIR}/orphans.txt"
-ORPHANSDETAIL="${REPORTDIR}/orphans_details.csv"
-ORPHANSDETAIL_CUNYONLY="${REPORTDIR}/orphans_details_cunyonly.csv"
-ORPHANSDETAIL_NYCMGONLY="${REPORTDIR}/orphans_details_maybe_nycmg.csv"
+#ORPHANS="${REPORTDIR}/orphans.txt"
+#ORPHANSDETAIL="${REPORTDIR}/orphans_details.csv"
+#ORPHANSDETAIL_CUNYONLY="${REPORTDIR}/orphans_details_cunyonly.csv"
+#ORPHANSDETAIL_NYCMGONLY="${REPORTDIR}/orphans_details_maybe_nycmg.csv"
 CONFLICTS="${REPORTDIR}/conflicts.txt"
 NYCMG_ON_OMNEON="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_nycmg_only.txt"
 CUNYTV_ON_OMNEON="${REPORTDIR}/omneon/what_is_on_the_omneon_ids_only_cunytv_only.txt"
@@ -195,7 +195,6 @@ cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|
 cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u | grep -v "^$" > "${NYCMG_FILLER_IDS}"
 cat "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}" | tr "\r" "\n" | awk '{print $1}' | grep -v "^$" | sort -u > "${IDS_CUNYTV}"
 cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV_FILLER_IDS}"
-cat "${IDS_NYCMG}" "${IDS_CUNYTV}" | sort -u | grep -v "^$" > "${IDS_BOTH}"
 
 _report -d "Media ID counts"
 printf "%-32s %12s %20s \n" "Schedule" "Media Count" "Last Update"
@@ -233,7 +232,7 @@ awk -v date="${AGED_DATE}" '$6 <= date' "${ON_OMNEON_FILES_STAT}" | cut -d " " -
 comm -2 -3 "${ON_OMNEON_IDS_OLD}" <(sort "${EVERGREEN_LIST}") > "$ON_OMNEON_IDS_NO_EVERGREEN"
 comm -1 -2 "${ON_OMNEON_IDS_NO_EVERGREEN}" "${IDS_NYCMG}" > "${NYCMG_ON_OMNEON}"
 comm -1 -2 "${ON_OMNEON_IDS_NO_EVERGREEN}" "${IDS_CUNYTV}" > "${CUNYTV_ON_OMNEON}"
-comm -2 -3 "${ON_OMNEON_IDS}" "${IDS_BOTH}" > "${ORPHANS}"
+# comm -2 -3 "${ON_OMNEON_IDS}" "${IDS_BOTH}" > "${ORPHANS}"
 cat "${ON_OMNEON_FILES_STAT}" | grep -v ".dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.mxf\)$" | cut -d " " -f 7- | cut -d/ -f 5- > "${BAD_FILENAMES}"
 comm -1 -2 "${IDS_NYCMG}" "${CUNYTV4AIR}" | sort -u > "${CONFLICTS}"
 
@@ -245,7 +244,7 @@ printf "%-32s %12d %20s \n" "File Count (evergreen)" "$(cat "${EVERGREEN_LIST}" 
 # associate omneon files to custodians
 printf "%-32s %12d %20s \n" "File Count (NYCMG)" "$(cat "${NYCMG_ON_OMNEON}" | wc -l)" ""
 printf "%-32s %12d %20s \n" "File Count (CUNYTV)" "$(cat "${CUNYTV_ON_OMNEON}" | wc -l)" ""
-printf "%-32s %12d %20s \n" "File Count (orphans)" "$(cat "${ORPHANS}" | wc -l)" ""
+#printf "%-32s %12d %20s \n" "File Count (orphans)" "$(cat "${ORPHANS}" | wc -l)" ""
 if [ -s "${BAD_FILENAMES}" ] ; then
     printf "%-32s %12d %20s \n" "File Count (bad filename)" "$(cat "${BAD_FILENAMES}" | wc -l)" ""
 fi
@@ -346,11 +345,11 @@ if [[ -s "${BAD_FILENAMES}" ]] ; then
     cat "${BAD_FILENAMES}"
     echo
 fi
-if [[ $(cat "${ORPHANS}") ]] ; then
-    _report -d "Please note there are $(cat "${ORPHANS}" | wc -l | sed 's/ //g') orphans, to see them run:"
-    _report -w "  cat ${ORPHANS}"
-    echo
-fi
+#if [[ $(cat "${ORPHANS}") ]] ; then
+#    _report -d "Please note there are $(cat "${ORPHANS}" | wc -l | sed 's/ //g') orphans, to see them run:"
+#    _report -w "  cat ${ORPHANS}"
+#    echo
+#fi
 if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC) ]] ; then
     echo
     _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH}" >> /dev/null && du -sch $(cat "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
@@ -376,22 +375,22 @@ if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_b
     echo
 fi
 
-echo "filename,recport,recdate,source" > "${ORPHANSDETAIL}"
-while read orphan ; do
-  orphanpath=$(_getfullpath "${orphan}")
-  if [ -f "${orphanpath}" ] ; then
-    omdata=$(head -c 10000 "${orphanpath}" | strings | grep "${OMNEON_CUNY}" | head -n 1)
-    recport=$(echo "${omdata}" | cut -d";" -f2)
-    recdate=$(echo "${omdata}" | cut -d";" -f9)
-    recname=$(echo "${omdata}" | cut -d";" -f6)
-    if [[ "${orphanpath}" == "${recname}" ]] ;then
-        recname=""
-    fi
-    echo "$(basename "${orphanpath}"),${recport},${recdate},$(basename "${recname}")" >> "${ORPHANSDETAIL}"
-  fi
-done < "${ORPHANS}"
-cat "${ORPHANSDETAIL}" | grep -v ",MR-[11-20]," > "${ORPHANSDETAIL_CUNYONLY}"
-cat "${ORPHANSDETAIL}" | grep -v ",MR-[1-9],\|,MR-[10]," > "${ORPHANSDETAIL_NYCMGONLY}"
+#echo "filename,recport,recdate,source" > "${ORPHANSDETAIL}"
+#while read orphan ; do
+#  orphanpath=$(_getfullpath "${orphan}")
+#  if [ -f "${orphanpath}" ] ; then
+#    omdata=$(head -c 10000 "${orphanpath}" | strings | grep "${OMNEON_CUNY}" | head -n 1)
+#    recport=$(echo "${omdata}" | cut -d";" -f2)
+#    recdate=$(echo "${omdata}" | cut -d";" -f9)
+#    recname=$(echo "${omdata}" | cut -d";" -f6)
+#    if [[ "${orphanpath}" == "${recname}" ]] ;then
+#        recname=""
+#    fi
+#    echo "$(basename "${orphanpath}"),${recport},${recdate},$(basename "${recname}")" >> "${ORPHANSDETAIL}"
+#  fi
+#done < "${ORPHANS}"
+#cat "${ORPHANSDETAIL}" | grep -v ",MR-[11-20]," > "${ORPHANSDETAIL_CUNYONLY}"
+#cat "${ORPHANSDETAIL}" | grep -v ",MR-[1-9],\|,MR-[10]," > "${ORPHANSDETAIL_NYCMGONLY}"
 cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | grep -v "^$" | awk -F "," '{print $1 "," $(NF-2) }' | sed 's/T-//' | sed 's|/1||' | sed 's/.........$//' | sort -t, -k2 -r | sort -t, -u -k1,1 | sort -t, -k2 | awk -v d=$(date "+%F") -F, '$2 < d' > "${NYCMG_EXPIRED_IDS}"
 for i in $(cat "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" | sort -u) ; do grep "^${i}," "${NYCMG_EXPIRED_IDS}" ; done > "${NYCMG_EXPIRED_IDS_ONLINE}"
 for i in $(cut -d, -f1 "${NYCMG_EXPIRED_IDS_ONLINE}" | sort) ; do
@@ -419,7 +418,7 @@ join -a1 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
 join -a1 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
 join -a1 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
-rsync -rtv --perms --chmod=777  "${ORPHANSDETAIL}" "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" "${CUNYTV_ON_OMNEON}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
+rsync -rtv --perms --chmod=777 "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" "${CUNYTV_ON_OMNEON}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
 
 # make nycmg pull list
 comm -2 -3 "${NYCMG4AIR}"  "${ON_OMNEON_IDS}" > /tmp/nycmg_pulllist_temp.txt
