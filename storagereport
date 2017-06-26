@@ -3,7 +3,7 @@
 # omneon path
 OMNEON_CUNY="cunytv.dir"
 OMNEON_NYCM="nycm.dir"
-OMNEON_ROOT="/Volumes/fs0/"
+OMNEON_ROOT="/Volumes/fs0"
 OMNEON_PATH_CUNY="${OMNEON_ROOT}/${OMNEON_DIR_CUNY}"
 OMNEON_PATH_NYCM="${OMNEON_ROOT}/${OMNEON_DIR_NYCM}"
 
