@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# omneon path
+OMNEON_CUNY="cunytv.dir"
+OMNEON_NYCM="nycm.dir"
+OMNEON_ROOT="/Volumes/fs0/"
+OMNEON_PATH_CUNY="${OMNEON_ROOT}/${OMNEON_DIR_CUNY}"
+OMNEON_PATH_NYCM="${OMNEON_ROOT}/${OMNEON_DIR_NYCM}"
+
 # internal functions
 _get_iso8601(){
     date +%FT%T
@@ -105,13 +112,11 @@ NYCMG_NEARLINE_PATH="${NYCMG_ROOT}/media"
 # nearline folder of CUNYTV files
 CUNYTV_DIGACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
 CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/nearline"
-# omneon path
-OMNEON_PATH="/Volumes/fs0/clip.dir"
 # array of about-to-runs
 abouttoruns=(/Volumes/Autosaved/02-LIFE.xml /Volumes/Autosaved/03-GOV.xml /Volumes/Autosaved/04-WORLD.xml)
 
 ## connect to nearline volumes
-_check4mount "${CUNYTV_DIGACQ_PATH}" "${CUNYTV_NEARLINE_PATH}" "${NYCMG_ROOT}" "${OMNEON_PATH}"
+_check4mount "${CUNYTV_DIGACQ_PATH}" "${CUNYTV_NEARLINE_PATH}" "${NYCMG_ROOT}" "${OMNEON_ROOT}"
 
 #outputs
 REPORTDIR="${HOME}/Desktop/REPORTS/${TODAY}"
@@ -166,7 +171,7 @@ NYCMG_STORAGE_SUMMARY="${REPORTDIR}/nycmg_storage_summary.txt"
 
 _getfullpath(){
   filenameroot="${1}"
-  grep "clip.dir/${filenameroot}.m" "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1
+  grep ".dir/${filenameroot}.m" "${ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1
 }
 
 ### REPORT ON MEDIAIDS IN UPCOMING AIR
@@ -174,8 +179,8 @@ _getfullpath(){
 _report "STORAGE REPORT - $(_get_iso8601)"
 echo
 _report -d "Omneon status information:"
-_report -d "The omneon is at ** $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $5}') ** capacity."
-_report -d "The omneon has ** $(df -h /Volumes/fs0 | grep /Volumes/fs0 | awk '{print $4}') ** available."
+_report -d "The omneon is at ** $(df -h "${OMNEON_ROOT}" | grep "${OMNEON_ROOT}" | awk '{print $5}') ** capacity."
+_report -d "The omneon has ** $(df -h "${OMNEON_ROOT}" | grep "${OMNEON_ROOT}" | awk '{print $4}') ** available."
 echo
 _report -d "Storage reports have been written to: ${REPORTDIR}"
 echo
@@ -229,7 +234,7 @@ comm -2 -3 "${ON_OMNEON_IDS_OLD}" <(sort "${EVERGREEN_LIST}") > "$ON_OMNEON_IDS_
 comm -1 -2 "${ON_OMNEON_IDS_NO_EVERGREEN}" "${IDS_NYCMG}" > "${NYCMG_ON_OMNEON}"
 comm -1 -2 "${ON_OMNEON_IDS_NO_EVERGREEN}" "${IDS_CUNYTV}" > "${CUNYTV_ON_OMNEON}"
 comm -2 -3 "${ON_OMNEON_IDS}" "${IDS_BOTH}" > "${ORPHANS}"
-cat "${ON_OMNEON_FILES_STAT}" | grep -v "/clip.dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.mxf\)$" | cut -d " " -f 7- | cut -d/ -f 5- > "${BAD_FILENAMES}"
+cat "${ON_OMNEON_FILES_STAT}" | grep -v ".dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.mxf\)$" | cut -d " " -f 7- | cut -d/ -f 5- > "${BAD_FILENAMES}"
 comm -1 -2 "${IDS_NYCMG}" "${CUNYTV4AIR}" | sort -u > "${CONFLICTS}"
 
 echo
@@ -281,7 +286,7 @@ comm -1 -3 "${NYCMG_NEARLINE}" "${NYCMG_REMOVAL_CANDIDATES}" > "${NYCMG_REMOVAL_
 # list files to remove from the omneon for nycmg and report on filename conflicts
 nycmg_removal_candidates_on_omneon_with_extension_and_size=$(_maketemp)
 nycmg_removal_candidates_on_nearline_with_extension_and_size=$(_maketemp)
-for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g' ; done  > "${nycmg_removal_candidates_on_omneon_with_extension_and_size}"
+for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed "s:${OMNEON_PATH_CUNY}/::g" ; done  > "${nycmg_removal_candidates_on_omneon_with_extension_and_size}"
 for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${NYCMG_NEARLINE_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/NYCM_Media/media/::g' ; done > "${nycmg_removal_candidates_on_nearline_with_extension_and_size}"
 diff -y "${nycmg_removal_candidates_on_nearline_with_extension_and_size}" "${nycmg_removal_candidates_on_omneon_with_extension_and_size}" | grep -v "|" | grep -v "<" | grep -v ">" | awk '{print $1}' | cut -d " " -f2 > "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt"
 if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
@@ -289,7 +294,7 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
     diff -y "${nycmg_removal_candidates_on_nearline_with_extension_and_size}" "${nycmg_removal_candidates_on_omneon_with_extension_and_size}" | grep "|" | while read conflictnameline ; do
         omname=$(echo "${conflictnameline}" | awk '{print $1}')
         ommediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${OMNEON_PATH}/${omname}")
-        omdata=$(head -c 10000 "${OMNEON_PATH}/${omname}" | strings | grep clip.dir | head -n 1)
+        omdata=$(head -c 10000 "${OMNEON_PATH}/${omname}" | strings | grep "${OMNEON_CUNY}" | head -n 1)
         omrecport=$(echo "${omdata}" | cut -d";" -f2)
         omrecdate=$(echo "${omdata}" | cut -d";" -f9)
         omrecname=$(echo "${omdata}" | cut -d";" -f6)
@@ -300,7 +305,7 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
         fi
         nlname=$(echo "${conflictnameline}" | awk '{print $4}')
         nlmediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${NYCMG_NEARLINE_PATH}/${nlname}")
-        nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep clip.dir | head -n 1)
+        nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep "${OMNEON_CUNY}" | head -n 1)
         nlrecport=$(echo "${nldata}" | cut -d";" -f2)
         nlrecdate=$(echo "${nldata}" | cut -d";" -f9)
         nlrecname=$(echo "${nldata}" | cut -d";" -f6)
@@ -320,7 +325,7 @@ comm -1 -2 "${CUNYTV_NEARLINE}" "${CUNYTV_REMOVAL_CANDIDATES}" > "${CUNYTV_REMOV
 comm -1 -3 "${CUNYTV_NEARLINE}" "${CUNYTV_REMOVAL_CANDIDATES}" > "${CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE}"
 
 for i in $(cat "${CUNYTV_REMOVAL_CANDIDATES}") ; do
-    grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed 's:/Volumes/fs0/clip.dir/::g'
+    grep "/${i}\." "${ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed "s:${OMNEON_PATH_CUNY}/::g"
 done  > "/${REPORTDIR}/cunytv_removal_candidates_on_omneon_with_extension_and_size.txt"
 for i in $(cat "${CUNYTV_REMOVAL_CANDIDATES_NEARLINE}") ; do
     grep "/${i}\." "${CUNYTV_NEARLINE_STAT}" | awk '{n=split ($7,a,/\//); print a[n] " " $5}'
@@ -375,7 +380,7 @@ echo "filename,recport,recdate,source" > "${ORPHANSDETAIL}"
 while read orphan ; do
   orphanpath=$(_getfullpath "${orphan}")
   if [ -f "${orphanpath}" ] ; then
-    omdata=$(head -c 10000 "${orphanpath}" | strings | grep clip.dir | head -n 1)
+    omdata=$(head -c 10000 "${orphanpath}" | strings | grep "${OMNEON_CUNY}" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
     recname=$(echo "${omdata}" | cut -d";" -f6)
