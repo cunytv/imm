@@ -135,8 +135,8 @@ ON_OMNEON_IDS_NO_EVERGREEN="${INTERNALDIR}/what_is_on_the_omneon_and_old_ids_onl
 NYCMG4AIR="${INTERNALDIR}/nycmg_ids_in_upcoming_air.txt"
 NYCMGPROTRACK4AIR="${INTERNALDIR}/nycmg_ids_in_upcoming_air_protrack.txt"
 CUNYTV4AIR="${INTERNALDIR}/cunytv_ids_in_upcoming_air.txt"
-NYCMG_FILLER_IDS="${INTERNALDIR}/nycmg_ids_of_filler.txt"
-CUNYTV_FILLER_IDS="${INTERNALDIR}/cunytv_ids_of_filler.txt"
+NYCM_FILLER_IDS="${INTERNALDIR}/nycmg_ids_of_filler.txt"
+CUNY_FILLER_IDS="${INTERNALDIR}/cunytv_ids_of_filler.txt"
 #ORPHANS="${REPORTDIR}/orphans.txt"
 #ORPHANSDETAIL="${REPORTDIR}/orphans_details.csv"
 #ORPHANSDETAIL_CUNYONLY="${REPORTDIR}/orphans_details_cunyonly.csv"
@@ -192,9 +192,9 @@ _mkdir2 "${REPORTDIR}" "${INTERNALDIR}" "${SNAPSHOTDIR}" "${REPORTDIR}/protrack"
 cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV4AIR}"
 xml sel -t -v //mediaid "${abouttoruns[@]}" | grep -v "^$" | sort -u > "${NYCMG4AIR}"
 cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "${IDS_NYCMG}"
-cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u | grep -v "^$" > "${NYCMG_FILLER_IDS}"
+cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u | grep -v "^$" > "${NYCM_FILLER_IDS}"
 cat "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}" | tr "\r" "\n" | awk '{print $1}' | grep -v "^$" | sort -u > "${IDS_CUNYTV}"
-cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV_FILLER_IDS}"
+cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNY_FILLER_IDS}"
 
 _report -d "Media ID counts"
 printf "%-32s %12s %20s \n" "Schedule" "Media Count" "Last Update"
@@ -217,10 +217,10 @@ printf "%-32s %12d %20s \n" "NYCMG (all)" "$(cat "${NYCMG4AIR}" | wc -l )" ""
 echo
 _report -d "Total Known IDs"
 printf "%-32s %12d %20s \n"  "NYCMG" "$(cat "${IDS_NYCMG}" | wc -l)" "$(stat -F -l -t '%FT%T' "${NYCMG_MEDIAID_CSV}" | awk '{print $6}')"
-printf "%-32s %12d %20s \n" "NYCMG (interstitial)" "$(cat "${NYCMG_FILLER_IDS}" | wc -l)" ""
+printf "%-32s %12d %20s \n" "NYCMG (interstitial)" "$(cat "${NYCM_FILLER_IDS}" | wc -l)" ""
 # list all CUNYTV ProTrack IDs (Programs, Segments, and Filler)
 printf "%-32s %12d %20s \n" "CUNYTV" "$(cat "${IDS_CUNYTV}" | wc -l)" ""
-printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "${CUNYTV_FILLER_IDS}" | wc -l)" ""
+printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "${CUNY_FILLER_IDS}" | wc -l)" ""
 
 ### REPORT ON OMNEON FILES
 # list all Omneon files
@@ -255,7 +255,7 @@ fi
 ### REPORT ON NEARLINE FILES
 stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"* | grep -v "/$" | sed 's:*$::g' > "${NYCMG_NEARLINE_STAT}"
 cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "${NYCMG_NEARLINE}"
-comm -2 -3 "${NYCMG_NEARLINE}" "${NYCMG_FILLER_IDS}" > "${NYCMG_NEARLINE_NOT_FILLER}"
+comm -2 -3 "${NYCMG_NEARLINE}" "${NYCM_FILLER_IDS}" > "${NYCMG_NEARLINE_NOT_FILLER}"
 if [ ! -f "${CUNYTV_NEARLINE_STAT}" ] ; then
     find "${CUNYTV_DIGACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_NEARLINE_STAT}"
     find "${CUNYTV_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' >> "${CUNYTV_NEARLINE_STAT}"
@@ -277,7 +277,7 @@ if [[ ! -f "${CUNYTV_ON_LTO_SIZE_EXT}" ]] ; then
 fi
 
 # find NYCMG removal candidates
-comm -2 -3 "${NYCMG_ON_OMNEON}" "${NYCMG_FILLER_IDS}" > "${NYCMG_ON_OMNEON_NOT_FILLER}"
+comm -2 -3 "${NYCMG_ON_OMNEON}" "${NYCM_FILLER_IDS}" > "${NYCMG_ON_OMNEON_NOT_FILLER}"
 comm -2 -3 "${NYCMG_ON_OMNEON_NOT_FILLER}" "${NYCMG4AIR}" > "${NYCMG_REMOVAL_CANDIDATES}"
 comm -1 -2 "${NYCMG_NEARLINE}" "${NYCMG_REMOVAL_CANDIDATES}" > "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}"
 comm -1 -3 "${NYCMG_NEARLINE}" "${NYCMG_REMOVAL_CANDIDATES}" > "${NYCMG_REMOVAL_CANDIDATES_NOT_NEARLINE}"
@@ -318,7 +318,7 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
 fi
 
 # find CUNYTV removal candidates
-comm -2 -3 "${CUNYTV_ON_OMNEON}" "${CUNYTV_FILLER_IDS}" > "${CUNYTV_ON_OMNEON_NOT_FILLER}"
+comm -2 -3 "${CUNYTV_ON_OMNEON}" "${CUNY_FILLER_IDS}" > "${CUNYTV_ON_OMNEON_NOT_FILLER}"
 comm -2 -3 "${CUNYTV_ON_OMNEON_NOT_FILLER}" "${CUNYTV4AIR}" > "${CUNYTV_REMOVAL_CANDIDATES}"
 comm -1 -2 "${CUNYTV_NEARLINE}" "${CUNYTV_REMOVAL_CANDIDATES}" > "${CUNYTV_REMOVAL_CANDIDATES_NEARLINE}"
 comm -1 -3 "${CUNYTV_NEARLINE}" "${CUNYTV_REMOVAL_CANDIDATES}" > "${CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE}"
