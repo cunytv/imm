@@ -376,22 +376,6 @@ if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_b
     echo
 fi
 
-#echo "filename,recport,recdate,source" > "${ORPHANSDETAIL}"
-#while read orphan ; do
-#  orphanpath=$(_getfullpath "${orphan}")
-#  if [ -f "${orphanpath}" ] ; then
-#    omdata=$(head -c 10000 "${orphanpath}" | strings | grep "${OMNEON_CUNY}" | head -n 1)
-#    recport=$(echo "${omdata}" | cut -d";" -f2)
-#    recdate=$(echo "${omdata}" | cut -d";" -f9)
-#    recname=$(echo "${omdata}" | cut -d";" -f6)
-#    if [[ "${orphanpath}" == "${recname}" ]] ;then
-#        recname=""
-#    fi
-#    echo "$(basename "${orphanpath}"),${recport},${recdate},$(basename "${recname}")" >> "${ORPHANSDETAIL}"
-#  fi
-#done < "${ORPHANS}"
-#cat "${ORPHANSDETAIL}" | grep -v ",MR-[11-20]," > "${ORPHANSDETAIL_CUNYONLY}"
-#cat "${ORPHANSDETAIL}" | grep -v ",MR-[1-9],\|,MR-[10]," > "${ORPHANSDETAIL_NYCMGONLY}"
 cat "$NYCMG_MEDIAID_CSV" | tr "\r" "\n" | grep -v "^$" | awk -F "," '{print $1 "," $(NF-2) }' | sed 's/T-//' | sed 's|/1||' | sed 's/.........$//' | sort -t, -k2 -r | sort -t, -u -k1,1 | sort -t, -k2 | awk -v d=$(date "+%F") -F, '$2 < d' > "${NYCMG_EXPIRED_IDS}"
 for i in $(cat "${NYCMG_NEARLINE}" "${NYCMG_ON_OMNEON}" | sort -u) ; do grep "^${i}," "${NYCMG_EXPIRED_IDS}" ; done > "${NYCMG_EXPIRED_IDS_ONLINE}"
 for i in $(cut -d, -f1 "${NYCMG_EXPIRED_IDS_ONLINE}" | sort) ; do
