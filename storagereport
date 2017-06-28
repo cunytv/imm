@@ -35,34 +35,35 @@ _mkdir2(){
     done
 }
 _report(){
-    local RED="$(tput setaf 1)"   # Red      - For Warnings
-    local GREEN="$(tput setaf 2)" # Green    - For Declarations
-    local BLUE="$(tput setaf 4)"  # Blue     - For Questions
-    local NC="$(tput sgr0)"       # No Color
-    local COLOR=""
-    local STARTMESSAGE=""
-    local ECHOOPT=""
+    local RED GREEN BLUE NC COLOR STARTMESSAGE ECHOOPT OPTIND
+    RED="$(tput setaf 1)"   # Red      - For Warnings
+    GREEN="$(tput setaf 2)" # Green    - For Declarations
+    BLUE="$(tput setaf 4)"  # Blue     - For Questions
+    NC="$(tput sgr0)"       # No Color
+    COLOR=""
+    STARTMESSAGE=""
+    ECHOOPT=""
     OPTIND=1
     while getopts ":qdwstn" OPT; do
         case "${OPT}" in
             q) COLOR="${BLUE}" ;;                         # question mode, use color blue
             d) COLOR="${GREEN}" ;;                        # declaration mode, use color green
             w) COLOR="${RED}" ;;                          # warning mode, use color red
-            s) STARTMESSAGE+=([$(basename "${0}")] ) ;;     # prepend scriptname to the message
-            t) STARTMESSAGE+=($(_get_iso8601) '- ' ) ;;     # prepend timestamp to the message
+            s) STARTMESSAGE+=(["$(basename "${0}")"] ) ;;     # prepend scriptname to the message
+            t) STARTMESSAGE+=("$(_get_iso8601) '- ' ") ;;     # prepend timestamp to the message
             n) ECHOOPT="-n" ;;                          # to avoid line breaks after echo
         esac
     done
-    shift $(( ${OPTIND} - 1 ))
+    shift $((OPTIND-1))
     MESSAGE="${1}"
-    echo "${ECHOOPT}" "${COLOR}${STARTMESSAGE[@]}${MESSAGE}${NC}"
+    echo "${ECHOOPT}" "${COLOR}${STARTMESSAGE[*]}${MESSAGE}${NC}"
 }
 _check4mount(){
     # check to see if a requested volume is mounted and warn if not
     local VOLUME=""
     while [ "${*}" != "" ] ; do
         VOLUME="${1}"
-        if [ $(df "${VOLUME}" | tail -n +2 | awk '{print length($9)}') -le 1 ] ; then
+        if [ "$(df "${VOLUME}" | tail -n +2 | awk '{print length($9)}')" -le 1 ] ; then
             echo
             echo
             _report -wt "Please connect to ${VOLUME} on $(uname -n)"
@@ -83,7 +84,7 @@ _maketemp(){
 }
 
 ## connect to Autosaved folder if not already
-if [ $(mount | grep -c /Volumes/Autosaved) = 0 ] ; then
+if [ "$(mount | grep -c /Volumes/Autosaved)" = 0 ] ; then
     _mkdir2 /Volumes/Autosaved
     sudo route -nv add 10.25.0.0/16 10.25.104.1
     mount -t smbfs "smb://archivesxsan@10.25.102.55/Autosaved" /Volumes/Autosaved
