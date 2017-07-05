@@ -45,6 +45,8 @@
 # 2016-04-08 - No longer upload: EDCA
 #
 # 2016-04-08 - Adding new show to the allowed: SDSW
+#
+# 2017-07-05 - Adding ISLG, SMRB
 #----------------------------------------------------------------------------
 
 use strict;
@@ -89,6 +91,7 @@ my @noGoList = (
 "ELCO",
 "INSO",
 "IRWR",
+"ISLG",
 "ITAL",
 "NUEV",
 "OPED",
@@ -97,6 +100,7 @@ my @noGoList = (
 "PTSBL",
 "SCIU",
 "SDSW",
+"SMRB",
 "SPEC",
 "SPLT"
 "STRP",
