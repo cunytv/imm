@@ -1,5 +1,8 @@
 #!/bin/bash
-
+# This script will upload a file to CUNY TV's Internet Archive account.
+DEPENDENCIES=(pbprotracktor ia)
+_initialize_make
+ 
 _maketemp(){
   mktemp -q "/tmp/$(basename "${0}").XXXXXX"
   if [ "${?}" -ne 0 ]; then
