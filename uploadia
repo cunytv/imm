@@ -48,8 +48,8 @@ DATE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m
    -v "p:pbcoreAssetDate[@dateType='broadcast']" \
    -n ${TEMP_PBCORE})
        
-        ./ia upload "${ARCHIVE_ORG_MEDIAID}"
-        ./ia delete "${ARCHIVE_ORG_MEDIAID}" --all
+        ia upload "${ARCHIVE_ORG_MEDIAID}"
+        ia delete "${ARCHIVE_ORG_MEDIAID}" --all
   echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
   echo "Uploading ${@} to archive.org/details/${MEDIAID_CLEAN}..."
   ./ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" 
