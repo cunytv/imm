@@ -1,0 +1,51 @@
+#!/bin/bash
+
+_maketemp(){
+  mktemp -q "/tmp/$(basename "${0}").XXXXXX"
+  if [ "${?}" -ne 0 ]; then
+      echo "${0}: Can't create temp file, exiting..."
+      _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
+      exit 1
+  fi
+}
+
+OPTIND=1
+while getopts ":c:a" OPT ; do
+  case "${OPT}" in
+      c) METADATAOPTS+=(-o "--modify=\"licenseurl:http://creativecommons.org/licenses/by-nc-nd/4.0/\" ") ;;
+      *) echo "bad option -${OPTARG}" ; _usage ;;
+      :) echo "Option -${OPTARG} requires an argument" ; _writeerrorlog "makebroadcast" "The option selected required an argument and none was provided. The script had to exit." ; exit 1 ;;
+  esac
+done
+shift $(( ${OPTIND} - 1 ))
+
+FILE="${1}"
+MEDIAID="$(basename "${FILE%.*}")"
+MEDIAID_CLEAN="$(echo "${MEDIAID}" | sed 's|HD$||g;s|DV$||g;s|DV_V[0-9]$||g;s|HD_V[0-9]$||g;s|_V[0-9]$||g')"
+ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
+TEMP_PBCORE=$(_maketemp)
+
+pbprotracktor "$MEDIAID" > "${TEMP_PBCORE}"
+
+TITLE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+  -o "${MEDIAID_CLEAN} - " -v "translate(p:pbcoreTitle[@titleType='Episode' or @titleType='Program'],'\"',\"'\")" \
+  -n ${TEMP_PBCORE})
+
+SUBJECT=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+   -v "translate(p:pbcoreTitle[@titleType='Series'], '\"',\"'\")" \
+   -n ${TEMP_PBCORE})
+       
+DESCRIPTION=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+   -v "translate(p:pbcoreDescription[1],'\"',\"'\")"  \
+   -n ${TEMP_PBCORE})
+
+DATE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+   -v "p:pbcoreAssetDate[@dateType='broadcast']" \
+   -n ${TEMP_PBCORE})
+       
+        ./ia upload "${ARCHIVE_ORG_MEDIAID}"
+        ./ia delete "${ARCHIVE_ORG_MEDIAID}" --all
+  echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
+  echo "Uploading ${@} to archive.org/details/${MEDIAID_CLEAN}..."
+  ./ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" 
+  ./ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" --modify="licenseurl:http://creativecommons.org/licenses/by-nc-nd/4.0/"
