@@ -1,5 +1,7 @@
 #!/bin/bash
 # This script will upload a file to CUNY TV's Internet Archive account.
+SCRIPTDIR=$(dirname $(which "${0}"))
+. "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
 DEPENDENCIES=(pbprotracktor ia)
 _initialize_make
  
