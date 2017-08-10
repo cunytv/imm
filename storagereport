@@ -239,7 +239,7 @@ echo "filename,recport,recdate,source" > "${CUNY_UNREGISTERED_DETAILS}"
 while read -r orphan ; do
   orphanpath=$(grep ".dir/${orphan}.m" "${CUNY_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1)
   if [ -f "${orphanpath}" ] ; then
-    omdata=$(head -c 10000 "${orphanpath}" | strings | grep clip.dir | head -n 1)
+    omdata=$(head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
     recname=$(echo "${omdata}" | cut -d";" -f6)
@@ -262,7 +262,7 @@ echo "filename,recport,recdate,source" > "${NYCM_UNREGISTERED_DETAILS}"
 while read -r orphan ; do
   orphanpath=$(grep ".dir/${orphan}.m" "${NYCM_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1)
   if [ -f "${orphanpath}" ] ; then
-    omdata=$(head -c 10000 "${orphanpath}" | strings | grep clip.dir | head -n 1)
+    omdata=$(head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
     recname=$(echo "${omdata}" | cut -d";" -f6)
