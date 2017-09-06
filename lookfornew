@@ -3,16 +3,77 @@
 searchdirectory="$1"
 timefile=$HOME/.timefile_$(basename "${searchdirectory}")
 
+_get_broadcastduration(){
+    BROADCASTDURATION=$(mediainfo --inform="General;%Duration_String4%" "${1}")
+}
+_get_filesize(){
+    FILESIZE=$(ls -hl "${1}" | awk '{print $5}')
+}
+_get_user(){
+    USER=$(ls -hl "${1}" | awk '{print $3}')
+}
+
 if [ ! -f "${timefile}" ] ; then 
     filelist=$(find "${searchdirectory}" -type f ! -name .DS_Store)
 else
     filelist=$(find "${searchdirectory}" -cnewer "${timefile}" -type f ! -name .DS_Store) 
 fi
 touch "${timefile}"
-if [ -n "${filelist}" ] ; then 
-    echo -e "Subject: [New Files on $(basename "${searchdirectory}")]\n
-These files showed up in $(basename "${searchdirectory}") \n
-${filelist}\n
-Enjoy!" | sendmail -f "catriona@cuny.tv" -F "library@cuny.tv" "library@cuny.tv"
-fi 
 
+message="These new files showed up in $(basename "${searchdirectory}"):\n\n"
+
+if [ -n "${filelist}" ] ; then
+     BOUNDARY="unique-boundary-$RANDOM"
+     while read file ; do
+        _get_broadcastduration "$file"
+        _get_filesize "$file"
+        _get_user "$file"
+        message+="Filename: $file\n"
+        if [ -n "${BROADCASTDURATION}" ] ; then
+            message+="Duration: $BROADCASTDURATION\n"
+            makegifsummary -o /tmp "$file"
+            gifpath="/tmp/$(basename "${file%.*}").gif"
+            if [ -f "${gifpath}" ] ; then
+                ATT_MIMETYPE=$(file -Ib "${gifpath}" | cut -d";" -f1)
+                ATT_ENCODED=$(base64 < "${gifpath}")
+                attachmentlist+="--$BOUNDARY\n"
+                attachmentlist+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
+                attachmentlist+="Content-Transfer-Encoding: base64\n"
+                attachmentlist+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
+                attachmentlist+="\n"
+                attachmentlist+="$ATT_ENCODED\n"
+                attachmentlist+="\n\n"
+            fi
+        fi
+        if [ -n "${FILESIZE}" ] ; then
+            message+="Size: $FILESIZE\n"
+        fi
+        if [ -n "${USER}" ] ; then
+            message+="User: $USER\n"
+        fi
+        message+="\n"
+    done < <(echo "${filelist}")
+
+    cat <<EOF | sendmail -f "library@cuny.tv" -F "library@cuny.tv" "library@cuny.tv"
+MIME-Version: 1.0
+From: "library@cuny.tv"
+To: "library@cuny.tv"
+Subject: [New Files on $(basename "${searchdirectory}")]
+Content-Type: multipart/mixed; boundary="$BOUNDARY"
+
+--$BOUNDARY
+Content-Type: text/plain
+Content-Disposition: inline
+
+$(echo -e "${message}")
+
+Enjoy!
+
+
+
+
+$(echo -e "${attachmentlist}")
+--$BOUNDARY--
+
+EOF
+fi
