@@ -28,28 +28,33 @@ if [ -n "${filelist}" ] ; then
         _get_broadcastduration "$file"
         _get_filesize "$file"
         _get_user "$file"
+        message+="*********\n"
         message+="Filename: $file\n"
         if [ -n "${BROADCASTDURATION}" ] ; then
             message+="Duration: $BROADCASTDURATION\n"
-            makegifsummary -o /tmp "$file"
-            gifpath="/tmp/$(basename "${file%.*}").gif"
-            if [ -f "${gifpath}" ] ; then
-                ATT_MIMETYPE=$(file -Ib "${gifpath}" | cut -d";" -f1)
-                ATT_ENCODED=$(base64 < "${gifpath}")
-                attachmentlist+="--$BOUNDARY\n"
-                attachmentlist+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
-                attachmentlist+="Content-Transfer-Encoding: base64\n"
-                attachmentlist+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
-                attachmentlist+="\n"
-                attachmentlist+="$ATT_ENCODED\n"
-                attachmentlist+="\n\n"
-            fi
         fi
         if [ -n "${FILESIZE}" ] ; then
             message+="Size: $FILESIZE\n"
         fi
         if [ -n "${USER}" ] ; then
-            message+="User: $USER\n"
+            message+="User: $USER\n\n\n"
+        fi
+        if [ -n "${BROADCASTDURATION}" ] ; then
+            makegifsummary -o /tmp "$file"
+            gifpath="/tmp/$(basename "${file%.*}").gif"
+            if [ -f "${gifpath}" ] ; then
+                ATT_MIMETYPE=$(file -Ib "${gifpath}" | cut -d";" -f1)
+                ATT_ENCODED=$(base64 < "${gifpath}")
+                message+="--$BOUNDARY\n"
+                message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
+                message+="Content-Transfer-Encoding: base64\n"
+                message+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
+                message+="\n"
+                message+="$ATT_ENCODED"
+                message+="\n\n"
+                message+="--$BOUNDARY"
+                message+="\n"
+            fi
         fi
         message+="\n"
     done < <(echo "${filelist}")
@@ -71,8 +76,6 @@ Enjoy!
 
 
 
-
-$(echo -e "${attachmentlist}")
 --$BOUNDARY--
 
 EOF
