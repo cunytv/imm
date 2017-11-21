@@ -12,6 +12,17 @@ _get_filesize(){
 _get_user(){
     USER=$(ls -hl "${1}" | awk '{print $3}')
 }
+_get_framerate(){
+    FRAMERATE="$(mediainfo --inform="Video;%FrameRate%" "${1}") fps"
+}
+_get_framesize(){
+    WIDTH=$(mediainfo --inform="Video;%Width%" "${1}")
+    HEIGHT=$(mediainfo --inform="Video;%Height%" "${1}")
+    FRAMESIZE="$WIDTH x $HEIGHT pixels"
+}
+_get_codec(){
+    CODEC=$(mediainfo --inform="Video;%CodecID%" "${1}")
+}
 
 if [ ! -f "${timefile}" ] ; then 
     filelist=$(find "${searchdirectory}" -type f ! -name .DS_Store)
@@ -27,6 +38,9 @@ if [ -n "${filelist}" ] ; then
      while read file ; do
         _get_broadcastduration "$file"
         _get_filesize "$file"
+        _get_codec "$file"
+        _get_framerate "$file"
+        _get_framesize "$file"
         _get_user "$file"
         message+="*********\n"
         message+="Filename: $file\n"
@@ -35,6 +49,15 @@ if [ -n "${filelist}" ] ; then
         fi
         if [ -n "${FILESIZE}" ] ; then
             message+="Size: $FILESIZE\n"
+        fi
+        if [ -n "${CODEC}" ] ; then
+            message+="Codec: $CODEC\n"
+        fi
+        if [ -n "${FRAMERATE}" ] ; then
+            message+="Framerate: $FRAMERATE\n"
+        fi
+        if [ -n "${FRAMESIZE}" ] ; then
+            message+="Frame size: $FRAMESIZE\n"
         fi
         if [ -n "${USER}" ] ; then
             message+="User: $USER\n\n\n"
