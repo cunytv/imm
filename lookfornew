@@ -44,8 +44,7 @@ if [ -n "${filelist}" ] ; then
         message+="*********\n"
         message+="Filename: $file\n"
         if [ -n "${BROADCASTDURATION}" ] ; then
-            message+="Duration: $BROADCASTDURATION\n"
-        fi
+        message+="Duration: $BROADCASTDURATION\n"
         if [ -n "${FILESIZE}" ] ; then
             message+="Size: $FILESIZE\n"
         fi
@@ -81,6 +80,7 @@ if [ -n "${filelist}" ] ; then
             fi
         fi
         message+="\n"
+        fi
     done < <(echo "${filelist}")
 
     cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu"
