@@ -13,15 +13,14 @@ _get_user(){
     USER=$(ls -hl "${1}" | awk '{print $3}')
 }
 _get_framerate(){
-    FRAMERATE="$(mediainfo --inform="Video;%FrameRate%" "${1}") fps"
+    FRAMERATE="$(mediainfo --inform="Video;%FrameRate%" "${1}")"
 }
 _get_framesize(){
     WIDTH=$(mediainfo --inform="Video;%Width%" "${1}")
     HEIGHT=$(mediainfo --inform="Video;%Height%" "${1}")
-    FRAMESIZE="$WIDTH x $HEIGHT pixels"
 }
 _get_codec(){
-    CODEC=$(mediainfo --inform="Video;%CodecID%" "${1}")
+    CODEC=$(mediainfo --inform="Video;%Format% %Format_Version% %Format_Profile% %Format_Commercial_IfAny% (%CodecID%)" "${1}")
 }
 
 if [ ! -f "${timefile}" ] ; then 
@@ -54,10 +53,10 @@ if [ -n "${filelist}" ] ; then
             message+="Codec: $CODEC\n"
         fi
         if [ -n "${FRAMERATE}" ] ; then
-            message+="Framerate: $FRAMERATE\n"
+            message+="Framerate: $FRAMERATE fps\n"
         fi
-        if [ -n "${FRAMESIZE}" ] ; then
-            message+="Frame size: $FRAMESIZE\n"
+        if [ -n "${WIDTH}" ] ; then
+            message+="Frame size: $WIDTH x $HEIGHT pixels\n"
         fi
         if [ -n "${USER}" ] ; then
             message+="User: $USER\n\n\n"
@@ -82,9 +81,10 @@ if [ -n "${filelist}" ] ; then
         message+="\n"
     done < <(echo "${filelist}")
 
-    cat <<EOF | sendmail -f "library@.tv.cuny.edu" -F "Library Bot" "library@tv.cuny.edu"
+    cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu"
 MIME-Version: 1.0
-To: "library@tv.cuny.edu"
+From: "Library Bot" <library@tv.cuny.edu>
+To: <library@tv.cuny.edu>
 Subject: [New Files on $(basename "${searchdirectory}")]
 Content-Type: multipart/mixed; boundary="$BOUNDARY"
 
