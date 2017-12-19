@@ -84,8 +84,7 @@ if [ -n "${filelist}" ] ; then
 
     cat <<EOF | sendmail -f "library@.tv.cuny.edu" -F "Library Bot" "library@tv.cuny.edu"
 MIME-Version: 1.0
-From: "library@cuny.tv"
-To: "library@cuny.tv"
+To: "library@tv.cuny.edu"
 Subject: [New Files on $(basename "${searchdirectory}")]
 Content-Type: multipart/mixed; boundary="$BOUNDARY"
 
