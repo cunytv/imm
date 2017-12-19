@@ -59,7 +59,7 @@ if [ -n "${filelist}" ] ; then
         message+="\n"
     done < <(echo "${filelist}")
 
-    cat <<EOF | sendmail -f "library@cuny.tv" -F "library@cuny.tv" "library@cuny.tv"
+    cat <<EOF | sendmail -f "library@.tv.cuny.edu" -F "Library Bot" "library@tv.cuny.edu"
 MIME-Version: 1.0
 From: "library@cuny.tv"
 To: "library@cuny.tv"
