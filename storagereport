@@ -273,6 +273,13 @@ while read -r orphan ; do
   fi
 done < "${NYCM_UNREGISTERED}"
 
+echo "filename,recport,recdate,source,outputs" > "${NYCM_UNREGISTERED_DETAILS}x"
+while read -r line ; do
+    file=$(echo "$line" | cut -d "," -f 1)
+    outputs=$(cat "${NYCM_UNREGISTERED_DETAILS}" | grep ",${file}.mov$" | cut -d "," -f1 | grep -v "^${file}$" | xargs)
+    echo "$line,$outputs" >> "${NYCM_UNREGISTERED_DETAILS}x"
+done < <(tail -n +2 "${NYCM_UNREGISTERED_DETAILS}")
+mv -v "${NYCM_UNREGISTERED_DETAILS}x" > "${NYCM_UNREGISTERED_DETAILS}"
 
 echo
 _report -d "Omneon Storage stats"
