@@ -26,7 +26,7 @@ _get_codec(){
 if [ ! -f "${timefile}" ] ; then 
     filelist=$(find "${searchdirectory}" -type f ! -name .DS_Store)
 else
-    filelist=$(find "${searchdirectory}" -cnewer "${timefile}" ! -newermt "1 minute ago" -type f ! -name .DS_Store)
+    filelist=$(find "${searchdirectory}" -cnewer "${timefile}" -type f ! -name .DS_Store)
 fi
 touch "${timefile}"
 
