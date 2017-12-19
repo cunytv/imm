@@ -30,7 +30,7 @@ else
 fi
 touch "${timefile}"
 
-message="These new files showed up in $(basename "${searchdirectory}"):\n\n"
+message="These new video files showed up in $(basename "${searchdirectory}"):\n\n"
 
 if [ -n "${filelist}" ] ; then
      BOUNDARY="unique-boundary-$RANDOM"
