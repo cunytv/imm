@@ -44,42 +44,42 @@ if [ -n "${filelist}" ] ; then
         message+="*********\n"
         message+="Filename: $file\n"
         if [ -n "${BROADCASTDURATION}" ] ; then
-        message+="Duration: $BROADCASTDURATION\n"
-        if [ -n "${FILESIZE}" ] ; then
-            message+="Size: $FILESIZE\n"
-        fi
-        if [ -n "${CODEC}" ] ; then
-            message+="Codec: $CODEC\n"
-        fi
-        if [ -n "${FRAMERATE}" ] ; then
-            message+="Framerate: $FRAMERATE fps\n"
-        fi
-        if [ -n "${WIDTH}" ] ; then
-            message+="Frame size: $WIDTH x $HEIGHT pixels\n"
-        fi
-        if [ -n "${USER}" ] ; then
-            message+="User: $USER\n\n\n"
-        fi
-        if [ -n "${BROADCASTDURATION}" ] ; then
-            makegifsummary -o /tmp "$file"
-            gifpath="/tmp/$(basename "${file%.*}").gif"
-            if [ -f "${gifpath}" ] ; then
-                ATT_MIMETYPE=$(file -Ib "${gifpath}" | cut -d";" -f1)
-                ATT_ENCODED=$(base64 < "${gifpath}")
-                message+="--$BOUNDARY\n"
-                message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
-                message+="Content-Transfer-Encoding: base64\n"
-                message+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
-                message+="\n"
-                message+="$ATT_ENCODED"
-                message+="\n\n"
-                message+="--$BOUNDARY"
-                message+="\n"
-                echo "cleaning up gif"
-                rm -v "${gifpath}"
+            message+="Duration: $BROADCASTDURATION\n"
+            if [ -n "${FILESIZE}" ] ; then
+                message+="Size: $FILESIZE\n"
             fi
-        fi
-        message+="\n"
+            if [ -n "${CODEC}" ] ; then
+                message+="Codec: $CODEC\n"
+            fi
+            if [ -n "${FRAMERATE}" ] ; then
+                message+="Framerate: $FRAMERATE fps\n"
+            fi
+            if [ -n "${WIDTH}" ] ; then
+                message+="Frame size: $WIDTH x $HEIGHT pixels\n"
+            fi
+            if [ -n "${USER}" ] ; then
+                message+="User: $USER\n\n\n"
+            fi
+            if [ -n "${BROADCASTDURATION}" ] ; then
+                makegifsummary -o /tmp "$file"
+                gifpath="/tmp/$(basename "${file%.*}").gif"
+                if [ -f "${gifpath}" ] ; then
+                    ATT_MIMETYPE=$(file -Ib "${gifpath}" | cut -d";" -f1)
+                    ATT_ENCODED=$(base64 < "${gifpath}")
+                    message+="--$BOUNDARY\n"
+                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
+                    message+="Content-Transfer-Encoding: base64\n"
+                    message+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
+                    message+="\n"
+                    message+="$ATT_ENCODED"
+                    message+="\n\n"
+                    message+="--$BOUNDARY"
+                    message+="\n"
+                    echo "cleaning up gif"
+                    rm -v "${gifpath}"
+                fi
+            fi
+            message+="\n"
         fi
     done < <(echo "${filelist}")
 
