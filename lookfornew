@@ -76,6 +76,8 @@ if [ -n "${filelist}" ] ; then
                 message+="\n\n"
                 message+="--$BOUNDARY"
                 message+="\n"
+                echo "cleaning up gif"
+                rm -v "${gifpath}"
             fi
         fi
         message+="\n"
