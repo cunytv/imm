@@ -26,9 +26,9 @@ _get_codec(){
 if [ ! -f "${timefile}" ] ; then 
     filelist=$(find "${searchdirectory}" -type f ! -name .DS_Store)
 else
-    filelist=$(find "${searchdirectory}" -cnewer "${timefile}" ! -newermt '-10 second' -type f ! -name .DS_Store)
+    filelist=$(find "${searchdirectory}" -cnewer "${timefile}" ! -newermt '-20 seconds' -type f ! -name .DS_Store)
 fi
-touch -t "$(date -v -10S "+%Y%m%d%H%M.%S")" "${timefile}"
+touch -t "$(date -v -20S "+%Y%m%d%H%M.%S")" "${timefile}"
 
 message="These new video files showed up in $(basename "${searchdirectory}"):\n\n"
 
