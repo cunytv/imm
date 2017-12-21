@@ -83,10 +83,10 @@ if [ -n "${filelist}" ] ; then
         fi
     done < <(echo "${filelist}")
 
-    cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu"
+    cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu; catriona.schlosser@tv.cuny.edu; amy.monte@tv.cuny.edu; anne.murphy@tv.cuny.edu; oksana.israilova@tv.cuny.edu"
 MIME-Version: 1.0
 From: "Library Bot" <library@tv.cuny.edu>
-To: <library@tv.cuny.edu>
+To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
 Subject: [New Files on $(basename "${searchdirectory}")]
 Content-Type: multipart/mixed; boundary="$BOUNDARY"
 
