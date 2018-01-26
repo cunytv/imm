@@ -63,12 +63,16 @@ _check4mount(){
     local VOLUME=""
     while [ "${*}" != "" ] ; do
         VOLUME="${1}"
-        if [ "$(df "${VOLUME}" | tail -n +2 | awk '{print length($9)}')" -le 1 ] ; then
-            echo
-            echo
+        if [[ -d "${VOLUME}" ]] ; then
+            if [ "$(df "${VOLUME}" | tail -n +2 | awk '{print length($9)}')" -le 1 ] ; then
+                echo
+                echo
+                _report -wt "Please connect to ${VOLUME} on $(uname -n)"
+                echo
+                echo
+            fi
+        else
             _report -wt "Please connect to ${VOLUME} on $(uname -n)"
-            echo
-            echo
         fi
         shift
     done
