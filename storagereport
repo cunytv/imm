@@ -214,6 +214,7 @@ for abouttorun in "${abouttoruns[@]}" ; do
         printf "%-32s %12d %20s \n" "$(basename "${abouttorun}")" "$(xml sel -t -v //mediaid "${abouttorun}" | grep -v "^$" | sort -u | wc -l)" "$(xml sel -t -v /playlist/history/modified/@datetime "${abouttorun}")"
     else
         _report -w "WARNING ${abouttorun} is expected but is not found."
+        exit
     fi
 done
 printf "%-32s %12d %20s \n" "NYCMG (all)" "$(cat "${NYCMG4AIR}" | wc -l )" ""
