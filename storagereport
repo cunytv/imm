@@ -404,20 +404,13 @@ if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_base
     _report -w "  pushd "${OMNEON_PATH_NYCM}" && rm -i $(cat "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC | xargs) && popd"
     echo
 fi
-if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt") ]] ; then
+
+if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u) ]] ; then
     echo
-    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH_CUNY}" >> /dev/null && du -sch $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
-    _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on nearline run:"
+    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH_CUNY}" >> /dev/null && du -sch $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
+    _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on nearline or LTO tape run:"
     echo
-    _report -w "  pushd "${OMNEON_PATH_CUNY}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) && popd"
-    echo
-fi
-if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt") ]] ; then
-    echo
-    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH_CUNY}" >> /dev/null && du -sch $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
-    _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on LTO tape run:"
-    echo
-    _report -w "  pushd "${OMNEON_PATH_CUNY}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | xargs) && popd"
+    _report -w "  pushd "${OMNEON_PATH_CUNY}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u | xargs) && popd"
     echo
 fi
 
