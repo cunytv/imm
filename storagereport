@@ -400,7 +400,7 @@ if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_base
     _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH_NYCM}" >> /dev/null && du -sch $(cat "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
     _report -d "To remove nycmg files that are not new, not filler, not about-to-air, that are already on nearline run:"
     echo
-    _report -w "  pushd "${OMNEON_PATH_NYCM}" && rm -i $(cat "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC | xargs) && popd"
+    _report -w "  pushd "${OMNEON_PATH_NYCM}" && rm -i $(cat "${REPORTDIR}/nycmg_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | grep -v BBC | xargs) ; popd"
     echo
 fi
 
