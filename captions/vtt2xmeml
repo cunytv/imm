@@ -1,0 +1,135 @@
+#!/bin/bash
+
+VTT="$1"
+
+FONTFILE="/Library/Fonts/Arial.ttf"
+FONTCOLOR="yellow"
+FONTSIZE=64
+BORDERCOLOR="black@0.8"
+BORDERW=2
+
+hhmmssff2frame(){
+    TIME="${1}"
+    HOUR=$(echo "${TIME}" | cut -d: -f1)
+    MIN=$(echo "${TIME}" | cut -d: -f2)
+    SEC=$(echo "${TIME}" | cut -d: -f3)
+    regex='^[0-9]+([.][0-9]+)?$'
+    if [[ ${HOUR} =~ $regex && ${MIN} =~ $regex && ${SEC} =~ $regex ]] ; then
+        printf %.$2f "$(echo "(($HOUR * 3600 + $MIN * 60 + $SEC) * 30) - 2" | bc)"
+    fi
+}
+
+BASENAME="$(basename "${VTT%.*}")"
+DIRNAME="$(dirname "${VTT}")"
+c=0
+DIRECTORY="${DIRNAME}/${BASENAME}_Subtitles"
+XMEML_FILENAME="${DIRECTORY}/${BASENAME}_xmeml.xml"
+mkdir -p "${DIRECTORY}"
+while read LINE ; do
+    if [[ -n "$LINE" ]]; then	
+        SUBTITLE+=("$LINE")
+        continue
+    else
+        ((c++))
+        NUMBER=$(echo "000000${c}" | tail -c 6)
+        n=0
+        unset DRAWTEXT_LINE
+        for SUBTITLE_LINE in "${SUBTITLE[@]}" ; do
+            if [[ "$n" = 0 ]] ; then
+                START=$(echo "$SUBTITLE_LINE" | cut -c 1-11)
+                END=$(echo "$SUBTITLE_LINE" | cut -c 18-28)
+                LINE=$(echo "$SUBTITLE_LINE" | grep -o -e "line:[^ ]*" | cut -d: -f2 | cut -d% -f1)
+                echo -n "$START - $END: "
+            else
+                if [[ "$n" != 1 ]] ; then
+                    echo -n "                           "
+                fi
+                echo "$SUBTITLE_LINE" | perl -MHTML::Entities -pe 'decode_entities($_);'
+                echo "$SUBTITLE_LINE" | perl -MHTML::Entities -pe 'decode_entities($_);' > "/tmp/subtitle_${n}.txt"
+                DRAWTEXT_LINE+=",drawtext=fontfile=${FONTFILE}:textfile=/tmp/subtitle_${n}.txt:fontcolor=${FONTCOLOR}:bordercolor=${BORDERCOLOR}:borderw=${BORDERW}:fontsize=${FONTSIZE}:x=(w-text_w)/2:y=h*0.$LINE+$FONTSIZE*$n"
+            fi
+            ((n++))
+            unset SUBTITLE
+        done
+        FILENAME="${BASENAME}_${NUMBER}.png"
+        ffmpeg -v quiet -y -f lavfi -i "color=0x808080FF@0.0:s=1920x1080,format=rgba${DRAWTEXT_LINE}" -vframes 1 -f image2 "${DIRECTORY}/${FILENAME}"
+        if [[ -n "$(hhmmssff2frame "${START}")" ]] ; then
+        CLIPS+="<clipitem id=\"${FILENAME}\">
+            <name>${FILENAME}</name>
+            <duration/>
+            <rate>
+              <ntsc>TRUE</ntsc>
+              <timebase>30</timebase>
+            </rate>
+            <start>$(hhmmssff2frame "${START}")</start>
+            <end>$(hhmmssff2frame "${END}")</end>
+            <pixelaspectratio>NTSC-601</pixelaspectratio>
+            <anamorphic>FALSE</anamorphic>
+            <alphatype>straight</alphatype>
+            <masterclipid>${FILENAME}</masterclipid>
+            <logginginfo/>
+            <labels/>
+            <comments/>
+            <file id=\"${FILENAME}\">
+              <name>${FILENAME}</name>
+              <pathurl>file:///${FILENAME}</pathurl>
+              <rate>
+                <ntsc>TRUE</ntsc>
+                <timebase>30</timebase>
+              </rate>
+              <duration>0</duration>
+              <width>1920</width>
+              <height>1080</height>
+              <media>
+                <video>
+                  <duration>0</duration>
+                  <stillframe>TRUE</stillframe>
+                  <samplecharacteristics>
+                    <width>1920</width>
+                    <height>1080</height>
+                  </samplecharacteristics>
+                </video>
+              </media>
+            </file>
+          </clipitem>
+"
+        fi
+        unset SUBTITLE
+    fi
+done < <(grep -v "WEBVTT$" "$VTT")
+
+echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE xmeml>
+<xmeml version=\"2\">
+  <sequence id=\"CUNY TV Subtitles\">
+    <name>CUNY TV Subtitles</name>
+    <duration>0</duration>
+    <rate>
+      <ntsc>TRUE</ntsc>
+      <timebase>30</timebase>
+    </rate>
+    <timecode>
+      <rate>
+        <ntsc>TRUE</ntsc>
+        <timebase>30</timebase>
+      </rate>
+      <string>00:00:00:00</string>
+      <frame>0</frame>
+      <source>source</source>
+      <displayformat>DF</displayformat>
+    </timecode>
+    <in>-1</in>
+    <out>-1</out>
+    <media>
+      <video>
+        <format/>
+        <track>
+        ${CLIPS}
+        </track>
+        </video>
+      </media>
+    </sequence>
+  </xmeml>
+" > "${XMEML_FILENAME}"
+
+zip -j -r -X "${DIRECTORY}.zip" "${DIRECTORY}"
