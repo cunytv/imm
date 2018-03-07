@@ -4,9 +4,9 @@ VTT="$1"
 
 FONTFILE="/Library/Fonts/Arial.ttf"
 FONTCOLOR="yellow"
-FONTSIZE=64
+FONTSIZE=62
 BORDERCOLOR="black@0.8"
-BORDERW=2
+BORDERW=3
 
 hhmmssff2frame(){
     TIME="${1}"
