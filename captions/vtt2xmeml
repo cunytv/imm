@@ -44,7 +44,7 @@ while read LINE ; do
                 if [[ "$n" != 1 ]] ; then
                     echo -n "                           "
                 fi
-                ADJUSTED_LINE=$(echo "$SUBTITLE_LINE" | perl -MHTML::Entities -pe 'decode_entities($_);')
+                ADJUSTED_LINE=$(echo "$SUBTITLE_LINE" | perl -MHTML::Entities -pe 'decode_entities($_);' | sed -e 's/<[^>]*>//g')
                 echo "${ADJUSTED_LINE}"
                 echo "${ADJUSTED_LINE}" > "/tmp/subtitle_${n}.txt"
                 DRAWTEXT_LINE+=",drawtext=fontfile=${FONTFILE}:textfile=/tmp/subtitle_${n}.txt:fontcolor=${FONTCOLOR}:bordercolor=${BORDERCOLOR}:borderw=${BORDERW}:fontsize=${FONTSIZE}:x=(w-text_w)/2:y=h*0.$LINE+$FONTSIZE*$n"
