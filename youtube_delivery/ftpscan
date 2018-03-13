@@ -47,6 +47,8 @@
 # 2016-04-08 - Adding new show to the allowed: SDSW
 #
 # 2017-07-05 - Adding ISLG, SMRB
+#
+# 2018-03-13 - Adding CNJZ
 #----------------------------------------------------------------------------
 
 use strict;
@@ -86,6 +88,7 @@ my @noGoList = (
 "CFOR",
 "CITA",
 "CIWI",
+"CNJZ",
 "DANI",
 "DIGA",
 "ELCO",
