@@ -2,13 +2,8 @@
 #This script is used to clean up files that are more than a month old from the studio folder on the XSan Video. 
 
 Cleanupdir="/Volumes/XsanVideo/studio"
-find "$Cleanupdir" -type f -mtime +60d -path "*Line_Cut*" ! -path "*Line_Cuts_to_archive*" ! -path "*ISOs_to_delete*"| while read file ; do
-    movedir=$(dirname "$file" | sed "s|${Cleanupdir}|${Cleanupdir}/Line_Cuts_to_archive|g")
-    mkdir -p "$movedir/"
-    mv -v -n "$file" "$movedir/"
-done
-find "$Cleanupdir" -type f -mtime +60d -path "*ISOs*" ! -path "*ISOs_to_delete*" ! -path "*Line_Cuts_to_archive*"| while read file ; do
-    movedir=$(dirname "$file" | sed "s|${Cleanupdir}|${Cleanupdir}/ISOs_to_delete|g")
+find "$Cleanupdir" -type f -mtime +60d ! -path "*To_Archive*" ! -path "*To_Retain*"| while read file ; do
+    movedir=$(dirname "$file" | sed "s|${Cleanupdir}|${Cleanupdir}/To_Archive|g")
     mkdir -p "$movedir/"
     mv -v -n "$file" "$movedir/"
 done
