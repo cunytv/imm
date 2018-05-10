@@ -35,7 +35,7 @@ cleanup(){
 
 get_ftp_status(){
 local filename="$1"
-status=$(ftp "$YOUTUBEIP" <<END_SCRIPT
+status=$(sftp "$YOUTUBEIP" <<END_SCRIPT
 binary
 ls "${YOUTUBEPATH}/${filename}"
 exit
