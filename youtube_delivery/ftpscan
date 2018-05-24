@@ -64,7 +64,7 @@ use File::Slurp qw(read_file write_file);
 use Time::Local;
 
 my $debug = 1;
-my $dir = "/FTPRoot";
+my $dir = "/Volumes/From library/youtube_delivery";
 my $donedir = $dir . "/Uploaded";
 my $dupdir = $dir . "/Duplicates";
 my $errordir = $dir . "/Errors";
@@ -206,8 +206,9 @@ sub printHelp
 	my $helpdoc = <<'EOT';
 
 =----------------------------------------------------------------------------
-= This script scans the /FTPRoot directory for newly uploaded files and then
-= uploads those files, if any, to youtube automatically.
+= This script scans the '/Volumes/From library/youtube_delivery' directory
+= for newly uploaded files and then uploads those files, if any, to youtube
+= automatically.
 =
 = Optional arguements:
 =----------------------------------------------------------------------------
@@ -329,7 +330,8 @@ sub scanftp
 		# Process the file list and keep valid file types
 		foreach my $file (@files) 
 		{
-			# Check if the file is still in the process of being uploaded to the FTPRoot folder
+			# Check if the file is still in the process of being uploaded to the
+			# '/Volumes/From library/youtube_delivery' folder
 			if ($file =~ m/uploading/)
 			{
 				# Ignore file and move on to the next one

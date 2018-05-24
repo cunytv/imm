@@ -2,6 +2,6 @@
 
 # This script will clean up the /FTPRoot directory of files older than 3 days
 echo `date +"%Y-%m-%d %H:%M:%S"`: ftpclean script called. List of files to be deleted:  >> /var/log/ftpscan.log
-find /FTPRoot -mindepth 2 -type f -mtime +3 | grep -v "TEST" >> /var/log/ftpscan.log
-find /FTPRoot -mindepth 2 -type f -mtime +3 | grep -v "TEST" | xargs -I{} rm -v {}
+find "/Volumes/From library/youtube_delivery" -mindepth 2 -type f -mtime +3 | grep -v "TEST" >> /var/log/ftpscan.log
+find "/Volumes/From library/youtube_delivery" -mindepth 2 -type f -mtime +3 | grep -v "TEST" | xargs -I{} rm -v {}
 echo `date +"%Y-%m-%d %H:%M:%S"`: ftpclean script completed. >> /var/log/ftpscan.log
