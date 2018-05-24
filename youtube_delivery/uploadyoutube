@@ -1,5 +1,4 @@
 #!/bin/bash
-# uploadYOUTUBE
 # upload to YOUTUBE
 requireconfig="Y"
 
@@ -14,9 +13,6 @@ usage(){
     echo "$(basename ${0}) ${version}"
     echo "This application will upload file(s) to a server via rsync in sequential order. Options are specified via 'mmconfig'."
     echo
-    echo "Settings:"
-    echo "YOUTUBEIP=${YOUTUBEIP}"
-    echo "YOUTUBEPATH=${YOUTUBEPATH}"
     echo "Usage: $(basename $0) file1 [ file2 ...]"
     echo "  -h ( display this help )"
     echo
@@ -54,7 +50,6 @@ while [ "$*" != "" ] ; do
     filename=$(basename "$sourcefile")
     if [ $(echo "$filename" | grep -E "${UPLOADREGEX}") ] ; then
         _report -dt "${filename} qualifies for youtube upload."
-_log -b
         _report -dt "Starting to rsync $filename to ${MOUNT_YOUTUBE}..."
         rsync -rtvP "$sourcefile" "${MOUNT_YOUTUBE}/"
         upload_err="${?}"
