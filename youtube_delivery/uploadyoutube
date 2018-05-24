@@ -48,33 +48,25 @@ while getopts ":h" opt; do
     esac
 done
 shift $(( ${OPTIND} - 1 ))
-
 while [ "$*" != "" ] ; do
-
-sourcefile="$1"
-removetmp="n"
-filename=$(basename "$sourcefile")
-
-if [ $(echo "$filename" | grep -E "${UPLOADREGEX}") ] ; then
+    sourcefile="$1"
+    removetmp="n"
+    filename=$(basename "$sourcefile")
+    if [ $(echo "$filename" | grep -E "${UPLOADREGEX}") ] ; then
         _report -dt "${filename} qualifies for youtube upload."
-
 _log -b
-
-_report -dt "Starting to rsync $filename to ${MOUNT_YOUTUBE}..."
-rsync -rtvP "$sourcefile" "${MOUNT_YOUTUBE}/"
-
-upload_err="${?}"
-if [ "$upload_err" = "0" ] ; then
-    _report -dt "${filename} is uploaded to the ${MOUNT_YOUTUBE}"
-else
-    _report -wt "rsync exited with code ${upload_err} for ${filename}."
-fi
-
-else
-    _report -dt "${filename} does NOT qualify for youtube upload, skipping."
-fi
-
-shift
+        _report -dt "Starting to rsync $filename to ${MOUNT_YOUTUBE}..."
+        rsync -rtvP "$sourcefile" "${MOUNT_YOUTUBE}/"
+        upload_err="${?}"
+        if [ "$upload_err" = "0" ] ; then
+            _report -dt "${filename} is uploaded to the ${MOUNT_YOUTUBE}"
+        else
+            _report -wt "rsync exited with code ${upload_err} for ${filename}."
+        fi
+    else
+        _report -dt "${filename} does NOT qualify for youtube upload, skipping."
+    fi
+    shift
 done
 umount "${MOUNT_YOUTUBE}"
 _log -e
