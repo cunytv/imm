@@ -332,7 +332,7 @@ sub scanftp
 		{
 			# Check if the file is still in the process of being uploaded to the
 			# '/Volumes/From library/youtube_delivery' folder
-			if ($file =~ m/uploading/)
+			if ($file =~ m/.mp4./)
 			{
 				# Ignore file and move on to the next one
 				next;
