@@ -50,7 +50,7 @@ else
     if [[ "${MP4_ONLINE}" != "true" ]] ; then
         echo "The MP4 file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
     fi
-    if [[ "${SCC_ONLINE}" == "true" ]] ; then
+    if [[ "${SCC_ONLINE}" != "true" ]] ; then
         echo "The SCC file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
     fi
 fi
