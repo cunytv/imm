@@ -28,10 +28,17 @@ if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     echo "Downloading Democracy Now MP4"
     wget "${MP4_FILE}" -O "${PROCESS_DIR}/${MEDIA_ID}.mp4"
     echo "Running makebroadcast on ${MEDIA_ID}.mp4"
+
+    #transcode
     makebroadcast "${PROCESS_DIR}/${MEDIA_ID}.mp4"
+
+    #deliver
+    echo "Delivering mov to Omneon"
     uploadomneon "${PROCESS_DIR}/service/${MEDIA_ID}.mov"
     echo "Delivering scc to Omneon"
     uploadomneon "${PROCESS_DIR}/${MEDIA_ID}.scc"
+
+    # cleanup
     echo "Cleaning up temporary files."
     rm -v "${PROCESS_DIR}/service/${MEDIA_ID}.mov"
     rm -v "${PROCESS_DIR}/${MEDIA_ID}.scc"
