@@ -1,10 +1,11 @@
 #!/bin/bash
 
 DN_DATE=$(date +%Y-%m%d)
-
 MEDIA_ID="DN${DN_DATE/-}"
 
 PROCESS_DIR="$(mktemp -d)"
+mkdir -p "$PROCESS_DIR"
+
 _validate_url(){
     if [[ `wget -S --spider $1  2>&1 | grep 'HTTP/1.1 200 OK'` ]] ; then
         echo "true"
@@ -16,7 +17,6 @@ _validate_url(){
 MP4_FILE="http://mpeg.democracynow.org/dn${DN_DATE}-hd.mp4"
 SCC_FILE="https://www.democracynow.org/scc/dn${DN_DATE}.scc"
 
-mkdir -p "$PROCESS_DIR"
 MP4_ONLINE=$(_validate_url "${MP4_FILE}")
 SCC_ONLINE=$(_validate_url "${SCC_FILE}")
 
