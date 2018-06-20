@@ -4,7 +4,8 @@ SCRIPTDIR=$(dirname $(which "${0}"))
 . "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
 
 DN_DATE=$(date +%Y-%m%d)
-MEDIA_ID="DN${DN_DATE/-}"
+DN_WEEKDAY=$(date +%u)
+MEDIA_ID="DEMNOW0${DN_WEEKDAY}"
 
 PROCESS_DIR="$(mktemp -d)"
 mkdir -p "$PROCESS_DIR"
