@@ -48,9 +48,9 @@ if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     _email_delivery "${MAKEYOUTUBE_DELIVERY_EMAIL_TO}"
 else
     if [[ "${MP4_ONLINE}" != "true" ]] ; then
-        echo "The MP4 file is not online at https://www.democracynow.org/static yet."
+        echo "The MP4 file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
     fi
     if [[ "${SCC_ONLINE}" == "true" ]] ; then
-        echo "The SCC file is not online at https://www.democracynow.org/static yet."
+        echo "The SCC file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
     fi
 fi
