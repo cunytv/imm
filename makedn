@@ -2,9 +2,9 @@
 
 DN_DATE=$(date +%Y-%m%d)
 
-PROCESS_DIR="/tmp/dn${DN_DATE}"
 MEDIA_ID="DN${DN_DATE/-}"
 
+PROCESS_DIR="$(mktemp -d)"
 _validate_url(){
     if [[ `wget -S --spider $1  2>&1 | grep 'HTTP/1.1 200 OK'` ]] ; then
         echo "true"
