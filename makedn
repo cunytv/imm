@@ -32,6 +32,10 @@ if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     uploadomneon "${PROCESS_DIR}/service/${MEDIA_ID}.mov"
     echo "Delivering scc to Omneon"
     uploadomneon "${PROCESS_DIR}/${MEDIA_ID}.scc"
+    echo "Cleaning up temporary files."
+    rm -v "${PROCESS_DIR}/service/${MEDIA_ID}.mov"
+    rm -v "${PROCESS_DIR}/${MEDIA_ID}.scc"
+    rm -v "${PROCESS_DIR}/${MEDIA_ID}.mp4"
 else
     if [[ "${MP4_ONLINE}" != "true" ]] ; then
         echo "The MP4 file is not online at https://www.democracynow.org/static yet."
