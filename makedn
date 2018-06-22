@@ -1,0 +1,60 @@
+#!/bin/bash
+
+SCRIPTDIR=$(dirname $(which "${0}"))
+. "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
+
+DN_DATE=$(date +%Y-%m%d)
+DN_WEEKDAY=$(date +%u)
+MEDIA_ID="DEMNOW0${DN_WEEKDAY}"
+
+PROCESS_DIR="$(mktemp -d)"
+mkdir -p "$PROCESS_DIR"
+
+_validate_url(){
+    if [[ `wget -S --spider $1  2>&1 | grep 'HTTP/1.1 200 OK'` ]] ; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+MP4_FILE="http://mpeg.democracynow.org/dn${DN_DATE}-hd.mp4"
+SCC_FILE="https://www.democracynow.org/scc/dn${DN_DATE}.scc"
+
+MP4_ONLINE=$(_validate_url "${MP4_FILE}")
+SCC_ONLINE=$(_validate_url "${SCC_FILE}")
+
+if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
+    #download
+    _report -dt "DN files for ${DN_DATE} are online. Processing files in ${PROCESS_DIR}."
+    _report -dt "Downloading Democracy Now SCC"
+    wget "${SCC_FILE}" -O "${PROCESS_DIR}/${MEDIA_ID}.scc"
+    _report -dt "Downloading Democracy Now MP4"
+    wget "${MP4_FILE}" -O "${PROCESS_DIR}/${MEDIA_ID}.mp4"
+    _report -dt "Running makebroadcast on ${MEDIA_ID}.mp4"
+
+    #transcode
+    makebroadcast "${PROCESS_DIR}/${MEDIA_ID}.mp4"
+
+    #deliver
+    _report -dt "Delivering mov to Omneon"
+    uploadomneon "${PROCESS_DIR}/service/${MEDIA_ID}.mov"
+    _report -dt "Delivering scc to Omneon"
+    uploadomneon "${PROCESS_DIR}/${MEDIA_ID}.scc"
+
+    # cleanup
+    _report -dt "Cleaning up temporary files."
+    rm -v "${PROCESS_DIR}/service/${MEDIA_ID}.mov"
+    rm -v "${PROCESS_DIR}/${MEDIA_ID}.scc"
+    rm -v "${PROCESS_DIR}/${MEDIA_ID}.mp4"
+
+    # announce
+    _email_delivery "${MAKEYOUTUBE_DELIVERY_EMAIL_TO}"
+else
+    if [[ "${MP4_ONLINE}" != "true" ]] ; then
+        _report -wt "The MP4 file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
+    fi
+    if [[ "${SCC_ONLINE}" != "true" ]] ; then
+        _report -wt "The SCC file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
+    fi
+fi
