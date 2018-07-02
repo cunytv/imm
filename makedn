@@ -18,6 +18,15 @@ _validate_url(){
     fi
 }
 
+_validate_scc(){
+    SCC="${1}"
+    if [[ "$(head -c 9 "${SCC}")" == "Scenarist" ]] ; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
 MP4_FILE="http://mpeg.democracynow.org/dn${DN_DATE}-hd.mp4"
 SCC_FILE="https://www.democracynow.org/scc/dn${DN_DATE}.scc"
 
@@ -29,6 +38,10 @@ if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     _report -dt "DN files for ${DN_DATE} are online. Processing files in ${PROCESS_DIR}."
     _report -dt "Downloading Democracy Now SCC"
     wget "${SCC_FILE}" -O "${PROCESS_DIR}/${MEDIA_ID}.scc"
+    if [[ "$(_validate_scc "${PROCESS_DIR}/${MEDIA_ID}.scc")" != "true" ]] ; then
+        _report -wt "The SCC file for ${DN_DATE} is not VALID yet. See ${SCC_FILE}."
+        exit
+    fi
     _report -dt "Downloading Democracy Now MP4"
     wget "${MP4_FILE}" -O "${PROCESS_DIR}/${MEDIA_ID}.mp4"
     _report -dt "Running makebroadcast on ${MEDIA_ID}.mp4"
@@ -55,6 +68,6 @@ else
         _report -wt "The MP4 file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
     fi
     if [[ "${SCC_ONLINE}" != "true" ]] ; then
-        _report -wt "The SCC file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
+        _report -wt "The SCC file for ${DN_DATE} is not online at https://www.democracynow.org/static yet. See ${SCC_FILE}."
     fi
 fi
