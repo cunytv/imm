@@ -18,6 +18,54 @@ _validate_url(){
     fi
 }
 
+_validate_scc(){
+    SCC="${1}"
+    if [[ "$(head -c 9 "${SCC}")" == "Scenarist" ]] ; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
+_usage(){
+        echo
+        echo "makedn"
+        echo "This application will download, transcode and deliver video and scc files from democracynow.org/static."
+        echo "Usage: $(basename "${0}") [ YYYY-MMDD ]"
+        echo "  -h  show this help"
+        echo
+        echo "Running:"
+        echo "    makedn"
+        echo "will process the current day's file"
+        echo
+        echo "running"
+        echo "    makedn 2018-0704"
+        echo "will process the file for July 4th, 2018. Be sure to provide the date in YYYY-MMDD format."
+        echo
+        exit
+}
+
+OPTIND=1
+while getopts ":h" OPT ; do
+    case "${OPT}" in
+        h) _usage ;;
+        *) echo "bad option -${OPTARG}" ; _usage ;;
+        :) echo "Option -${OPTARG} requires an argument" ; _writeerrorlog "makedn" "The option selected required an argument and none was provided. The script had to exit." ; exit 1 ;;
+    esac
+done
+shift $(( ${OPTIND} - 1 ))
+
+if [[ -n "${1}" ]] ; then
+    USER_DATE="${1}"
+    if [[ -n "$(echo "$USER_DATE" | grep "[2][0][0-9][0-9]-[0-1][0-9][0-3][0-9]")" ]] ; then
+        DN_DATE="${USER_DATE}"
+        _report -dt "Will use $USER_DATE instead of ${DN_DATE}"
+    else
+        _report -wt "${USER_DATE} is not properly formated. Used YYYY-MMDD format."
+        exit
+    fi
+fi
+
 MP4_FILE="http://mpeg.democracynow.org/dn${DN_DATE}-hd.mp4"
 SCC_FILE="https://www.democracynow.org/scc/dn${DN_DATE}.scc"
 
@@ -29,6 +77,10 @@ if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     _report -dt "DN files for ${DN_DATE} are online. Processing files in ${PROCESS_DIR}."
     _report -dt "Downloading Democracy Now SCC"
     wget "${SCC_FILE}" -O "${PROCESS_DIR}/${MEDIA_ID}.scc"
+    if [[ "$(_validate_scc "${PROCESS_DIR}/${MEDIA_ID}.scc")" != "true" ]] ; then
+        _report -wt "The SCC file for ${DN_DATE} is not VALID yet. See ${SCC_FILE}."
+        exit
+    fi
     _report -dt "Downloading Democracy Now MP4"
     wget "${MP4_FILE}" -O "${PROCESS_DIR}/${MEDIA_ID}.mp4"
     _report -dt "Running makebroadcast on ${MEDIA_ID}.mp4"
@@ -49,12 +101,12 @@ if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     rm -v "${PROCESS_DIR}/${MEDIA_ID}.mp4"
 
     # announce
-    _email_delivery "${MAKEYOUTUBE_DELIVERY_EMAIL_TO}"
+    _email_delivery "oksana.israilova@tv.cuny.edu"
 else
     if [[ "${MP4_ONLINE}" != "true" ]] ; then
         _report -wt "The MP4 file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
     fi
     if [[ "${SCC_ONLINE}" != "true" ]] ; then
-        _report -wt "The SCC file for ${DN_DATE} is not online at https://www.democracynow.org/static yet."
+        _report -wt "The SCC file for ${DN_DATE} is not online at https://www.democracynow.org/static yet. See ${SCC_FILE}."
     fi
 fi
