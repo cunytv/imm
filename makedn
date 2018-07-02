@@ -27,6 +27,17 @@ _validate_scc(){
     fi
 }
 
+if [[ -n "${1}" ]] ; then
+    USER_DATE="${1}"
+    if [[ -n "$(echo "$USER_DATE" | grep "[2][0][0-9][0-9]-[0-1][0-9][0-3][0-9]")" ]] ; then
+        DN_DATE="${USER_DATE}"
+        _report -dt "Will use $USER_DATE instead of ${DN_DATE}"
+    else
+        _report -wt "${USER_DATE} is not properly formated. Used YYYY-MMDD format."
+        exit
+    fi
+fi
+
 MP4_FILE="http://mpeg.democracynow.org/dn${DN_DATE}-hd.mp4"
 SCC_FILE="https://www.democracynow.org/scc/dn${DN_DATE}.scc"
 
