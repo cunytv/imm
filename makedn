@@ -27,6 +27,34 @@ _validate_scc(){
     fi
 }
 
+_usage(){
+        echo
+        echo "makedn"
+        echo "This application will download, transcode and deliver video and scc files from democracynow.org/static."
+        echo "Usage: $(basename "${0}") [ YYYY-MMDD ]"
+        echo "  -h  show this help"
+        echo
+        echo "Running:"
+        echo "    makedn"
+        echo "will process the current day's file"
+        echo
+        echo "running"
+        echo "    makedn 2018-0704"
+        echo "will process the file for July 4th, 2018. Be sure to provide the date in YYYY-MMDD format."
+        echo
+        exit
+}
+
+OPTIND=1
+while getopts ":h" OPT ; do
+    case "${OPT}" in
+        h) _usage ;;
+        *) echo "bad option -${OPTARG}" ; _usage ;;
+        :) echo "Option -${OPTARG} requires an argument" ; _writeerrorlog "makedn" "The option selected required an argument and none was provided. The script had to exit." ; exit 1 ;;
+    esac
+done
+shift $(( ${OPTIND} - 1 ))
+
 if [[ -n "${1}" ]] ; then
     USER_DATE="${1}"
     if [[ -n "$(echo "$USER_DATE" | grep "[2][0][0-9][0-9]-[0-1][0-9][0-3][0-9]")" ]] ; then
