@@ -4,8 +4,6 @@ SCRIPTDIR=$(dirname $(which "${0}"))
 . "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
 
 DN_DATE=$(date +%Y-%m%d)
-DN_WEEKDAY=$(date +%u)
-MEDIA_ID="DEMNOW0${DN_WEEKDAY}"
 
 PROCESS_DIR="$(mktemp -d)"
 mkdir -p "$PROCESS_DIR"
@@ -65,6 +63,9 @@ if [[ -n "${1}" ]] ; then
         exit
     fi
 fi
+
+DN_WEEKDAY=$(date -j -f '%Y-%m%d' "${DN_DATE}" +%u)
+MEDIA_ID="DEMNOW0${DN_WEEKDAY}"
 
 MP4_FILE="http://mpeg.democracynow.org/dn${DN_DATE}-hd.mp4"
 SCC_FILE="https://www.democracynow.org/scc/dn${DN_DATE}.scc"
