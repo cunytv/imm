@@ -301,7 +301,7 @@ if [ -s "${NYCM_BAD_FILENAMES}" ] ; then
 fi
 
 ### REPORT ON NEARLINE FILES
-stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"*.mov | grep -v "/$" | sed 's:*$::g' > "${NYCMG_NEARLINE_STAT}"
+stat -F -l -t '%FT%T' "${NYCMG_NEARLINE_PATH}/"*.m[ox][vf] | grep -v "/$" | sed 's:*$::g' > "${NYCMG_NEARLINE_STAT}"
 cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "${NYCMG_NEARLINE}"
 comm -2 -3 "${NYCMG_NEARLINE}" "${NYCM_FILLER_IDS}" > "${NYCMG_NEARLINE_NOT_FILLER}"
 if [ ! -f "${CUNYTV_NEARLINE_STAT}" ] ; then
