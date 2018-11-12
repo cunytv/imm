@@ -90,7 +90,7 @@ _maketemp(){
 ## connect to Autosaved folder if not already
 if [ "$(mount | grep -c /Volumes/Autosaved)" = 0 ] ; then
     _mkdir2 /Volumes/Autosaved
-    mount -t smbfs "smb://archivesx@10.25.102.137/Autosaved" /Volumes/Autosaved
+    mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /Volumes/Autosaved
 fi
 
 # shortcuts
