@@ -90,7 +90,7 @@ _maketemp(){
 ## connect to Autosaved folder if not already
 if [ "$(mount | grep -c /Volumes/Autosaved)" = 0 ] ; then
     _mkdir2 /Volumes/Autosaved
-    mount -t smbfs "smb://archivesx@10.25.102.137/Autosaved" /Volumes/Autosaved
+    mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /Volumes/Autosaved
 fi
 
 # shortcuts
@@ -148,6 +148,7 @@ NYCM_UNREGISTERED="${INTERNALDIR}/nycm_unregistered.txt"
 NYCM_UNREGISTERED_DETAILS="${INTERNALDIR}/nycm_unregistered.csv"
 NYCM_REGISTERED="${INTERNALDIR}/nycm_registered.txt"
 NYCMG4AIR="${INTERNALDIR}/nycmg_ids_in_upcoming_air.txt"
+NYCMG4AIR_SNAPSHOT="${NYCM_SNAPSHOTDIR}/nycmg_ids_in_upcoming_air_$(_get_iso8601_c).txt"
 CUNYTV4AIR="${INTERNALDIR}/cunytv_ids_in_upcoming_air.txt"
 NYCM_FILLER_IDS="${INTERNALDIR}/nycmg_ids_of_filler.txt"
 CUNY_FILLER_IDS="${INTERNALDIR}/cunytv_ids_of_filler.txt"
@@ -208,7 +209,10 @@ printf "%-32s %12d %20s \n" "CUNYTV (future)" "$(cat "${CUNYTV_TOAIR}" | tr "\r"
 printf "%-32s %12d %20s \n" "CUNYTV (all)" "$(cat "${CUNYTV4AIR}" | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV4AIR}" | awk '{print $6}')"
 # get NYCMG mediaids that are needed for air
 for abouttorun in "${abouttoruns[@]}" ; do
-    if [[ -f "${abouttorun}" ]] ; then
+    if [[ "$(find "${abouttorun}" -mtime +1d -print)" ]] ; then
+        _report -w "WARNING ${abouttorun} is suspiciously over a day old."
+        exit
+    elif [[ -f "${abouttorun}" ]] ; then
         cp "${abouttorun}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
         printf "%-32s %12d %20s \n" "$(basename "${abouttorun}")" "$(xml sel -t -v //media/@mediaName "${abouttorun}" | grep -v "^$" | sort -u | wc -l)" "$(xml sel -t -v //properties/history/modified/@time "${abouttorun}")"
     else
@@ -256,6 +260,7 @@ done < "${CUNY_UNREGISTERED}"
 
 stat -F -l -t '%FT%T' "${OMNEON_PATH_NYCM}/"* | grep -v "/$" | sed 's:*$::g' > "${NYCM_ON_OMNEON_FILES_STAT}"
 cp "${NYCM_ON_OMNEON_FILES_STAT}" "${NYCM_ON_OMNEON_FILES_STAT_SNAPSHOT}"
+cp "${NYCMG4AIR}" "${NYCMG4AIR_SNAPSHOT}"
 cut -d " " -f 7- "${NYCM_ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${NYCM_OMNEON_IDS}"
 awk -v date="${AGED_DATE}" '$6 <= date' "${NYCM_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${NYCM_OMNEON_IDS_OLD}"
 comm -2 -3 "${NYCM_OMNEON_IDS_OLD}" <(sort "${EVERGREEN_LIST}") > "$NYCM_OMNEON_IDS_NO_EVERGREEN"
