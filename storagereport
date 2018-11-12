@@ -209,7 +209,10 @@ printf "%-32s %12d %20s \n" "CUNYTV (future)" "$(cat "${CUNYTV_TOAIR}" | tr "\r"
 printf "%-32s %12d %20s \n" "CUNYTV (all)" "$(cat "${CUNYTV4AIR}" | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV4AIR}" | awk '{print $6}')"
 # get NYCMG mediaids that are needed for air
 for abouttorun in "${abouttoruns[@]}" ; do
-    if [[ -f "${abouttorun}" ]] ; then
+    if [[ "$(find "${abouttorun}" -mtime +1d -print)" ]] ; then
+        _report -w "WARNING ${abouttorun} is suspiciously over a day old."
+        exit
+    elif [[ -f "${abouttorun}" ]] ; then
         cp "${abouttorun}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
         printf "%-32s %12d %20s \n" "$(basename "${abouttorun}")" "$(xml sel -t -v //media/@mediaName "${abouttorun}" | grep -v "^$" | sort -u | wc -l)" "$(xml sel -t -v //properties/history/modified/@time "${abouttorun}")"
     else
