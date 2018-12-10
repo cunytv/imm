@@ -1,0 +1,25 @@
+#!/bin/bash
+SCRIPTDIR=$(dirname $(which "${0}"))
+. "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
+
+_ask_mediaid
+if [[ -f "${1}" ]] ; then
+    INPUT="${1}"
+else
+    _ask_input
+fi
+ORIG_NAME="$(basename "${INPUT}")"
+
+OUTPUT_DIR="${HOME}/Desktop/temp/"
+
+_mkdir2 "${OUTPUT_DIR}"
+_report -dt "Making a temporary broadcast file in ${OUTPUT_DIR}"
+makebroadcast -o "${OUTPUT_DIR}" "${INPUT}"
+OUTPUT_FILE="${OUTPUT_DIR}/${MEDIAID}.mov"
+mv -v "${OUTPUT_DIR}/${ORIG_NAME}" "${OUTPUT_FILE}"
+if [[ -s "${OUTPUT_FILE}" ]] ; then
+    _report -dt "Attempting to deliver ${OUTPUT_FILE} to the omneon"
+    uploadomneon "${OUTPUT_FILE}"
+    rm -v "${OUTPUT_FILE}"
+    _report -dt "Check the omneon for ${MEDIAID}"
+fi
