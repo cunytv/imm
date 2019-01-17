@@ -51,6 +51,8 @@
 # 2018-03-13 - Adding CNJZ
 #
 # 2018-04-17 - Adding PATC
+#
+# 2019-01-17 - Adding SHUS, THMP, TWTT
 #----------------------------------------------------------------------------
 
 use strict;
@@ -110,14 +112,17 @@ my @noGoList = (
 "PTSBL",
 "SCIU",
 "SDSW",
+"SHUS",
 "SMRB",
 "SPEC",
 "SPLT",
 "STRP",
 "SWTB",
+"THMP",
 "THTK",
 "TKHL",
 "TNGD",
+"TWTT",
 "TEST",
 "WW"
 );
