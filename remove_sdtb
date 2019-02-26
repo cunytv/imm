@@ -1,13 +1,27 @@
 #!/bin/bash
-while [[ "${@}" != "" ]] ; do
-  FILE="$1"
+
+_fix(){
+  FILE="${1}"
   NAME="$(basename "${FILE}")"
-  shift
   SDTP_OFFSET="$(mediaconch -mt "${FILE}" | xmlstarlet sel -N mt="https://mediaarea.net/mediatrace" -t -m "mt:MediaTrace/mt:media/mt:block[@name='File header']/mt:block[@name='Track']/mt:block[@name='Media']/mt:block[@name='Media Information']/mt:block[@name='Sample Table']/mt:block[@name='Sample Dependency']/mt:block[@name='Header']/mt:data[@name='Name']" -v @offset)"
   if [[ "${SDTP_OFFSET}" = "" ]] ; then
     echo "${NAME} has no sample dependency table anyway, skipping"
   else
     echo "${NAME} has a sample dependency table at ${SDTP_OFFSET}"
     sfk setbytes "${FILE}" "${SDTP_OFFSET}" "skip" -yes
+  fi
+}
+
+while [[ "${@}" != "" ]] ; do
+  INPUT="${1}"
+  shift
+  if [[ -f "${INPUT}" ]] ; then
+    _fix "${INPUT}"
+  elif [[ -d "${INPUT}" ]] ; then
+    find "${INPUT}" -type f -name "*.mov" -path "*ISO*" | while read FILE ; do
+      _fix "${FILE}"
+    done
+  else
+    "${1} was not a file or directory, please run '${0} file.mov' or '${0} directory/with/letters/ISO/in/it'"
   fi
 done
