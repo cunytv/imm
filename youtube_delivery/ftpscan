@@ -21,7 +21,7 @@ logit(){
 }
 
 if [[ -f "$LOCK" ]] ; then
-  "$0 is already running, remove the $LOCK file is you need to reset"
+  echo "$0 is already running, remove the $LOCK file is you need to reset"
 else
   touch "$LOCK"
   # Get the current file list from the directory
