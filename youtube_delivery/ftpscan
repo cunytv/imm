@@ -5,12 +5,14 @@
 
 LOCK="/tmp/$(basename "${0}").lock"
 
+YOUTUBEUPLOADER="/Users/cunytvadmin/go/bin/youtubeuploader"
+YOUTUBECACHE="/Users/cunytvadmin/go/bin/request.token"
+
 dir="/Volumes/From library/youtube_delivery"
 donedir="${dir}/Uploaded"
 dupdir="${dir}/Duplicates"
 errordir="${dir}/Errors"
-logDir="/var/log/"
-UPLOADED_MD5S="/Users/cunytvadmin/uploaded.hash"
+logDir="/Users/cunytvadmin"
 ytErr="/tmp/youtube-upload2.stderr"
 
 logit(){
@@ -26,26 +28,19 @@ else
   touch "$LOCK"
   # Get the current file list from the directory
   find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1 | while read file ; do
-    echo "getting checksum for $file"
-    FILE_MD5="$(md5 -q "${file}")"
-    FILE_NAME="$(basename "${file}")"
-    if [[ "$(grep "${FILE_MD5}" "${UPLOADED_MD5S}")" ]] ; then
-      logit "${FILE_NAME} is already uploaded, according to md5 match (${FILE_MD5})."
-      mv -v "${file}" "${dupdir}"
-    else
-      echo "Trying to upload ${file} to youtube"
-      YOUTUBE_ID="$(/usr/local/bin/youtube-upload --client-secrets="/Library/Frameworks/Python.framework/Versions/2.7/share/youtube_upload/client_secrets.json" --credentials-file="/Users/cunytvadmin/.youtube-upload-credentials.json" --title="$(basename "${file%.*}")" --privacy=private "${file}" 2>$ytErr)"
-      echo "Outcome of uploading ${file} is ${YOUTUBE_ID}."
-      if [[ "${#YOUTUBE_ID}" == 11 ]] ; then
-        mv -v "${file}" "${donedir}"
-        logit "${FILE_NAME} is uploaded, (${YOUTUBE_ID})."
-        echo "${FILE_MD5}" >> "${UPLOADED_MD5S}"
-      else
-        mv -v "${file}" "${errordir}"
-        logit "${FILE_NAME} had an error, see ${errordir}.stderr.txt."
-        cat "${ytErr}" "${errordir}.stderr.txt"
-      fi
-    fi
+  echo "Trying to upload ${file} to youtube"
+  FILE_NAME="$(basename "${file}")"
+  # --credentials-file="${logDir}/.youtube-upload-credentials.json"
+  YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" -title "$(basename "${file%.*}")" -privacy "private" -filename "${file}" 2>$ytErr | grep -i "success" | awk 'NF>1{print $NF}')"
+  echo "Outcome of uploading ${file} is ${YOUTUBE_ID}."
+  if [[ "${#YOUTUBE_ID}" == 11 ]] ; then
+    mv -v "${file}" "${donedir}"
+    logit "${FILE_NAME} is uploaded, (${YOUTUBE_ID})."
+  else
+    mv -v "${file}" "${errordir}"
+    logit "${FILE_NAME} had an error, see ${errordir}.stderr.txt."
+    cat "${ytErr}" >> "${errordir}/errors.stderr.txt"
+  fi
   done
   if [[ -f "$LOCK" ]] ; then
 	rm "$LOCK"
