@@ -3,17 +3,35 @@ PREPDIR="/Volumes/filestore/PREPPED"
 
 SCRIPTDIR="$(dirname "$0")"
 while read file ; do
-    echo "Working on ${file}"
-    rs_uploadfile "${file}"
     MEDIAID=$(basename "${file%.*}")
-    prot2rs "${MEDIAID}"
+    echo "Working on ${file}"
     RS_ID=$("${SCRIPTDIR}/rs_search" "${MEDIAID}")
     if [[ -z "${RS_ID}" ]] ; then
-        echo "Something went wrong and ${MEDIAID} does not appear to be in resourcespace."
-    else
-        echo "Cleaning up and removing ${file} which is now at pages/view.php?ref=${RS_ID}."
-        if [[ -f "${file}" ]] ; then
-            rm -v "${file}"
+        echo "${MEDIAID} does not appear in resourcespace, so uploading..."
+        rs_uploadfile "${file}"
+        prot2rs "${MEDIAID}"
+        RS_ID=$("${SCRIPTDIR}/rs_search" "${MEDIAID}")
+        if [[ -z "${RS_ID}" ]] ; then
+            echo "Something went wrong and ${MEDIAID} does not appear to be in resourcespace."
+            if [[ ! -d "${PREPDIR}/upload_error" ]] ; then
+                mkdir "${PREPDIR}/upload_error"
+            fi
+            mv -v "${file}" "${PREPDIR}/upload_error/"
+        else
+            echo "Cleaning up and moving ${file} which is now at pages/view.php?ref=${RS_ID}."
+            if [[ ! -d "${PREPDIR}/uploaded" ]] ; then
+                mkdir "${PREPDIR}/uploaded"
+            fi
+            if [[ -f "${file}" ]] ; then
+                rm -v "${file}"
+            fi
         fi
+    else
+        echo "${MEDIAID} is already in resoursace at ${RS_ID} so going to skip uploading this."
+        if [[ ! -d "${PREPDIR}/already_uploaded" ]] ; then
+            mkdir "${PREPDIR}/already_uploaded"
+        fi
+        mv -v "${file}" "${PREPDIR}/already_uploaded/"
     fi
-done < <(find "${PREPDIR}" -type f -size +0)
+done < <(find "${PREPDIR}" -type f -size +0 -maxdepth 1)
+
