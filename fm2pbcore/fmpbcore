@@ -1,3 +1,3 @@
 #!/bin/bash
 
-curl -s "http://10.10.201.22/fmi/xml/fmresultset.xml?-db=CUNY_TV_archive&-lay=pbcoreform&PBCoreIdentifier::identifier=${1}&-find" | xsltproc fm2pbcore.xsl -
+curl -s "http://10.10.201.48/fmi/xml/fmresultset.xml?-db=CUNY_TV_archive&-lay=pbcoreform&PBCoreInstantiationIdentifier::instantiationIdentifier=${1}&-find" | xsltproc fm2pbcore.xsl -
