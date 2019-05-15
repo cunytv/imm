@@ -1,0 +1,37 @@
+#!/bin/bash
+VERSION="1.0"
+SCRIPTDIR=$(dirname $(which "${0}"))
+. "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
+
+DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media"
+SCC_DIRECTORY="/Volumes/fs0/cunytv.dir/subtitle.dir"
+
+_checkdir "${DELIVERY_DIRECTORY}"
+_checkdir "${SCC_DIRECTORY}"
+
+find "${DELIVERY_DIRECTORY}" -name "*.mp4" | sort | while read file ; do
+    DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media/test"
+    BASENAME="$(basename "${file}")"
+    MEDIAID="$(echo "${BASENAME}" | grep -E -o "^[A-Z0-9]*([_]+[V]+[0-9]*)?" | head -n 1)"
+    _report -d -n "Found ${BASENAME} (${MEDIAID}) "
+    HOPEFUL_SCC="${SCC_DIRECTORY}/${MEDIAID}.scc"
+    HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${BASENAME%.*}.en_US.srt"
+    if [[ -f "${HOPEFUL_SRT}" ]] ; then
+        _report -d "and $(basename "${HOPEFUL_SRT}") is already there."
+    elif [[ -f "${HOPEFUL_SCC}" ]] ; then
+        _report -d "and $(basename ${HOPEFUL_SCC}) exists, so going to add an srt from that."
+        CHAPTER_TIME="$(ffprobe -i "${file}" -show_entries format_tags=comment -of default=nw=1:nk=1)"
+        if [[ -n "${CHAPTER_TIME}" ]] ; then
+            INTIME="$(echo "${CHAPTER_TIME}" | grep -o "in=[0-9.]*" | cut -d= -f2)"
+            OUTTIME="$(echo "${CHAPTER_TIME}" | grep -o "out=[0-9.]*" | cut -d= -f2)"
+            _report -d "${BASENAME} is a chapter file with this timing $INTIME - $OUTTIME of ${MEDIAID}"
+            if [[ -n "${INTIME}" && -n "${OUTTIME}" ]] ; then
+                ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" -ss "${INTIME}" -to "$OUTTIME" -f srt - | sed 's|{\\an7}|{\\an2}|g' > "${HOPEFUL_SRT}"
+            fi
+        else
+            ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" -f srt - | sed 's|{\\an7}|{\\an2}|g' > "${HOPEFUL_SRT}"
+        fi
+    else
+        _report -w "and there's nothing i can do about that."
+    fi
+done
