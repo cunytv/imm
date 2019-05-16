@@ -26,10 +26,10 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" | sort | while read file ; do
             OUTTIME="$(echo "${CHAPTER_TIME}" | grep -o "out=[0-9.]*" | cut -d= -f2)"
             _report -d "${BASENAME} is a chapter file with this timing $INTIME - $OUTTIME of ${MEDIAID}"
             if [[ -n "${INTIME}" && -n "${OUTTIME}" ]] ; then
-                ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" -ss "${INTIME}" -to "$OUTTIME" -f srt - | sed 's|{\\an7}|{\\an2}|g' > "${HOPEFUL_SRT}"
+                ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" -ss "${INTIME}" -to "$OUTTIME" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g' > "${HOPEFUL_SRT}"
             fi
         else
-            ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" -f srt - | sed 's|{\\an7}|{\\an2}|g' > "${HOPEFUL_SRT}"
+            ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g' > "${HOPEFUL_SRT}"
         fi
     else
         _report -w "and there's nothing i can do about that."
