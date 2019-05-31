@@ -32,7 +32,7 @@ MOUNT_YOUTUBE=/tmp/youtube_upload/
 if [[ ! -d "${MOUNT_YOUTUBE}" ]] ; then
 	mkdir "${MOUNT_YOUTUBE}"
 fi
-mount_smbfs //archivesx:cunytvx@cunytv/From%20library/youtube_delivery "${MOUNT_YOUTUBE}"
+mount_afp afp://archivesx:cunytvx@cunytv/From%20library/youtube_delivery "${MOUNT_YOUTUBE}"
 
 # command-line options to set mediaid and original variables
 OPTIND=1
