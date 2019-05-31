@@ -10,27 +10,38 @@ _checkdir "${DELIVERY_DIRECTORY}"
 _checkdir "${SCC_DIRECTORY}"
 
 find "${DELIVERY_DIRECTORY}" -name "*.mp4" | sort | while read file ; do
-    DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media/test"
+    unset MIDDLE_OPTIONS
+    DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media/test3"
     BASENAME="$(basename "${file}")"
-    MEDIAID="$(echo "${BASENAME}" | grep -E -o "^[A-Z0-9]*([_]+[V]+[0-9]*)?" | head -n 1)"
-    _report -d -n "Found ${BASENAME} (${MEDIAID}) "
+    COMMENT="$(ffprobe -i "${file}" -show_entries format_tags=comment -of default=nw=1:nk=1)"
+    if [[ -n "${COMMENT}" ]] ; then
+        EMBEDDED_MEDIAID="$(echo "${COMMENT}" | grep -o "mediaid=[0-9.]*" | cut -d= -f2)"
+        if [[ -n "${EMBEDDED_MEDIAID}" ]] ; then
+            _report -d "Using an embedded mediaid: ${EMBEDDED_MEDIAID}"
+            MEDIAID="${EMBEDDED_MEDIAID}"
+        fi
+        INTIME="$(echo "${COMMENT}" | grep -o "in=[0-9.]*" | cut -d= -f2)"
+        OUTTIME="$(echo "${COMMENT}" | grep -o "out=[0-9.]*" | cut -d= -f2)"
+        _report -d "${BASENAME} is a chapter file with this timing ($INTIME - $OUTTIME) of ${MEDIAID}"
+        if [[ -n "${INTIME}" ]]; then
+            MIDDLE_OPTIONS+=(-ss "${INTIME}")
+        fi
+        if [[ -n "${OUTTIME}" ]] ; then
+            MIDDLE_OPTIONS+=(-to "$OUTTIME")
+        fi
+    else
+        MEDIAID="$(echo ${BASENAME%.*} | sed 's|_SEG[0-9]{2}.*||g')"
+    fi
+    _report -d -n "Found ${BASENAME} (${MEDIAID})"
     HOPEFUL_SCC="${SCC_DIRECTORY}/${MEDIAID}.scc"
-    HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${BASENAME%.*}.en_US.srt"
+    HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${MEDIAID}.en_US.srt"
+    DURATION_MP4="$(ffprobe -loglevel 0 -i "${file}" -show_entries format=duration -of default=nw=1:nk=1)"
+    DURATION_SCC=
     if [[ -f "${HOPEFUL_SRT}" ]] ; then
         _report -d "and $(basename "${HOPEFUL_SRT}") is already there."
     elif [[ -f "${HOPEFUL_SCC}" ]] ; then
         _report -d "and $(basename ${HOPEFUL_SCC}) exists, so going to add an srt from that."
-        CHAPTER_TIME="$(ffprobe -i "${file}" -show_entries format_tags=comment -of default=nw=1:nk=1)"
-        if [[ -n "${CHAPTER_TIME}" ]] ; then
-            INTIME="$(echo "${CHAPTER_TIME}" | grep -o "in=[0-9.]*" | cut -d= -f2)"
-            OUTTIME="$(echo "${CHAPTER_TIME}" | grep -o "out=[0-9.]*" | cut -d= -f2)"
-            _report -d "${BASENAME} is a chapter file with this timing $INTIME - $OUTTIME of ${MEDIAID}"
-            if [[ -n "${INTIME}" && -n "${OUTTIME}" ]] ; then
-                ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" -ss "${INTIME}" -to "$OUTTIME" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g' > "${HOPEFUL_SRT}"
-            fi
-        else
-            ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g' > "${HOPEFUL_SRT}"
-        fi
+        ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" "${MIDDLE_OPTIONS[@]}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${HOPEFUL_SRT}"
     else
         _report -w "and there's nothing i can do about that."
     fi
