@@ -20,8 +20,8 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" | sort | while read file ; do
             _report -d "Using an embedded mediaid: ${EMBEDDED_MEDIAID}"
             MEDIAID="${EMBEDDED_MEDIAID}"
         fi
-        INTIME="$(echo "${COMMENT}" | grep -o "in=[0-9.]*" | cut -d= -f2)"
-        OUTTIME="$(echo "${COMMENT}" | grep -o "out=[0-9.]*" | cut -d= -f2)"
+        INTIME="$(echo "${COMMENT}" | grep -o "in=[0-9:.]*" | cut -d= -f2)"
+        OUTTIME="$(echo "${COMMENT}" | grep -o "out=[0-9:.]*" | cut -d= -f2)"
         _report -d "${BASENAME} is a chapter file with this timing ($INTIME - $OUTTIME) of ${MEDIAID}"
         if [[ -n "${INTIME}" ]]; then
             MIDDLE_OPTIONS+=(-ss "${INTIME}")
