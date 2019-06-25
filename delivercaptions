@@ -16,7 +16,7 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" | sort | while read file ; do
         mkdir "${DELIVERY_DIRECTORY}"
     fi
     BASENAME="$(basename "${file}")"
-    COMMENT="$(ffprobe -i "${file}" -show_entries format_tags=comment -of default=nw=1:nk=1)"
+    COMMENT="$(ffprobe -v 0 -i "${file}" -show_entries format_tags=comment -of default=nw=1:nk=1)"
     if [[ -n "${COMMENT}" ]] ; then
         EMBEDDED_MEDIAID="$(echo "${COMMENT}" | grep -o "mediaid=[0-9.]*" | cut -d= -f2)"
         if [[ -n "${EMBEDDED_MEDIAID}" ]] ; then
