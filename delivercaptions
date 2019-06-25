@@ -37,14 +37,19 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" | sort | while read file ; do
     fi
     _report -q -n "Found ${BASENAME} (${MEDIAID})"
     HOPEFUL_SCC="${SCC_DIRECTORY}/${MEDIAID}.scc"
-    HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${MEDIAID}.en_US.srt"
-    DURATION_MP4="$(ffprobe -loglevel 0 -i "${file}" -show_entries format=duration -of default=nw=1:nk=1)"
-    DURATION_SCC=
+    HOPEFUL_BASE_SRT="${DELIVERY_DIRECTORY}/${MEDIAID}.en_US.srt"
+    HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${BASENAME%.*}.en_US.srt"
+    if [[ -n "${MIDDLE_OPTIONS[@]}" ]] ; then
+        CAPTION_INPUT="${HOPEFUL_BASE_SRT}"
+        echo "GOING TO GET captions for $file from the episode srt at ${HOPEFUL_SRT}"
+    else
+        CAPTION_INPUT="${HOPEFUL_SCC}"
+    fi
     if [[ -f "${HOPEFUL_SRT}" ]] ; then
         _report -q "and $(basename "${HOPEFUL_SRT}") is already there."
     elif [[ -f "${HOPEFUL_SCC}" ]] ; then
         _report -d "and $(basename ${HOPEFUL_SCC}) exists, so going to add an srt from that."
-        ffmpeg -nostdin -hide_banner -loglevel 24 -i "${HOPEFUL_SCC}" "${MIDDLE_OPTIONS[@]}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${HOPEFUL_SRT}"
+        ffmpeg -nostdin -hide_banner -loglevel 24 -i "${CAPTION_INPUT}" "${MIDDLE_OPTIONS[@]}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${HOPEFUL_SRT}"
     else
         _report -w "and there's nothing i can do about that since ${HOPEFUL_SCC} isn't ready."
     fi
