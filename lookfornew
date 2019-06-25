@@ -23,6 +23,10 @@ _get_codec(){
     CODEC=$(mediainfo --inform="Video;%Format% %Format_Version% %Format_Profile% %Format_Commercial_IfAny% (%CodecID%)" "${1}")
 }
 
+_get_chapterlist(){
+    CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of compact=p=0:nk=1)"
+}
+
 if [ ! -f "${timefile}" ] ; then 
     filelist=$(find "${searchdirectory}" -type f ! -name .DS_Store)
 else
@@ -41,6 +45,7 @@ if [ -n "${filelist}" ] ; then
         _get_framerate "$file"
         _get_framesize "$file"
         _get_user "$file"
+        _get_chapterlist "$file"
         message+="*********\n"
         message+="Filename: $file\n"
         if [ -n "${BROADCASTDURATION}" ] ; then
@@ -59,6 +64,9 @@ if [ -n "${filelist}" ] ; then
             fi
             if [ -n "${USER}" ] ; then
                 message+="User: $USER\n\n\n"
+            fi
+            if [ -n "${CHAPTER_LIST}" ] ; then
+                message+="\nChapters:\n${CHAPTER_LIST}\n\n\n"
             fi
             if [ -n "${BROADCASTDURATION}" ] ; then
                 makegifsummary -o /tmp "$file"
