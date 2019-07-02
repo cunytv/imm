@@ -38,32 +38,39 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" -maxdepth 1 | sort | while read file 
     fi
     _report -q -n "Found ${BASENAME} (${MEDIAID})"
 
-    # deliver scc
+    # copy scc
     HOPEFUL_SCC="${SCC_DIRECTORY}/${MEDIAID}.scc"
+    TMP_SCC="/tmp/$(basename "${HOPEFUL_SCC}")"
+    if [[ -f "${HOPEFUL_SCC}" ]] && [[ ! -f "${TMP_SCC}" ]] ; then
+        cp -v "${HOPEFUL_SCC}" "${TMP_SCC}"
+    fi
+
+    # deliver scc
     COPY_SCC="${DELIVERY_DIRECTORY}/${BASENAME%.*}.scc"
-    if [[ -f "${HOPEFUL_SCC}" ]] && [[ ! -f "${COPY_SCC}" ]] ; then
-        _report -d "Making an scc from ${HOPEFUL_SCC} (${INTIME}-${OUTTIME})"
-        ffmpeg -nostdin -i "${HOPEFUL_SCC}" "${MIDDLE_OPTIONS[@]}" -c copy "${COPY_SCC}"
+    if [[ -f "${TMP_SCC}" ]] && [[ ! -f "${COPY_SCC}" ]] ; then
+        _report -d "Making an scc from ${TMP_SCC} (${INTIME}-${OUTTIME})"
+        echo "ffmpeg -nostdin -i \"${TMP_SCC}\" ${MIDDLE_OPTIONS[@]} -map_chapters -1 -map 0 -c copy ${COPY_SCC}"
+        ffmpeg -nostdin -i "${TMP_SCC}" "${MIDDLE_OPTIONS[@]}" -map 0 -c copy "${COPY_SCC}"
     fi
 
     # make srt
     HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${BASENAME%.*}.en_US.srt"
     if [[ -f "${COPY_SCC}" ]] && [[ ! -f "${HOPEFUL_SRT}" ]] ; then
-        _report -d "Making an scc from ${HOPEFUL_SCC} (${INTIME}-${OUTTIME})"
-        ffmpeg -v 0 -nostdin -i "${COPY_SCC}" "${MIDDLE_OPTIONS[@]}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${HOPEFUL_SRT}"
+        _report -d "Making an scc from ${COPY_SCC} (${INTIME}-${OUTTIME})"
+        ffmpeg -nostdin -i "${COPY_SCC}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${HOPEFUL_SRT}"
     fi
 
     # make embedded srt
     HOPEFUL_MP4EMBED="${DELIVERY_DIRECTORY}/${BASENAME%.*}_subtitled.mp4"
     if [[ -f "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_MP4EMBED}" ]] ; then
-        ffmpeg -v 0 -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -0 -map 0:v -map 0:a -map 1:s -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_MP4EMBED}"
+        ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_MP4EMBED}"
     fi
 
     # make open subs
     echo "sec $FILESECONDS"
     HOPEFUL_OPENSUB="${DELIVERY_DIRECTORY}/${BASENAME%.*}_opensub.mp4"
     if [[ -f "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_OPENSUB}" ]] &&  (( $(echo "${FILESECONDS} < 122" | bc -l) )) ; then
-        ffmpeg -nostdin -i "${file}" -vf "subtitles=${COPY_SCC}" -map_chapters -0 -c:v libx264 -crf 18 -c:a copy "${HOPEFUL_OPENSUB}"
+        ffmpeg -nostdin -i "${file}" -vf "subtitles=${COPY_SCC}" -map_chapters -1 -c:v libx264 -crf 18 -c:a copy "${HOPEFUL_OPENSUB}"
     fi
 
 done
