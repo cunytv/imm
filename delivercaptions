@@ -49,7 +49,7 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" -maxdepth 1 | sort | while read file 
     COPY_SCC="${DELIVERY_DIRECTORY}/${BASENAME%.*}.scc"
     if [[ -f "${TMP_SCC}" ]] && [[ ! -f "${COPY_SCC}" ]] ; then
         _report -d "Making an scc from ${TMP_SCC} (${INTIME}-${OUTTIME})"
-        echo "ffmpeg -nostdin -i \"${TMP_SCC}\" ${MIDDLE_OPTIONS[@]} -map_chapters -1 -map 0 -c copy ${COPY_SCC}"
+        echo "ffmpeg -nostdin -i \"${TMP_SCC}\" ${MIDDLE_OPTIONS[@]} -map 0 -c copy ${COPY_SCC}"
         ffmpeg -nostdin -i "${TMP_SCC}" "${MIDDLE_OPTIONS[@]}" -map 0 -c copy "${COPY_SCC}"
     fi
 
