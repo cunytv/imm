@@ -40,17 +40,12 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*__opensub.mp4" ! -name "*_s
 
     # copy scc
     HOPEFUL_SCC="${SCC_DIRECTORY}/${MEDIAID}.scc"
-    TMP_SCC="/tmp/$(basename "${HOPEFUL_SCC}")"
-    if [[ -f "${HOPEFUL_SCC}" ]] && [[ ! -f "${TMP_SCC}" ]] ; then
-        cp -v "${HOPEFUL_SCC}" "${TMP_SCC}"
-    fi
 
     # deliver scc
     COPY_SCC="${DELIVERY_DIRECTORY}/${BASENAME%.*}.scc"
-    if [[ -f "${TMP_SCC}" ]] && [[ ! -f "${COPY_SCC}" ]] ; then
-        _report -d "Making an scc from ${TMP_SCC} (${INTIME}-${OUTTIME})"
-        echo "ffmpeg -nostdin -i \"${TMP_SCC}\" ${MIDDLE_OPTIONS[@]} -map 0 -c copy ${COPY_SCC}"
-        ffmpeg -nostdin -i "${TMP_SCC}" "${MIDDLE_OPTIONS[@]}" -map 0 -c copy "${COPY_SCC}"
+    if [[ -f "${HOPEFUL_SCC}" ]] && [[ ! -f "${COPY_SCC}" ]] ; then
+        _report -d "Making an scc from ${HOPEFUL_SCC} (${INTIME}-${OUTTIME})"
+        ffmpeg -nostdin -i "${HOPEFUL_SCC}" "${MIDDLE_OPTIONS[@]}" -map 0 -c copy "${COPY_SCC}"
     fi
 
     # make srt
