@@ -29,6 +29,7 @@ MEDIAID="$(basename "${FILE%.*}")"
 MEDIAID_CLEAN="$(echo "${MEDIAID}" | sed 's|HD$||g;s|DV$||g;s|DV_V[0-9]$||g;s|HD_V[0-9]$||g;s|_V[0-9]$||g')"
 ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
 TEMP_PBCORE=$(_maketemp)
+EXT="${FILE##*.}"
 
 pbprotracktor "$MEDIAID" > "${TEMP_PBCORE}"
 
@@ -48,9 +49,12 @@ DATE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m
    -v "p:pbcoreAssetDate[@dateType='broadcast']" \
    -n ${TEMP_PBCORE})
        
-  ia upload "${ARCHIVE_ORG_MEDIAID}"
-  ia delete "${ARCHIVE_ORG_MEDIAID}" --all
-  echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
-  echo "Uploading ${@} to archive.org/details/${MEDIAID_CLEAN}..."
-  ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" 
-  ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" --modify="licenseurl:http://creativecommons.org/licenses/by-nc-nd/4.0/"
+  if  [[ "$EXT" = "scc" ]] ; then
+        ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" 
+  else
+      ia delete "${ARCHIVE_ORG_MEDIAID}" ;
+      echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..." ;
+      ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" ;
+      ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" ;
+  fi  
+  echo "Uploading ${@} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
