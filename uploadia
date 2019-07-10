@@ -51,14 +51,10 @@ DATE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m
        
   if  [[ "$EXT" = "scc" ]] ; then
         ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" 
-  else 
-     echo "This is not an scc file."
-  fi
-
-  if [[ "$EXT" != "scc" ]] ; then 
+  else
       ia delete "${ARCHIVE_ORG_MEDIAID}" ;
       echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..." ;
       ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" ;
-      ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" --modify="licenseurl:http://creativecommons.org/licenses/by-nc-nd/4.0/"  ;
+      ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" ;
   fi  
   echo "Uploading ${@} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
