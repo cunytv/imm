@@ -50,26 +50,30 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*__opensub.mp4" ! -name "*_s
 
     # make srt
     HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${BASENAME%.*}.en_US.srt"
-    if [[ -f "${COPY_SCC}" ]] && [[ ! -f "${HOPEFUL_SRT}" ]] ; then
         _report -d "Making an scc from ${COPY_SCC} (${INTIME}-${OUTTIME})"
+    if [[ -s "${COPY_SCC}" ]] && [[ ! -f "${HOPEFUL_SRT}" ]] ; then
         ffmpeg -nostdin -i "${COPY_SCC}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${HOPEFUL_SRT}"
     fi
 
     # make embedded srt
     HOPEFUL_MP4EMBED="${DELIVERY_DIRECTORY}/${BASENAME%.*}_subtitled.mp4"
-    if [[ -f "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_MP4EMBED}" ]] ; then
+    if [[ -s "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_MP4EMBED}" ]] ; then
         ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_MP4EMBED}"
+    elif [[ -z "${HOPEFUL_SRT}" ]] ; then
+        _report -w "Mmm, ${HOPEFUL_SRT} is empty. Please review and remove."
     fi
 
     # make open subs
     HOPEFUL_OPENSUB="${DELIVERY_DIRECTORY}/${BASENAME%.*}_opensub.mp4"
-    if [[ -f "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_OPENSUB}" ]] ; then
+    if [[ -s "${COPY_SCC}" ]] && [[ ! -f "${HOPEFUL_OPENSUB}" ]] ; then
         if [[ -z "${FILESECONDS}" ]] ; then
             FILESECONDS="$(ffprobe -v 0 -i "${file}" -show_entries format=duration -of default=nw=1:nk=1)"
         fi
         if (( $(echo "${FILESECONDS} < 122" | bc -l) )) ; then
             ffmpeg -nostdin -i "${file}" -vf "subtitles=${COPY_SCC}" -map_chapters -1 -c:v libx264 -crf 18 -c:a copy "${HOPEFUL_OPENSUB}"
         fi
+    elif [[ -z "${HOPEFUL_SRT}" ]] ; then
+        _report -w "Mmm, ${HOPEFUL_SRT} is empty. Please review and remove."
     fi
 
 done
@@ -85,8 +89,10 @@ find "${DELIVERY_DIRECTORY}" -name "*_podcast.mov" -maxdepth 1 | sort | while re
     fi
 
     HOPEFUL_PODCAST_SUBTITLED="${DELIVERY_DIRECTORY}/${BASENAME%.*}_subtitled.mp4"
-    if [[ -f "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_PODCAST_SUBTITLED}" ]] ; then
          _report -d "Making an subtitled_podcast from ${file}"
+    if [[ -s "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_PODCAST_SUBTITLED}" ]] ; then
         ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_PODCAST_SUBTITLED}"
+    elif [[ -z "${HOPEFUL_SRT}" ]] ; then
+        _report -w "Mmm, ${HOPEFUL_SRT} is empty. Please review and remove."
     fi
 done
