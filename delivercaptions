@@ -74,3 +74,22 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" -maxdepth 1 | sort | while read file 
     fi
 
 done
+
+# now make podcast outputs
+find "${DELIVERY_DIRECTORY}" -name "*_podcast.mov" -maxdepth 1 | sort | while read file ; do
+    DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media/test4"
+    
+    BASENAME="$(basename "${file}")"
+    HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${BASENAME%_podcast.mov}.en_US.srt"
+    if [[ ! -d "${DELIVERY_DIRECTORY}" ]] ; then
+        mkdir "${DELIVERY_DIRECTORY}"
+    fi
+
+    HOPEFUL_PODCAST_SUBTITLED="${DELIVERY_DIRECTORY}/${BASENAME%.*}_subtitled.mp4"
+    if [[ -f "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_PODCAST_SUBTITLED}" ]] ; then
+         _report -d "Making an subtitled_podcast from ${file}"
+        ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_PODCAST_SUBTITLED}"
+    fi
+
+    echo "Pinar's work end here for $BASENAME looking for $HOPEFUL_SRT"
+done
