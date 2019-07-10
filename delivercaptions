@@ -9,7 +9,7 @@ SCC_DIRECTORY="/Volumes/fs0/cunytv.dir/subtitle.dir"
 _checkdir "${DELIVERY_DIRECTORY}"
 _checkdir "${SCC_DIRECTORY}"
 
-find "${DELIVERY_DIRECTORY}" -name "*.mp4" -maxdepth 1 | sort | while read file ; do
+find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*__opensub.mp4" ! -name "*_subtitled.mp4" -maxdepth 1 | sort | while read file ; do
     unset MIDDLE_OPTIONS
     DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media/test4"
     if [[ ! -d "${DELIVERY_DIRECTORY}" ]] ; then
