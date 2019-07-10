@@ -85,6 +85,4 @@ find "${DELIVERY_DIRECTORY}" -name "*_podcast.mov" -maxdepth 1 | sort | while re
          _report -d "Making an subtitled_podcast from ${file}"
         ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_PODCAST_SUBTITLED}"
     fi
-
-    echo "Pinar's work end here for $BASENAME looking for $HOPEFUL_SRT"
 done
