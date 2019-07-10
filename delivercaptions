@@ -10,7 +10,7 @@ _checkdir "${DELIVERY_DIRECTORY}"
 _checkdir "${SCC_DIRECTORY}"
 
 find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*__opensub.mp4" ! -name "*_subtitled.mp4" -maxdepth 1 | sort | while read file ; do
-    unset MIDDLE_OPTIONS
+    unset MIDDLE_OPTIONS FILESECONDS
     DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media/test4"
     if [[ ! -d "${DELIVERY_DIRECTORY}" ]] ; then
         mkdir "${DELIVERY_DIRECTORY}"
@@ -62,10 +62,14 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*__opensub.mp4" ! -name "*_s
     fi
 
     # make open subs
-    echo "sec $FILESECONDS"
     HOPEFUL_OPENSUB="${DELIVERY_DIRECTORY}/${BASENAME%.*}_opensub.mp4"
-    if [[ -f "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_OPENSUB}" ]] &&  (( $(echo "${FILESECONDS} < 122" | bc -l) )) ; then
-        ffmpeg -nostdin -i "${file}" -vf "subtitles=${COPY_SCC}" -map_chapters -1 -c:v libx264 -crf 18 -c:a copy "${HOPEFUL_OPENSUB}"
+    if [[ -f "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_OPENSUB}" ]] ; then
+        if [[ -z "${FILESECONDS}" ]] ; then
+            FILESECONDS="$(ffprobe -v 0 -i "${file}" -show_entries format=duration -of default=nw=1:nk=1)"
+        fi
+        if (( $(echo "${FILESECONDS} < 122" | bc -l) )) ; then
+            ffmpeg -nostdin -i "${file}" -vf "subtitles=${COPY_SCC}" -map_chapters -1 -c:v libx264 -crf 18 -c:a copy "${HOPEFUL_OPENSUB}"
+        fi
     fi
 
 done
