@@ -96,7 +96,7 @@ find "${DELIVERY_DIRECTORY}" -name "*_podcast.mov" -maxdepth 1 | sort | while re
     HOPEFUL_PODCAST_SUBTITLED="${DELIVERY_DIRECTORY}/${BASENAME%.*}_subtitled.mp4"
     if [[ -s "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_PODCAST_SUBTITLED}" ]] ; then
          _report -d "Converting $(basename "${file}") and $(basename "${HOPEFUL_SRT}") --> $(basename "${HOPEFUL_PODCAST_SUBTITLED}")"
-        ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_PODCAST_SUBTITLED}"
+        ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -metadata:s:s:0 language=eng -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_PODCAST_SUBTITLED}"
     elif [[ -z "${HOPEFUL_SRT}" ]] ; then
         _report -w "Mmm, ${HOPEFUL_SRT} is empty. Please review and remove."
     fi
