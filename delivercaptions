@@ -11,7 +11,7 @@ _checkdir "${SCC_DIRECTORY}"
 
 find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*_opensub.mp4" ! -name "*_subtitled.mp4" -maxdepth 1 | sort | while read file ; do
     unset MIDDLE_OPTIONS FILESECONDS
-    DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media/test4"
+    DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media"
     if [[ ! -d "${DELIVERY_DIRECTORY}" ]] ; then
         mkdir "${DELIVERY_DIRECTORY}"
     fi
@@ -75,7 +75,7 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*_opensub.mp4" ! -name "*_su
         fi
         if (( $(echo "${FILESECONDS} < 182" | bc -l) )) ; then
             _report -d "Converting ${BASENAME} and $(basename "${COPY_SCC}") --> $(basename "${HOPEFUL_OPENSUB}")"
-            ffmpeg -nostdin -i "${file}" -vf "subtitles=${COPY_SCC}" -map_chapters -1 -c:v libx264 -crf 18 -c:a copy "${HOPEFUL_OPENSUB}"
+            ffmpeg -nostdin -i "${file}" -vf "subtitles=${COPY_SCC}:force_style='SecondaryColour=&H80808080,Shadow=1,Outline=0,BorderStyle=1'" -map_chapters -1 -c:v libx264 -crf 18 -c:a copy "${HOPEFUL_OPENSUB}"
         fi
     elif [[ -z "${HOPEFUL_SRT}" ]] ; then
         _report -w "Mmm, ${HOPEFUL_SRT} is empty. Please review and remove."
@@ -96,7 +96,7 @@ find "${DELIVERY_DIRECTORY}" -name "*_podcast.mov" -maxdepth 1 | sort | while re
     HOPEFUL_PODCAST_SUBTITLED="${DELIVERY_DIRECTORY}/${BASENAME%.*}_subtitled.mp4"
     if [[ -s "${HOPEFUL_SRT}" ]] && [[ ! -f "${HOPEFUL_PODCAST_SUBTITLED}" ]] ; then
          _report -d "Converting $(basename "${file}") and $(basename "${HOPEFUL_SRT}") --> $(basename "${HOPEFUL_PODCAST_SUBTITLED}")"
-        ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_PODCAST_SUBTITLED}"
+        ffmpeg -nostdin -i "${file}" -i "${HOPEFUL_SRT}" -map_chapters -1 -map 0:v -map 0:a -map 1:s -metadata:s:s:0 language=eng -c:v copy -c:a copy -c:s mov_text "${HOPEFUL_PODCAST_SUBTITLED}"
     elif [[ -z "${HOPEFUL_SRT}" ]] ; then
         _report -w "Mmm, ${HOPEFUL_SRT} is empty. Please review and remove."
     fi
