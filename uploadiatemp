@@ -1,0 +1,29 @@
+#!/bin/bash
+# This script will upload a file to CUNY TV's Internet Archive account.
+SCRIPTDIR=$(dirname $(which "${0}"))
+. "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
+DEPENDENCIES=(ia)
+_initialize_make
+ 
+_maketemp(){
+  mktemp -q "/tmp/$(basename "${0}").XXXXXX"
+  if [ "${?}" -ne 0 ]; then
+      echo "${0}: Can't create temp file, exiting..."
+      _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
+      exit 1
+  fi
+}
+
+OPTIND=1
+while getopts ":a" OPT ; do
+  case "${OPT}" in
+      *) echo "bad option -${OPTARG}" ; _usage ;;
+      :) echo "Option -${OPTARG} requires an argument" ; _writeerrorlog "makebroadcast" "The option selected required an argument and none was provided. The script had to exit." ; exit 1 ;;
+  esac
+done
+shift $(( ${OPTIND} - 1 ))
+
+FILE="${1}"
+
+    ia upload "cunytvfileaccess" "${@}" --metadata="mediatype:movies" 
+    echo "Uploading ${@} to archive.org/details/cunytvfileaccess"
