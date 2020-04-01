@@ -24,6 +24,7 @@ done
 shift $(( ${OPTIND} - 1 ))
 
 FILE="${1}"
+MEDIAID="$(basename "${FILE%.*}")"
 
-    ia upload "cunytvfileaccess" "${@}" --metadata="mediatype:movies" 
+    ia upload "${MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="noindex:true" ;
     echo "Uploading ${@} to archive.org/details/cunytvfileaccess"
