@@ -30,8 +30,13 @@ else
   find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1 | while read file ; do
   echo "Trying to upload ${file} to youtube"
   FILE_NAME="$(basename "${file}")"
+  if [[ "${FILE_NAME:0:3}" == "WPR" ]] ; then
+      PRIVACY_TYPE="unlisted"
+  else
+      PRIVACY_TYPE="private"
+  fi
   # --credentials-file="${logDir}/.youtube-upload-credentials.json"
-  YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" -title "$(basename "${file%.*}")" -privacy "private" -filename "${file}" 2>$ytErr | grep -i "success" | awk 'NF>1{print $NF}')"
+  YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" -title "$(basename "${file%.*}")" -privacy "${PRIVACY_TYPE}" -filename "${file}" 2>$ytErr | grep -i "success" | awk 'NF>1{print $NF}')"
   echo "Outcome of uploading ${file} is ${YOUTUBE_ID}."
   if [[ "${#YOUTUBE_ID}" == 11 ]] ; then
     mv -v "${file}" "${donedir}"
