@@ -427,8 +427,14 @@ _add_broadcast_schedule(){
 xml ed --inplace --delete "//broadcast_time" "${INVENTORY_XML_CUNY}"
 xml ed --inplace --delete "//broadcast_date" "${INVENTORY_XML_CUNY}"
 _add_broadcast_schedule -m "${INVENTORY_XML_CUNY}" /Volumes/Autosaved/CH_25.3_CUNY_Main.xml
-_add_broadcast_schedule -t "${INVENTORY_XML_CUNY}" "${CUNYTV_TOAIRALL}"
-_add_broadcast_schedule "${INVENTORY_XML_CUNY}" "${CUNYTV_TOAIR}"
+
+CUNY_PROTRACK_AIR_TMP="$(_maketemp)"
+psql -P pager=off -F $'\t' -Ath 10.25.103.11 -U archivesx -d protrack -c "SELECT (CASE WHEN (trim(ms_segment_id) IS NULL) THEN trim(linkinfo.li_material_id) ELSE trim(ms_segment_id) END), ai_air_strt_inst FROM air LEFT JOIN airlink ON air.ai_serial = airlink.alk_air_id LEFT JOIN linkinfo ON airlink.alk_linkinfo_id = linkinfo.li_serial LEFT JOIN mediaseg ON linkinfo.li_serial = mediaseg.ms_linkinfo_id WHERE ai_air_einst > now() AND linkinfo.li_material_id IS NOT NULL ORDER BY ai_air_strt_inst" > "${CUNY_PROTRACK_AIR_TMP}"
+
+_add_broadcast_schedule -t "${INVENTORY_XML_CUNY}" "${CUNY_PROTRACK_AIR_TMP}"
+
+#_add_broadcast_schedule -t "${INVENTORY_XML_CUNY}" "${CUNYTV_TOAIRALL}"
+#_add_broadcast_schedule "${INVENTORY_XML_CUNY}" "${CUNYTV_TOAIR}"
 
 _add_caption_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
 _add_protrack_metadata "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
