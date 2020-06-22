@@ -1,0 +1,29 @@
+#!/bin/bash
+
+SCRIPTDIR="$(dirname "${0}")"
+
+_usage(){
+    echo "psipmerger"
+    echo
+    echo "Usage:"
+    echo "psipmerger first_psip.xml second_psip.xml"
+    echo
+    echo "The result will be a file called CUNYTV_PSIP_merged.xml on the Desktop."
+    exit
+}
+
+if [[ "${1##*.}" != "xml" ]] ; then
+    _usage
+elif [[ "${2##*.}" != "xml" ]] ; then
+    _usage
+fi
+
+if [[ ! -f "${SCRIPTDIR}/psipmerger.xsl" ]] ; then
+    echo "Error: ${SCRIPTDIR}/psipmerger.xsl is missing"
+    exit
+fi
+
+OUTPUT="${HOME}/Desktop/CUNYTV_PSIP_merged.xml"
+
+xsltproc --stringparam psipnycmg "${2}" "${SCRIPTDIR}/psipmerger.xsl" "${1}" > "${OUTPUT}"
+echo "A merged file is at ${OUTPUT}."
