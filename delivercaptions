@@ -73,7 +73,7 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*_opensub.mp4" ! -name "*_su
         if [[ -z "${FILESECONDS}" ]] ; then
             FILESECONDS="$(ffprobe -v 0 -i "${file}" -show_entries format=duration -of default=nw=1:nk=1)"
         fi
-        if (( $(echo "${FILESECONDS} < 1200" | bc -l) )) ; then
+        if (( $(echo "${FILESECONDS} < 1500" | bc -l) )) ; then
             _report -d "Converting ${BASENAME} and $(basename "${COPY_SCC}") --> $(basename "${HOPEFUL_OPENSUB}")"
             ffmpeg -nostdin -i "${file}" -vf "subtitles=${COPY_SCC}:force_style='SecondaryColour=&H80808080,Shadow=1,Outline=0,BorderStyle=1'" -map_chapters -1 -c:v libx264 -crf 18 -c:a copy "${HOPEFUL_OPENSUB}"
         fi
