@@ -347,7 +347,8 @@ _label_evergreen "${INVENTORY_XML_CUNY}"
 
 _add_storage(){
     INVENTORY_XML="${1}"
-    shift
+    STORAGE_TYPE="${2}"
+    shift 2
     while [[ "${@}" != "" ]] ; do
         STATFILE="${1}"
         shift
@@ -362,6 +363,7 @@ _add_storage(){
             NAME="$(basename "${FP}")"
             ID="$(basename "${FP%.*}")"
             xml ed --inplace --subnode "/tree/directory/file[@id='${ID}']" --type elem -n storage -v "${FP}" \
+               --insert "/tree/directory/file[@id='${ID}']/storage[not(@type)]" --type attr -n type -v "${STORAGE_TYPE}" \
                --insert "/tree/directory/file[@id='${ID}']/storage[not(@size)]" --type attr -n size -v "${SIZE}" \
                --insert "/tree/directory/file[@id='${ID}']/storage[not(@time)]" --type attr -n time -v "${TIME}" "${INVENTORY_XML}"
         done
@@ -447,7 +449,8 @@ CUNYTV_ACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
 CUNYTV_ACQ_STAT="${REPORT_DIR}/cunytv_on_acq_stat.txt"
 find "${CUNYTV_ACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; > "${CUNYTV_ACQ_STAT}"
 xml sel -t -m ".//file" -o "- - - - " -v length -o " " -v "substring(modifytime,1,19)"  -o " "  -m "ancestor-or-self::directory" -v "name" -o "/" -b -v name -n ~/Documents/lto_indexes/E00*.schema ~/Documents/lto_indexes/A00*.schema  | grep -E ".mov$|.mxf$" > "${REPORT_DIR}/cuny_lto.txt"
-_add_storage "${INVENTORY_XML_CUNY}" "${CUNYTV_NEARLINE_STAT}" "${CUNYTV_ACQ_STAT}" "${REPORT_DIR}/cuny_lto.txt"
+_add_storage "${INVENTORY_XML_CUNY}" "nearline" "${CUNYTV_NEARLINE_STAT}" "${CUNYTV_ACQ_STAT}"
+_add_storage "${INVENTORY_XML_CUNY}" "offline" "${REPORT_DIR}/cuny_lto.txt"
 
 
 # add nycm storage
@@ -455,7 +458,8 @@ NYCM_NEARLINE_PATH="/Volumes/NYCM_Media/media"
 NYCM_NEARLINE_STAT="${REPORT_DIR}/nycm_on_nearline_stat.txt"
 ###find "${NYCM_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; > "${NYCM_NEARLINE_STAT}"
 ###xml sel -t -m ".//file" -o "- - - - " -v length -o " " -v "substring(modifytime,1,19)"  -o " "  -m "ancestor-or-self::directory" -v "name" -o "/" -b -v name -n ~/Documents/lto_indexes/C00*.schema | grep -E ".mov$|.mxf$" > "${REPORT_DIR}/nycm_lto.txt"
-###_add_storage "${INVENTORY_XML_NYCM}" "${NYCM_NEARLINE_STAT}" "${REPORT_DIR}/nycm_lto.txt"
+###_add_storage "${INVENTORY_XML_NYCM}" "nearline" "${NYCM_NEARLINE_STAT}"
+###_add_storage "${INVENTORY_XML_NYCM}" "offline" "${REPORT_DIR}/nycm_lto.txt"
 
 # list of files we don't have
 #xmlstarlet select -t -m "/tree/directory[@name='pull_list']/file[not(storage)]" -v @id -o "," -v "(broadcast_date|broadcast_time)[1]" -o "," -v "storage[1]" -n ~/Desktop/omneon_cuny_20200313.xml | grep 2020-0[34] | sort -k2 > media_ids_we_dont_have.csv
