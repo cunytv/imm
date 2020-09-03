@@ -159,7 +159,7 @@ if [[ "${REFRESH_INVENTORY}" == "Y" ]] ; then
     _make_inventory "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
     ### _make_inventory "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}"
 else
-    if [[ -f "${INVENTORY_XML_CUNY}" ]] ; then
+    if [[ -s "${INVENTORY_XML_CUNY}" ]] ; then
         _update_inventory "${INVENTORY_XML_CUNY}"  "${OMNEON_PATH_CUNY}"
     else
         _make_inventory "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
