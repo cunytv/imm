@@ -357,7 +357,7 @@ _add_storage(){
         shift
         # get ids from inventory
         xml sel -t -m "/tree/directory/file[not(storage)]" -v "@id" -n "${INVENTORY_XML}" | sort -u > /tmp/file_ids.txt
-        _report -dt "Adding ${STATFILE} on storage to ${INVENTORY_XML}."
+        _report -dt "Adding ${STATFILE} on storage (${STORAGE_TYPE}) to ${INVENTORY_XML}."
         awk 'FNR==NR { FS="[/.]" ; a[$NF]; next } $(NF-1) in a' /tmp/file_ids.txt "${STATFILE}" | sed 's:*$::g' | \
         while read stat ; do
             FP="$(echo "${stat}" | cut -d " " -f 7-)"
