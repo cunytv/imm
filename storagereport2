@@ -139,7 +139,6 @@ _update_inventory(){
     fi
     # add new files to the inventory xml
     if [[ ! -z "${NEW_FILE_PATTERN}" ]] ; then
-        echo "oh tree -x -X -L 1 -s -D --prune --noreport --timefmt \"%Y%m%d-%H%M%S\" -P \"${NEW_FILE_PATTERN}\" \"${INVENTORY_PATH}\""
         tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${NEW_FILE_PATTERN}" "${INVENTORY_PATH}" > "${NEW_FILES_TREE}"
         #xml ed --subnode "/tree/directory[@name='${INVENTORY_PATH}']"  --type text -n '' --value "$(xmlstarlet sel -t --copy-of '/tree/directory/file' "${NEW_FILES_TREE}")" "${INVENTORY_XML}" | xmlstarlet unescape | xml fo > "${INVENTORY_XML_TMP2}"
         # the above command doesn't work since it unescapes escaped characters within attributes
@@ -456,7 +455,6 @@ find "${CUNYTV_ACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%
 xml sel -t -m ".//file" -o "- - - - " -v length -o " " -v "substring(modifytime,1,19)"  -o " "  -m "ancestor-or-self::directory" -v "name" -o "/" -b -v name -n ~/Documents/lto_indexes/E00*.schema ~/Documents/lto_indexes/A00*.schema  | grep -E ".mov$|.mxf$" > "${REPORT_DIR}/cuny_lto.txt"
 _add_storage "${INVENTORY_XML_CUNY}" "nearline" "${CUNYTV_NEARLINE_STAT}" "${CUNYTV_ACQ_STAT}"
 _add_storage "${INVENTORY_XML_CUNY}" "offline" "${REPORT_DIR}/cuny_lto.txt"
-
 
 # add nycm storage
 NYCM_NEARLINE_PATH="/Volumes/NYCM_Media/media"
