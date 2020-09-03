@@ -195,9 +195,14 @@ _label_content_type(){
     fi
 }
 
-NYCM_PROTRACK_CSV="/Users/daverice/Desktop/NYCLIFE01011980.csv"
-cat "${NYCM_PROTRACK_CSV}" | tr "\r" "\n" | grep "F,$"    | cut -d, -f1 | sort -u | grep -v "^$" > "${REPORT_DIR}/nycm_filler.txt"
-cat "${NYCM_PROTRACK_CSV}" | tr "\r" "\n" | grep -v "F,$" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "${REPORT_DIR}/nycm_programs.txt"
+NYCM_PROTRACK_CSV="/Users/archivesx/Desktop/REPORTS/NYCLIFE01011980.csv"
+if [[ ! -f "${NYCM_PROTRACK_CSV}" ]] ; then
+    _report -wt "WARNING: Missing the NYCMG inventory expected at ${NYCM_PROTRACK_CSV}."
+    _report -wt "WARNING: Take no action with NYCMG files."
+else
+    cat "${NYCM_PROTRACK_CSV}" | tr "\r" "\n" | grep "F,$"    | cut -d, -f1 | sort -u | grep -v "^$" > "${REPORT_DIR}/nycm_filler.txt"
+    cat "${NYCM_PROTRACK_CSV}" | tr "\r" "\n" | grep -v "F,$" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "${REPORT_DIR}/nycm_programs.txt"
+fi
 
 _label_content_type "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}" "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}"
 ###_label_content_type "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}" "${REPORT_DIR}/nycm_filler.txt" "${REPORT_DIR}/nycm_programs.txt"
