@@ -229,7 +229,6 @@ _add_protrack_metadata(){
         PRT="$(pbprotracktor ${IDS4PBCORE})"
         echo "${PRT}" > /tmp/pbcore.xml
         xml sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[not(protrack)][@content_type]" -v "@id" -n "${INVENTORY_XML}" | sort -u | while read ID ; do
-            echo "$ID"
             xml sel -N "p=http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m "p:pbcoreCollection/p:pbcoreDescriptionDocument[p:pbcoreInstantiation/p:instantiationIdentifier[@source='Media ID']='$ID']" -v "(p:pbcoreInstantiation/p:instantiationDate[@dateType='availableEnd']|p:pbcoreAnnotation[@annotationType='protrack:end_eligibility'])[1]" -o "|" -v "p:pbcoreInstantiation/p:instantiationAnnotation[@annotationType='accessRestriction']" -o "|" -v "p:pbcoreAnnotation[@annotationType='protrack:caption_type']" -o "|" -v "p:pbcoreAnnotation[@annotationType='protrack:series_caption_exemption']" -o "|" -v "p:pbcoreAnnotation[@annotationType='protrack:episode_caption_exemption']" -n /tmp/pbcore.xml | while IFS="|" read end_eligibility restriction caption_type ser_cap_exemeption epi_cap_exemeption ; do
                 echo "PROTRACK $ID $end_eligibility $restriction $caption_type $ser_cap_exemeption $epi_cap_exemeption"
                 if [[ "${end_eligibility}" == "9999-12-31T23:59:59" ]] ; then
