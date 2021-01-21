@@ -51,11 +51,16 @@ find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*_opensub.mp4" ! -name "*_su
         ffmpeg -nostdin -i "${HOPEFUL_SCC}" "${MIDDLE_OPTIONS[@]}" -map 0 -c copy "${COPY_SCC}"
     fi
 
-    # make srt
+    # make srt and vtt
     HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${BASENAME%.*}.en_US.srt"
+    HOPEFUL_VTT="${DELIVERY_DIRECTORY}/${BASENAME%.*}.vtt"
     if [[ -s "${COPY_SCC}" ]] && [[ ! -f "${HOPEFUL_SRT}" ]] ; then
         _report -d "Converting $(basename "${COPY_SCC}") --> $(basename "${HOPEFUL_SRT}")"
         ffmpeg -nostdin -i "${COPY_SCC}" -f srt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${HOPEFUL_SRT}"
+    fi
+    if [[ -s "${COPY_SCC}" ]] && [[ ! -f "${HOPEFUL_VTT}" ]] ; then
+        _report -d "Converting $(basename "${COPY_SCC}") --> $(basename "${HOPEFUL_VTT}")"
+        ffmpeg -nostdin -i "${COPY_SCC}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${HOPEFUL_VTT}"
     fi
 
     # make embedded srt
