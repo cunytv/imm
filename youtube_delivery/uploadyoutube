@@ -3,7 +3,7 @@
 requireconfig="Y"
 
 version="1.1"
-UPLOADREGEX="^PR|^AALE|^AALF|^AITC|^BLAM|^BLTV|^BTBL|^BTNY|^BUNY|^CANA|^CFOR|^CITA|^CIWI|^CNJZ|^DANI|^DIGA|^DREAM|^DVCT|^ELCO|^INSO|^IRWR|^ISLG|^ITAL|^LTNS|^LTRP|^NUEV|^NYTCU|^OPED|^OPEN|^OTOO|^PATC|^PTSBL|^SCIU|^SHUS|^SMRB|^SMSC|^SPEC|^SPLT|^STRP|^THMP|^THTK|^TKHL|^TKMV|^TNGD|^TWTT|^TEST|^TPNR|^URBN|^WW"
+UPLOADREGEX="^PR|^AALE|^AALF|^AITC|^BLAM|^BLTV|^BTBL|^BTNY|^BUNY|^CANA|^CFOR|^CITA|^CIWI|^CLIR|^CNJZ|^DANI|^DIGA|^DREAM|^DVCT|^ELCO|^INSO|^IRWR|^ISLG|^ITAL|^LTNS|^LTRP|^NUEV|^NYTCU|^OPED|^OPEN|^OTOO|^PATC|^PTSBL|^SCIU|^SHUS|^SMRB|^SMSC|^SPEC|^SPLT|^STRP|^THMP|^THTK|^TKHL|^TKMV|^TNGD|^TWTT|^TEST|^TPNR|^URBN|^WW"
 scriptdir=$(dirname "$0")
 . "$scriptdir/mmfunctions" || { echo "Missing '$scriptdir/mmfunctions'. Exiting." ; exit 1 ;};
 
@@ -13,6 +13,7 @@ usage(){
     echo "This application will upload file(s) to a server via rsync in sequential order. Options are specified via 'mmconfig'."
     echo
     echo "Usage: $(basename $0) file1 [ file2 ...]"
+    echo "  -f ( force the upload without the regex pattern test )"
     echo "  -h ( display this help )"
     echo
     exit
@@ -35,9 +36,10 @@ mount_afp afp://archivesx:cunytvx@cunytv/From%20library/youtube_delivery "${MOUN
 
 # command-line options to set mediaid and original variables
 OPTIND=1
-while getopts ":h" opt; do
+while getopts ":hf" opt; do
     case "$opt" in
         h) usage ;;
+        f) FORCE="y" ;;
         *) echo "Invalid option: -$OPTARG" ; exit 1 ;;
         :) echo "Option -$OPTARG requires an argument" ; exit 1 ;;
     esac
@@ -47,7 +49,7 @@ while [ "$*" != "" ] ; do
     sourcefile="$1"
     removetmp="n"
     filename=$(basename "$sourcefile")
-    if [ $(echo "$filename" | grep -E "${UPLOADREGEX}") ] ; then
+    if [ "$(echo "$filename" | grep -E "${UPLOADREGEX}")" -o "${FORCE}" = "y" ] ; then
         _report -dt "${filename} qualifies for youtube upload."
         _report -dt "Starting to rsync $filename to ${MOUNT_YOUTUBE}..."
         rsync -rtvP "$sourcefile" "${MOUNT_YOUTUBE}/"
