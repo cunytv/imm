@@ -196,7 +196,23 @@ _mkdir2 "${REPORTDIR}" "${INTERNALDIR}" "${CUNY_SNAPSHOTDIR}" "${NYCM_SNAPSHOTDI
 
 # report on station identifiers
 cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV4AIR}"
-xml sel -t -v //media/@mediaName "${abouttoruns[@]}" | grep -v "^$" | sort -u > "${NYCMG4AIR}"
+NYCMG4AIR_TMP=$(_maketemp)
+_report -d "Checking on NYCMG schedules..."
+for schedule in "${abouttoruns[@]}" ; do
+    SCHEDULE_NAME="$(basename "${schedule}")"
+    TMP_SCHEDULE="/tmp/schedule_${SCHEDULE_NAME}"
+    xml sel -t -v "//media/@mediaName" "${schedule}" | grep -v "^$" | sort -u > "${TMP_SCHEDULE}"
+    LINE_COUNT="$(wc -l "${TMP_SCHEDULE}" | awk '{print $1}')"
+    echo "$SCHEDULE_NAME has $LINE_COUNT unique files needed"
+    if [[ "${LINE_COUNT}" -le "2" ]] ; then
+        _report -w "ERROR: ${SCHEDULE_NAME} only lists ${LINE_COUNT} files which is suspicious. Try again later."
+        exit 1
+    fi
+    cat "${TMP_SCHEDULE}" >> "${NYCMG4AIR_TMP}"
+done
+echo
+sort -u "${NYCMG4AIR_TMP}" > "${NYCMG4AIR}"
+
 cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "${IDS_NYCMG}"
 cat "${NYCMG_MEDIAID_CSV}" | tr "\r" "\n" | grep "F,$" | cut -d, -f1 | sort -u | grep -v "^$" > "${NYCM_FILLER_IDS}"
 cat "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}" | tr "\r" "\n" | awk '{print $1}' | grep -v "^$" | sort -u > "${IDS_CUNYTV}"
