@@ -460,7 +460,7 @@ join -a1 -a2 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
 join -a1 -a2 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
 join -a1 -a2 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
-rsync -rtv --perms --chmod=777 "${NYCMG_NEARLINE}" "${NYCM_OMNEON_IDS_NO_EVERGREEN}" "${CUNY_OMNEON_IDS_NO_EVERGREEN}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
+rsync -rtv --perms "${NYCMG_NEARLINE}" "${NYCM_OMNEON_IDS_NO_EVERGREEN}" "${CUNY_OMNEON_IDS_NO_EVERGREEN}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
 
 # make nycmg pull list
 comm -2 -3 "${NYCMG4AIR}"  "${NYCM_ON_OMNEON_IDS}" > /tmp/nycm_pulllist_temp.txt
