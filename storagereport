@@ -246,8 +246,7 @@ printf "%-32s %12d %20s \n" "CUNYTV" "$(cat "${IDS_CUNYTV}" | wc -l)" ""
 printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "${CUNY_FILLER_IDS}" | wc -l)" ""
 
 ### REPORT ON OMNEON FILES
-# list all Omneon files
-
+#### REPORT ON CUNY UNREGISTERED FILES
 stat -F -l -t '%FT%T' "${OMNEON_PATH_CUNY}"/* | grep -v "/$" | sed 's:*$::g' > "${CUNY_ON_OMNEON_FILES_STAT}"
 cp "${CUNY_ON_OMNEON_FILES_STAT}" "${CUNY_ON_OMNEON_FILES_STAT_SNAPSHOT}"
 cut -d " " -f 7- "${CUNY_ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${CUNY_OMNEON_IDS}"
@@ -271,6 +270,7 @@ while read -r orphan ; do
   fi
 done < "${CUNY_UNREGISTERED}"
 
+#### REPORT ON NYCM UNREGISTERED FILES
 stat -F -l -t '%FT%T' "${OMNEON_PATH_NYCM}/"* | grep -v "/$" | sed 's:*$::g' > "${NYCM_ON_OMNEON_FILES_STAT}"
 cp "${NYCM_ON_OMNEON_FILES_STAT}" "${NYCM_ON_OMNEON_FILES_STAT_SNAPSHOT}"
 cp "${NYCMG4AIR}" "${NYCMG4AIR_SNAPSHOT}"
