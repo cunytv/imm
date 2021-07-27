@@ -260,7 +260,7 @@ echo "filename,recport,recdate,source" > "${CUNY_UNREGISTERED_DETAILS}"
 while read -r orphan ; do
   orphanpath=$(grep ".dir/${orphan}.m" "${CUNY_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1)
   if [ -f "${orphanpath}" ] ; then
-    omdata=$(head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
+    omdata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
     recname=$(echo "${omdata}" | cut -d";" -f6)
@@ -284,7 +284,7 @@ echo "filename,recport,recdate,source" > "${NYCM_UNREGISTERED_DETAILS}"
 while read -r orphan ; do
   orphanpath=$(grep ".dir/${orphan}.m" "${NYCM_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1)
   if [ -f "${orphanpath}" ] ; then
-    omdata=$(head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
+    omdata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
     recname=$(echo "${omdata}" | cut -d";" -f6)
@@ -365,7 +365,7 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
     diff -y "${nycmg_removal_candidates_on_nearline_with_extension_and_size}" "${nycmg_removal_candidates_on_omneon_with_extension_and_size}" | grep "|" | while read -r conflictnameline ; do
         omname=$(echo "${conflictnameline}" | awk '{print $1}')
         ommediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${OMNEON_PATH_NYCM}/${omname}")
-        omdata=$(head -c 10000 "${OMNEON_PATH_NYCM}/${omname}" | strings | grep "${OMNEON_NYCM}" | head -n 1)
+        omdata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${OMNEON_PATH_NYCM}/${omname}" | strings | grep "${OMNEON_NYCM}" | head -n 1)
         omrecport=$(echo "${omdata}" | cut -d";" -f2)
         omrecdate=$(echo "${omdata}" | cut -d";" -f9)
         omrecname=$(echo "${omdata}" | cut -d";" -f6)
@@ -376,7 +376,7 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
         fi
         nlname=$(echo "${conflictnameline}" | awk '{print $4}')
         nlmediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${NYCMG_NEARLINE_PATH}/${nlname}")
-        nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep "${OMNEON_NYCM}" | head -n 1)
+        nldata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep "${OMNEON_NYCM}" | head -n 1)
         nlrecport=$(echo "${nldata}" | cut -d";" -f2)
         nlrecdate=$(echo "${nldata}" | cut -d";" -f9)
         nlrecname=$(echo "${nldata}" | cut -d";" -f6)
