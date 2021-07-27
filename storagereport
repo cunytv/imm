@@ -88,9 +88,9 @@ _maketemp(){
 }
 
 ## connect to Autosaved folder if not already
-if [ "$(mount | grep -c /Volumes/Autosaved)" = 0 ] ; then
-    _mkdir2 /Volumes/Autosaved
-    mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /Volumes/Autosaved
+if [ "$(mount | grep -c /tmp/Autosaved)" = 0 ] ; then
+    _mkdir2 /tmp/Autosaved
+    mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /tmp/Autosaved
 fi
 
 # shortcuts
@@ -117,7 +117,7 @@ NYCMG_NEARLINE_PATH="${NYCMG_ROOT}/media"
 CUNYTV_DIGACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
 CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/nearline"
 # array of about-to-runs
-abouttoruns=(/Volumes/Autosaved/CH_25.1_NYC_Life_Main.xml /Volumes/Autosaved/CH_25.2_74_NYC_Gov_Main.xml /Volumes/Autosaved/CH_73_-_NYCM_Main.xml)
+abouttoruns=(/tmp/Autosaved/CH_25.1_NYC_Life_Main.xml /tmp/Autosaved/CH_25.2_74_NYC_Gov_Main.xml /tmp/Autosaved/CH_73_-_NYCM_Main.xml)
 
 ## connect to nearline volumes
 _check4mount "${CUNYTV_DIGACQ_PATH}" "${CUNYTV_NEARLINE_PATH}" "${NYCMG_ROOT}" "${OMNEON_ROOT}"
