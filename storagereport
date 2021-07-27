@@ -456,9 +456,9 @@ cat "${IDS_NYCMG}" | while read line ; do echo "${line} " ; done > /tmp/all.txt
 cat "${NYCM_OMNEON_IDS_NO_EVERGREEN}" | while read line ; do echo "${line} omneon" ; done | tr "\r" "\n" > /tmp/omneon.txt
 cat "${NYCMG_NEARLINE}" | while read line ; do echo "${line} nearline" ; done | sort | tr "\r" "\n" > /tmp/nearline.txt
 cat "${NYCMG_ON_LTO_PATH}" | awk -F "/" '{print $NF " " $(NF-1)}' | sed 's/.mxf//g' | sed 's/.mov//g' | grep -v '^\.' | sort | tr "\r" "\n" > /tmp/lto.txt
-join -a1 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
-join -a1 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
-join -a1 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
+join -a1 -a2 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
+join -a1 -a2 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
+join -a1 -a2 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
 rsync -rtv --perms --chmod=777 "${NYCMG_NEARLINE}" "${NYCM_OMNEON_IDS_NO_EVERGREEN}" "${CUNY_OMNEON_IDS_NO_EVERGREEN}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
 
