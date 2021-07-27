@@ -301,7 +301,7 @@ while read -r line ; do
     outputs=$(cat "${NYCM_UNREGISTERED_DETAILS}" | grep ",${file}$" | cut -d "," -f1 | grep -v "^${file}$" | xargs)
     echo "$line,$outputs" >> "${NYCM_UNREGISTERED_DETAILS}x"
 done < <(tail -n +2 "${NYCM_UNREGISTERED_DETAILS}")
-mv -v "${NYCM_UNREGISTERED_DETAILS}x" "${NYCM_UNREGISTERED_DETAILS}"
+mv "${NYCM_UNREGISTERED_DETAILS}x" "${NYCM_UNREGISTERED_DETAILS}"
 
 echo
 _report -d "Omneon Storage stats"
