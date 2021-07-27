@@ -38,11 +38,11 @@ CUNY_PROGRAMS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_program.txt"
 CUNY_SEGMENTS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_segments.txt"
 
 # connect to Autosaved folder if not already
-if [ "$(mount | grep -c /Volumes/Autosaved)" = 0 ] ; then
-    if [[ ! -d /Volumes/Autosaved ]] ; then
-        mkdir /Volumes/Autosaved
+if [ "$(mount | grep -c /tmp/Autosaved)" = 0 ] ; then
+    if [[ ! -d /tmp/Autosaved ]] ; then
+        mkdir /tmp/Autosaved
     fi
-    #mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /Volumes/Autosaved
+    #mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /tmp/Autosaved
 fi
 
 
@@ -425,13 +425,13 @@ _add_broadcast_schedule(){
     fi
 }
 
-###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /Volumes/Autosaved/CH_25.1_NYC_Life_Main.xml
-###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /Volumes/Autosaved/CH_25.2_74_NYC_Gov_Main.xml
-###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /Volumes/Autosaved/CH_73_-_NYCM_Main.xml
+###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /tmp/Autosaved/CH_25.1_NYC_Life_Main.xml
+###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /tmp/Autosaved/CH_25.2_74_NYC_Gov_Main.xml
+###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /tmp/Autosaved/CH_73_-_NYCM_Main.xml
 
 xml ed --inplace --delete "//broadcast_time" "${INVENTORY_XML_CUNY}"
 xml ed --inplace --delete "//broadcast_date" "${INVENTORY_XML_CUNY}"
-_add_broadcast_schedule -m "${INVENTORY_XML_CUNY}" /Volumes/Autosaved/CH_25.3_CUNY_Main.xml
+_add_broadcast_schedule -m "${INVENTORY_XML_CUNY}" /tmp/Autosaved/CH_25.3_CUNY_Main.xml
 
 CUNY_PROTRACK_AIR_TMP="$(_maketemp)"
 psql -P pager=off -F $'\t' -Ath 10.25.103.11 -U archivesx -d protrack -c "SELECT (CASE WHEN (trim(ms_segment_id) IS NULL) THEN trim(linkinfo.li_material_id) ELSE trim(ms_segment_id) END), ai_air_strt_inst FROM air LEFT JOIN airlink ON air.ai_serial = airlink.alk_air_id LEFT JOIN linkinfo ON airlink.alk_linkinfo_id = linkinfo.li_serial LEFT JOIN mediaseg ON linkinfo.li_serial = mediaseg.ms_linkinfo_id WHERE ai_air_einst > now() AND linkinfo.li_material_id IS NOT NULL ORDER BY ai_air_strt_inst" > "${CUNY_PROTRACK_AIR_TMP}"
