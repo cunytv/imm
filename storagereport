@@ -201,14 +201,24 @@ _report -d "Checking on NYCMG schedules..."
 for schedule in "${abouttoruns[@]}" ; do
     SCHEDULE_NAME="$(basename "${schedule}")"
     TMP_SCHEDULE="/tmp/schedule_${SCHEDULE_NAME}"
-    xml sel -t -v "//media/@mediaName" "${schedule}" | grep -v "^$" | sort -u > "${TMP_SCHEDULE}"
-    LINE_COUNT="$(wc -l "${TMP_SCHEDULE}" | awk '{print $1}')"
-    echo "$SCHEDULE_NAME has $LINE_COUNT unique files needed"
-    if [[ "${LINE_COUNT}" -le "2" ]] ; then
-        _report -w "ERROR: ${SCHEDULE_NAME} only lists ${LINE_COUNT} files which is suspicious. Try again later."
-        exit 1
+    if [[ "$(find "${schedule}" -mtime +1d -print)" ]] ; then
+        _report -w "WARNING ${SCHEDULE_NAME} is suspiciously over a day old."
+        exit
+    elif [[ -f "${schedule}" ]] ; then
+        cp "${schedule}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
+        SCHEDULE_MOVED="${NYCMG_ABOUT_TO_RUN_DIR}/${SCHEDULE_NAME}"
+        xml sel -t -v "//media/@mediaName" "${SCHEDULE_MOVED}" | grep -v "^$" | sort -u > "${TMP_SCHEDULE}"
+        LINE_COUNT="$(wc -l "${TMP_SCHEDULE}" | awk '{print $1}')"
+        printf "%-32s %12d %20s \n" "${SCHEDULE_NAME}" "${LINE_COUNT}" "$(xml sel -t -v //properties/history/modified/@time "${SCHEDULE_MOVED}")"
+        if [[ "${LINE_COUNT}" -le "2" ]] ; then
+            _report -w "ERROR: ${SCHEDULE_NAME} only lists ${LINE_COUNT} files which is suspicious. Try again later."
+            exit 1
+        fi
+        cat "${TMP_SCHEDULE}" >> "${NYCMG4AIR_TMP}"
+    else
+        _report -w "WARNING ${schedule} is expected but is not found."
+        exit
     fi
-    cat "${TMP_SCHEDULE}" >> "${NYCMG4AIR_TMP}"
 done
 echo
 sort -u "${NYCMG4AIR_TMP}" > "${NYCMG4AIR}"
@@ -223,19 +233,6 @@ printf "%-32s %12s %20s \n" "Schedule" "Media Count" "Last Update"
 printf "%-32s %12d %20s \n" "CUNYTV (final)" "$(cat "${CUNYTV_TOAIRALL}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIRALL}" | awk '{print $6}')"
 printf "%-32s %12d %20s \n" "CUNYTV (future)" "$(cat "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIR}" | awk '{print $6}')"
 printf "%-32s %12d %20s \n" "CUNYTV (all)" "$(cat "${CUNYTV4AIR}" | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV4AIR}" | awk '{print $6}')"
-# get NYCMG mediaids that are needed for air
-for abouttorun in "${abouttoruns[@]}" ; do
-    if [[ "$(find "${abouttorun}" -mtime +1d -print)" ]] ; then
-        _report -w "WARNING ${abouttorun} is suspiciously over a day old."
-        exit
-    elif [[ -f "${abouttorun}" ]] ; then
-        cp "${abouttorun}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
-        printf "%-32s %12d %20s \n" "$(basename "${abouttorun}")" "$(xml sel -t -v //media/@mediaName "${abouttorun}" | grep -v "^$" | sort -u | wc -l)" "$(xml sel -t -v //properties/history/modified/@time "${abouttorun}")"
-    else
-        _report -w "WARNING ${abouttorun} is expected but is not found."
-        exit
-    fi
-done
 printf "%-32s %12d %20s \n" "NYCMG (all)" "$(cat "${NYCMG4AIR}" | wc -l )" ""
 ### REPORT ON PROTRACK REGISTERED MEDIAIDS
 # list all NYCMG ProTrack IDs (Programs and Filler)
