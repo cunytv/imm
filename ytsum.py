@@ -5,12 +5,28 @@ import subprocess
 import csv
 import youtube_dl
 import sys
+import os
+#from datetime import datetime
+import time
 
 
 reader = csv.reader(open(sys.argv[1]))
 
 next(reader)
 
+
+#date = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
+#print(date)
+
+timestr = time.strftime("%Y%m%d-%H%M%S")
+print(timestr)
+
+filename = os.path.join(os.getenv("HOME"), r"Desktop/youtubesummary_{timestr}.csv")
+print(f'Your Youtube summary report can be found here: {filename}')
+print()
+with open(filename, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile, delimiter=',')
+    writer.writerow(['MediaID', 'YouTubeID', 'Video', 'Captions'])
 
 for line in reader:
     
@@ -32,14 +48,10 @@ for line in reader:
     subtitles = (splitsub[-1])
     subtitles = subtitles.decode()
     print(f'Caption information for {mediaid} {youtubeid}:    {subtitles}')
-    
 
-## to fix later
-filename = "youtubesummary.csv"
     
-rows = [mediaid, youtubeid, videosize, subtitles]
+    rows = [mediaid, youtubeid, videosize, subtitles]
 
-with open(filename, 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile, delimiter=',')
-    writer.writerow(['MediaID', 'YouTubeID', 'Video', 'Captions'])
-    writer.writerow(rows)
+    with open(filename, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',')
+        writer.writerow(rows)
