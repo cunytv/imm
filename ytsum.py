@@ -3,10 +3,10 @@
 
 import subprocess  
 import csv
-import youtube_dl
+#import youtube_dl
 import sys
 import os
-#from datetime import datetime
+#import datetime
 import time
 
 
@@ -14,14 +14,14 @@ reader = csv.reader(open(sys.argv[1]))
 
 next(reader)
 
-
-#date = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
-#print(date)
+filepath = os.path.join(os.getenv("HOME"), r"Desktop/youtubesummary_")
 
 timestr = time.strftime("%Y%m%d-%H%M%S")
-print(timestr)
 
-filename = os.path.join(os.getenv("HOME"), r"Desktop/youtubesummary_{timestr}.csv")
+extension = ".csv"
+
+filename = filepath + timestr + extension
+
 print(f'Your Youtube summary report can be found here: {filename}')
 print()
 with open(filename, 'w', newline='') as csvfile:
