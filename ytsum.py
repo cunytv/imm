@@ -26,31 +26,38 @@ print(f'Your Youtube summary report can be found here: {filename}')
 print()
 with open(filename, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
-    writer.writerow(['MediaID', 'YouTubeID', 'Video', 'Captions'])
+    writer.writerow(['MediaID', 'YouTubeID', 'Extension', 'Size', 'Resolution', 'Frame Rate', 'Captions'])
 
 for line in reader:
     
     youtubeid=(line[1])
 
     mediaid=(line[0])
-
     
-    size = subprocess.check_output(['youtube-dl', '--list-formats', '--skip-download', youtubeid])
+    if youtubeid == '':
+        continue
     
-    splitvideo = size.splitlines()
-    videosize = (splitvideo[-1])
-    videosize = videosize.decode()
-    print(f'Video information for {mediaid} {youtubeid}:    {videosize}')
+    videoinfo = subprocess.check_output(['youtube-dl', '--list-formats', '--skip-download', youtubeid])
+    
+    videoinfosplit = videoinfo.splitlines()
+    videolastline = (videoinfosplit[-1])
+    videolastline = videolastline.decode()
+    
+    videosep = videolastline.split()
+    filetype = videosep[1]
+    size = videosep[2]
+    resolution = videosep[3]
+    fps = videosep[7]
     
     subtitles = subprocess.check_output(['youtube-dl', '--skip-download', '--list-subs', youtubeid])
 
     splitsub = subtitles.splitlines()
     subtitles = (splitsub[-1])
     subtitles = subtitles.decode()
-    print(f'Caption information for {mediaid} {youtubeid}:    {subtitles}')
+    #print(f'Caption information for {mediaid} {youtubeid}:    {subtitles}')
 
     
-    rows = [mediaid, youtubeid, videosize, subtitles]
+    rows = [mediaid, youtubeid, filetype, size, resolution, fps, subtitles]
 
     with open(filename, 'a', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
