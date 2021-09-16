@@ -35,6 +35,10 @@ for line in reader:
     mediaid=(line[0])
     
     if youtubeid == '':
+        with open(filename, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',')
+            rows2 = [mediaid, youtubeid]
+            writer.writerow(rows2) 
         continue
     
     videoinfo = subprocess.check_output(['youtube-dl', '--list-formats', '--skip-download', youtubeid])
@@ -54,9 +58,10 @@ for line in reader:
     splitsub = subtitles.splitlines()
     subtitles = (splitsub[-1])
     subtitles = subtitles.decode()
-    #print(f'Caption information for {mediaid} {youtubeid}:    {subtitles}')
-
     
+    if subtitles.startswith(youtubeid):
+        subtitles = ''
+        
     rows = [mediaid, youtubeid, filetype, size, resolution, fps, subtitles]
 
     with open(filename, 'a', newline='') as csvfile:
