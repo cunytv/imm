@@ -46,7 +46,7 @@ for line in reader:
     if youtubeid == '':
         with open(filename, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
-            rows2 = [mediaid, youtubeid, title]
+            rows2 = [mediaid, youtubeid]
             writer.writerow(rows2) 
         continue
     
