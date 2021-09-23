@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 """
-    ystum.py outputs a csv file on your desktop with metadata about youtube uploads using youtubeids 
-    from a csv input. 
-    Last Revised: 9/20/2021
+    ystum.py take a csv file with youtubeids and outputs a csv file ont your desktop with  
+    metadata about the youtube upload. 
+    Last Revised: 9/22/2021
 """
 
 import subprocess  
@@ -33,7 +33,7 @@ print(f'Your Youtube summary report can be found here: {filename}')
 print()
 with open(filename, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
-    writer.writerow(['MediaID', 'YouTubeID', 'Extension', 'Size', 'Resolution', 'Frame Rate', 'Captions', 'Title'])
+    writer.writerow(['MediaID', 'YouTubeID', 'Extension', 'Size', 'Resolution', 'Frame Rate', 'Captions'])
 
 for line in reader:
     
@@ -41,15 +41,13 @@ for line in reader:
 
     mediaid=(line[0])
     
-    title=(line[2])
-    
     if youtubeid == '':
         with open(filename, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
             rows2 = [mediaid, youtubeid]
             writer.writerow(rows2) 
         continue
-    
+                
     try:
         videoinfo = subprocess.check_output(['youtube-dl', '--list-formats', '--skip-download','--', youtubeid])
     
@@ -79,7 +77,7 @@ for line in reader:
     if subtitles.startswith(youtubeid):
         subtitles = ''
         
-    rows = [mediaid, youtubeid, filetype, size, resolution, fps, subtitles, title]
+    rows = [mediaid, youtubeid, filetype, size, resolution, fps, subtitles]
 
     with open(filename, 'a', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
