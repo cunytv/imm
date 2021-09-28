@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
 """
-    ystum.py take a csv file with youtubeids and outputs a csv file ont your desktop with  
+    ystum.py takes a csv file with youtubeids and outputs a csv file onto your desktop with  
     metadata about the youtube upload. 
-    Last Revised: 9/22/2021
+    Last Revised: 9/28/2021
 """
 
 import subprocess  
 import csv
-#import youtube_dl
 import sys
 import os
 import time
