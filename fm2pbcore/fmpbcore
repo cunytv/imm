@@ -14,13 +14,19 @@ FILEMAKER_SERVER="http://10.10.201.50"
 DATABASE_NAME="CUNY_TV_archive"
 PBCORE_QUERY_LAYOUT="pbcoreform"
 SEARCH_FIELD="PBCoreInstantiationIdentifier::instantiationIdentifier"
+SCRIPTDIR="$(dirname "${0}")"
 
 ID2QUERY="${1}"
-SEARCH_URL="${FILEMAKER_SERVER}/fmi/xml/fmresultset.xml?-db=${DATABASE_NAME}&-lay=${PBCORE_QUERY_LAYOUT}&${SEARCH_FIELD}=${ID2QUERY}&-find"
+
+
+_get_pbcore(){
+    ID="${1}"
+    SEARCH_URL="${FILEMAKER_SERVER}/fmi/xml/fmresultset.xml?-db=${DATABASE_NAME}&-lay=${PBCORE_QUERY_LAYOUT}&${SEARCH_FIELD}=${ID}&-find"
+    curl -s "${SEARCH_URL}" | xsltproc "${SCRIPTDIR}/fm2pbcore.xsl" -
+}
 
 if [[ -n "${ID2QUERY}" ]] ; then
-    SCRIPTDIR="$(dirname "${0}")"
-    curl -s "${SEARCH_URL}" | xsltproc "${SCRIPTDIR}/fm2pbcore.xsl" -
+    _get_pbcore "${ID2QUERY}"
 else
     _usage
     exit 1
