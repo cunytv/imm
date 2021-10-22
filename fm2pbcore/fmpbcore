@@ -1,3 +1,20 @@
 #!/bin/bash
-SCRIPTDIR="$(dirname "${0}")"
-curl -s "http://10.10.201.48/fmi/xml/fmresultset.xml?-db=CUNY_TV_archive&-lay=pbcoreform&PBCoreInstantiationIdentifier::instantiationIdentifier=${1}&-find" | xsltproc "${SCRIPTDIR}/fm2pbcore.xsl" -
+_usage(){
+    cat <<EOF
+    fmpbcore
+    
+    This will call a hard-coded server and filemaker database with an identifier query to return a set of records in PBCore collection format.
+    
+    Usage:
+        fmpbcore IDENTIFIER
+EOF
+}
+
+ID2QUERY="${1}"
+if [[ -n "${ID2QUERY}" ]] ; then
+    SCRIPTDIR="$(dirname "${0}")"
+    curl -s "http://10.10.201.50/fmi/xml/fmresultset.xml?-db=CUNY_TV_archive&-lay=pbcoreform&PBCoreInstantiationIdentifier::instantiationIdentifier=${1}&-find" | xsltproc "${SCRIPTDIR}/fm2pbcore.xsl" -
+else
+    _usage
+    exit 1
+fi
