@@ -33,6 +33,9 @@ EXT="${FILE##*.}"
 VTT="${MEDIAID%.*}.vtt"
 
 pbprotracktor "$MEDIAID" > "${TEMP_PBCORE}"
+if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
+    fmpbcore "$MEDIAID" > "${TEMP_PBCORE}"
+fi
 
 TITLE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
   -o "${MEDIAID_CLEAN} - " -v "translate(p:pbcoreTitle[@titleType='Episode' or @titleType='Program'],'\"',\"'\")" \
