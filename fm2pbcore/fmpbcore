@@ -13,7 +13,8 @@ EOF
 FILEMAKER_SERVER="http://10.10.201.50"
 DATABASE_NAME="CUNY_TV_archive"
 PBCORE_QUERY_LAYOUT="pbcoreform"
-SEARCH_FIELD="PBCoreInstantiationIdentifier::instantiationIdentifier"
+ID_FIELD="PBCoreIdentifier::identifier"
+INSTID_FIELD="PBCoreInstantiationIdentifier::instantiationIdentifier"
 SCRIPTDIR="$(dirname "${0}")"
 
 ID2QUERY="${1}"
@@ -21,7 +22,8 @@ ID2QUERY="${1}"
 
 _get_pbcore(){
     ID="${1}"
-    SEARCH_URL="${FILEMAKER_SERVER}/fmi/xml/fmresultset.xml?-db=${DATABASE_NAME}&-lay=${PBCORE_QUERY_LAYOUT}&${SEARCH_FIELD}=${ID}&-find"
+    SEARCH_URL="${FILEMAKER_SERVER}/fmi/xml/fmresultset.xml?-db=${DATABASE_NAME}&-lay=${PBCORE_QUERY_LAYOUT}&-query=(q1);(q2)&-q1=${ID_FIELD}&-q1.value=${ID}&-q2=${INSTID_FIELD}&-q2.value=${ID}&-findquery"
+    >&2 echo "Searching at ${SEARCH_URL}"
     curl -s "${SEARCH_URL}" | xsltproc "${SCRIPTDIR}/fm2pbcore.xsl" -
 }
 
