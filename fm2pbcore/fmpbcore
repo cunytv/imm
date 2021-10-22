@@ -26,7 +26,12 @@ _get_pbcore(){
 }
 
 if [[ -n "${ID2QUERY}" ]] ; then
-    _get_pbcore "${ID2QUERY}"
+    XML_RESULT="$(_get_pbcore "${ID2QUERY}")"
+    if [[ -n "${XML_RESULT}" ]] ; then
+        echo "${XML_RESULT}" | xml fo
+    else
+        >&2 echo "No result for ${@}"
+    fi
 else
     _usage
     exit 1
