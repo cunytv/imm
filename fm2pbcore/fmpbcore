@@ -10,10 +10,30 @@ _usage(){
 EOF
 }
 
+FILEMAKER_SERVER="http://10.10.201.50"
+DATABASE_NAME="CUNY_TV_archive"
+PBCORE_QUERY_LAYOUT="pbcoreform"
+ID_FIELD="PBCoreIdentifier::identifier"
+INSTID_FIELD="PBCoreInstantiationIdentifier::instantiationIdentifier"
+SCRIPTDIR="$(dirname "${0}")"
+
 ID2QUERY="${1}"
+
+
+_get_pbcore(){
+    ID="${1}"
+    SEARCH_URL="${FILEMAKER_SERVER}/fmi/xml/fmresultset.xml?-db=${DATABASE_NAME}&-lay=${PBCORE_QUERY_LAYOUT}&-query=(q1);(q2)&-q1=${ID_FIELD}&-q1.value=${ID}&-q2=${INSTID_FIELD}&-q2.value=${ID}&-findquery"
+    >&2 echo "Searching at ${SEARCH_URL}"
+    curl -s "${SEARCH_URL}" | xsltproc "${SCRIPTDIR}/fm2pbcore.xsl" -
+}
+
 if [[ -n "${ID2QUERY}" ]] ; then
-    SCRIPTDIR="$(dirname "${0}")"
-    curl -s "http://10.10.201.50/fmi/xml/fmresultset.xml?-db=CUNY_TV_archive&-lay=pbcoreform&PBCoreInstantiationIdentifier::instantiationIdentifier=${1}&-find" | xsltproc "${SCRIPTDIR}/fm2pbcore.xsl" -
+    XML_RESULT="$(_get_pbcore "${ID2QUERY}")"
+    if [[ -n "${XML_RESULT}" ]] ; then
+        echo "${XML_RESULT}" | xml fo
+    else
+        >&2 echo "No result for ${@}"
+    fi
 else
     _usage
     exit 1
