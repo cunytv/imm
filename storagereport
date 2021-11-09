@@ -342,7 +342,7 @@ cat ~/Documents/lto_indexes/C0*_index.txt | sort > "${NYCMG_ON_LTO_PATH}"
 grep --no-filename ".mov \|.mxf " ~/Documents/lto_indexes/A0*_namesize.txt ~/Documents/lto_indexes/E0*_namesize.txt | sort -u > "${CUNYTV_ON_LTO_SIZE_EXT}"
 
 # list files to remove from the omneon for nycmg and report on filename conflicts
-nycmg_removal_candidates_on_omneon_with_extension_and_size=$(_maketemp)
+nycmg_removal_candidates_on_omneon_with_extension_and_size="${REPORTDIR}/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt"
 nycmg_removal_candidates_on_nearline_with_extension_and_size=$(_maketemp)
 for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${NYCM_ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed "s:${OMNEON_PATH_NYCM}/::g" ; done  > "${nycmg_removal_candidates_on_omneon_with_extension_and_size}"
 for i in $(cat "${NYCMG_REMOVAL_CANDIDATES_NEARLINE}") ; do grep "/${i}\." "${NYCMG_NEARLINE_STAT}" | awk '{print $7 " " $5}' | sed "s:${NYCMG_NEARLINE_PATH}/::g" ; done > "${nycmg_removal_candidates_on_nearline_with_extension_and_size}"
@@ -408,12 +408,20 @@ if [[ $(cat "$REPORTDIR/nycmg_removal_candidates_save_to_remove_from_omneon_base
     echo
 fi
 
-if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u) ]] ; then
+if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | sort -u) ]] ; then
     echo
-    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH_CUNY}" >> /dev/null && du -sch $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
-    _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on nearline or LTO tape run:"
+    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH_CUNY}" >> /dev/null && du -sch $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | sort -u | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
+    _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on NEARLINE run:"
     echo
-    _report -w "  pushd "${OMNEON_PATH_CUNY}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u | xargs) && popd"
+    _report -w "  pushd "${OMNEON_PATH_CUNY}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_extension_and_size.txt" | sort -u | xargs) && popd"
+    echo
+fi
+if [[ $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u) ]] ; then
+    echo
+    _report -d "Candidate files to remove = $(pushd "${OMNEON_PATH_CUNY}" >> /dev/null && du -sch $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u | xargs) | tail -n1 | awk '{print $1}' && popd>> /dev/null)"
+    _report -d "To remove cunytv files that are not new, not filler, not about-to-air, that are already on LTO tape run:"
+    echo
+    _report -w "  pushd "${OMNEON_PATH_CUNY}" && rm -i $(cat "${REPORTDIR}/cunytv_removal_candidates_save_to_remove_from_omneon_based_on_lto_index.txt" | sort -u | xargs) && popd"
     echo
 fi
 
@@ -440,9 +448,9 @@ cat "${IDS_NYCMG}" | while read line ; do echo "${line} " ; done > /tmp/all.txt
 cat "${NYCM_OMNEON_IDS_NO_EVERGREEN}" | while read line ; do echo "${line} omneon" ; done | tr "\r" "\n" > /tmp/omneon.txt
 cat "${NYCMG_NEARLINE}" | while read line ; do echo "${line} nearline" ; done | sort | tr "\r" "\n" > /tmp/nearline.txt
 cat "${NYCMG_ON_LTO_PATH}" | awk -F "/" '{print $NF " " $(NF-1)}' | sed 's/.mxf//g' | sed 's/.mov//g' | grep -v '^\.' | sort | tr "\r" "\n" > /tmp/lto.txt
-join -a1 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
-join -a1 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
-join -a1 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
+join -a1 -a2 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
+join -a1 -a2 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
+join -a1 -a2 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
 rsync -rtv --perms --chmod=777 "${NYCMG_NEARLINE}" "${NYCM_OMNEON_IDS_NO_EVERGREEN}" "${CUNY_OMNEON_IDS_NO_EVERGREEN}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
 
