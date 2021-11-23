@@ -246,8 +246,7 @@ printf "%-32s %12d %20s \n" "CUNYTV" "$(cat "${IDS_CUNYTV}" | wc -l)" ""
 printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "${CUNY_FILLER_IDS}" | wc -l)" ""
 
 ### REPORT ON OMNEON FILES
-# list all Omneon files
-
+#### REPORT ON CUNY UNREGISTERED FILES
 stat -F -l -t '%FT%T' "${OMNEON_PATH_CUNY}"/* | grep -v "/$" | sed 's:*$::g' > "${CUNY_ON_OMNEON_FILES_STAT}"
 cp "${CUNY_ON_OMNEON_FILES_STAT}" "${CUNY_ON_OMNEON_FILES_STAT_SNAPSHOT}"
 cut -d " " -f 7- "${CUNY_ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${CUNY_OMNEON_IDS}"
@@ -260,7 +259,7 @@ echo "filename,recport,recdate,source" > "${CUNY_UNREGISTERED_DETAILS}"
 while read -r orphan ; do
   orphanpath=$(grep ".dir/${orphan}.m" "${CUNY_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1)
   if [ -f "${orphanpath}" ] ; then
-    omdata=$(head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
+    omdata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
     recname=$(echo "${omdata}" | cut -d";" -f6)
@@ -271,6 +270,7 @@ while read -r orphan ; do
   fi
 done < "${CUNY_UNREGISTERED}"
 
+#### REPORT ON NYCM UNREGISTERED FILES
 stat -F -l -t '%FT%T' "${OMNEON_PATH_NYCM}/"* | grep -v "/$" | sed 's:*$::g' > "${NYCM_ON_OMNEON_FILES_STAT}"
 cp "${NYCM_ON_OMNEON_FILES_STAT}" "${NYCM_ON_OMNEON_FILES_STAT_SNAPSHOT}"
 cp "${NYCMG4AIR}" "${NYCMG4AIR_SNAPSHOT}"
@@ -284,7 +284,7 @@ echo "filename,recport,recdate,source" > "${NYCM_UNREGISTERED_DETAILS}"
 while read -r orphan ; do
   orphanpath=$(grep ".dir/${orphan}.m" "${NYCM_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | head -n 1)
   if [ -f "${orphanpath}" ] ; then
-    omdata=$(head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
+    omdata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
     recname=$(echo "${omdata}" | cut -d";" -f6)
@@ -301,7 +301,7 @@ while read -r line ; do
     outputs=$(cat "${NYCM_UNREGISTERED_DETAILS}" | grep ",${file}$" | cut -d "," -f1 | grep -v "^${file}$" | xargs)
     echo "$line,$outputs" >> "${NYCM_UNREGISTERED_DETAILS}x"
 done < <(tail -n +2 "${NYCM_UNREGISTERED_DETAILS}")
-mv -v "${NYCM_UNREGISTERED_DETAILS}x" "${NYCM_UNREGISTERED_DETAILS}"
+mv "${NYCM_UNREGISTERED_DETAILS}x" "${NYCM_UNREGISTERED_DETAILS}"
 
 echo
 _report -d "Omneon Storage stats"
@@ -365,7 +365,7 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
     diff -y "${nycmg_removal_candidates_on_nearline_with_extension_and_size}" "${nycmg_removal_candidates_on_omneon_with_extension_and_size}" | grep "|" | while read -r conflictnameline ; do
         omname=$(echo "${conflictnameline}" | awk '{print $1}')
         ommediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${OMNEON_PATH_NYCM}/${omname}")
-        omdata=$(head -c 10000 "${OMNEON_PATH_NYCM}/${omname}" | strings | grep "${OMNEON_NYCM}" | head -n 1)
+        omdata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${OMNEON_PATH_NYCM}/${omname}" | strings | grep "${OMNEON_NYCM}" | head -n 1)
         omrecport=$(echo "${omdata}" | cut -d";" -f2)
         omrecdate=$(echo "${omdata}" | cut -d";" -f9)
         omrecname=$(echo "${omdata}" | cut -d";" -f6)
@@ -376,7 +376,7 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
         fi
         nlname=$(echo "${conflictnameline}" | awk '{print $4}')
         nlmediainfo=$(mediainfo --inform="General;%Duration_String4%,%File_Modified_Date_Local%,%Encoded_Date%" "${NYCMG_NEARLINE_PATH}/${nlname}")
-        nldata=$(head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep "${OMNEON_NYCM}" | head -n 1)
+        nldata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${NYCMG_NEARLINE_PATH}/${nlname}" | strings | grep "${OMNEON_NYCM}" | head -n 1)
         nlrecport=$(echo "${nldata}" | cut -d";" -f2)
         nlrecdate=$(echo "${nldata}" | cut -d";" -f9)
         nlrecname=$(echo "${nldata}" | cut -d";" -f6)
@@ -465,7 +465,7 @@ join -a1 -a2 /tmp/all.txt /tmp/nearline.txt > /tmp/all_near.txt
 join -a1 -a2 /tmp/all_near.txt /tmp/omneon.txt > /tmp/allnearomneon.txt
 join -a1 -a2 /tmp/allnearomneon.txt /tmp/lto.txt | grep " " > "${NYCMG_STORAGE_SUMMARY}"
 
-rsync -rtv --perms --chmod=777 "${NYCMG_NEARLINE}" "${NYCM_OMNEON_IDS_NO_EVERGREEN}" "${CUNY_OMNEON_IDS_NO_EVERGREEN}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
+rsync -rtv --perms "${NYCMG_NEARLINE}" "${NYCM_OMNEON_IDS_NO_EVERGREEN}" "${CUNY_OMNEON_IDS_NO_EVERGREEN}" "${NYCMG_ON_LTO_SIZE_EXT}" "${NYCMG_STORAGE_SUMMARY}" "${REPORTDIRNYC}/"
 
 # make nycmg pull list
 comm -2 -3 "${NYCMG4AIR}"  "${NYCM_ON_OMNEON_IDS}" > /tmp/nycm_pulllist_temp.txt
