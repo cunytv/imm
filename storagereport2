@@ -13,6 +13,10 @@ shift $(( ${OPTIND} - 1 ))
 
 # variables to hold time references
 WHEN_RUN="$(date +%Y%m%d-%H%M%S)"
+TODAY="$(date +%Y%m%d)"
+_get_iso8601(){
+    date +%FT%T
+}
 
 # omneon path
 OMNEON_CUNY="cunytv.dir"
@@ -21,7 +25,6 @@ OMNEON_ROOT="/Volumes/fs0"
 OMNEON_PATH_CUNY="${OMNEON_ROOT}/${OMNEON_CUNY}"
 OMNEON_PATH_NYCM="${OMNEON_ROOT}/${OMNEON_NYCM}"
 
-TODAY="$(date +%Y%m%d)"
 # output inventory xml paths
 INVENTORY_XML_CUNY="${HOME}/Desktop/omneon_cuny_${TODAY}.xml"
 INVENTORY_XML_NYCM="${HOME}/Desktop/omneon_nycm_${TODAY}.xml"
@@ -46,12 +49,6 @@ if [ "$(mount | grep -c /tmp/Autosaved)" = 0 ] ; then
     fi
     #mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /tmp/Autosaved
 fi
-
-
-
-_get_iso8601(){
-    date +%FT%T
-}
 
 _maketemp(){
     mktemp -q "/tmp/$(basename "${0}").XXXXXX"
