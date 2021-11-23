@@ -1,10 +1,11 @@
 #!/bin/bash
 
 OPTIND=1
-while getopts ":nh" OPT ; do
+while getopts ":nhP:" OPT ; do
     case "${OPT}" in
         n) REFRESH_INVENTORY="Y" ;;
         h) _usage ;;
+        P) PATTERN="${OPTARG}" ;;
         *) echo "bad option -${OPTARG}" ; _usage ; exit 1 ;;
         :) echo "Option -${OPTARG} requires an argument" ; exit 1 ;;
     esac
@@ -97,7 +98,12 @@ _make_inventory(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
     # start inventory
-    tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"
+    if [[ -n "${PATTERN}" ]] ; then
+        _report "Using a file match pattern of ${PATTERN}"
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"     
+    else
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"
+    fi
     # remove level 2+ directories from xml
     xml ed --inplace --delete /tree/directory/directory "${INVENTORY_XML}"
     xml ed --inplace --delete /tree/report "${INVENTORY_XML}"
@@ -112,7 +118,12 @@ _update_inventory(){
     INVENTORY_SIZE_NAME_LIST="$(_maketemp)"
     INVENTORY_SIZE_NAME_LIST_TMP="$(_maketemp)"
     NEW_FILES_TREE="$(_maketemp)"
-    tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
+    if [[ -n "${PATTERN}" ]] ; then
+        _report "Using a file match pattern of ${PATTERN}"
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
+    else
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
+    fi
     xml sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file" -v "@size" -o "|" -v "@name" -n "${INVENTORY_XML}" | sort > "${INVENTORY_SIZE_NAME_LIST}"
     xml sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file" -v "@size" -o "|" -v "@name" -n "${INVENTORY_XML_TMP}" | sort > "${INVENTORY_SIZE_NAME_LIST_TMP}"
     NEW_FILES="$(comm -1 -3 "${INVENTORY_SIZE_NAME_LIST}" "${INVENTORY_SIZE_NAME_LIST_TMP}" | cut -d "|" -f 2- | sort)"
