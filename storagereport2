@@ -98,6 +98,11 @@ _make_inventory(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
     # start inventory
+    if [[ ! -d "${INVENTORY_PATH}" ]] ; then 
+        _report "Expecting ${INVENTORY_PATH}...but ${INVENTORY_PATH} is not here!"
+        echo "${0}: Does not compute, exiting..."
+        exit 
+    fi 
     if [[ -n "${PATTERN}" ]] ; then
         _report "Using a file match pattern of ${PATTERN}"
         tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"     
@@ -118,6 +123,11 @@ _update_inventory(){
     INVENTORY_SIZE_NAME_LIST="$(_maketemp)"
     INVENTORY_SIZE_NAME_LIST_TMP="$(_maketemp)"
     NEW_FILES_TREE="$(_maketemp)"
+    if [[ ! -d "${INVENTORY_PATH}" ]] ; then 
+        _report "Expecting ${INVENTORY_PATH}...but ${INVENTORY_PATH} is not here!"
+        echo "${0}: Does not compute, exiting..."
+        exit 
+    fi 
     if [[ -n "${PATTERN}" ]] ; then
         _report "Using a file match pattern of ${PATTERN}"
         tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
