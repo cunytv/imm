@@ -104,8 +104,8 @@ _make_inventory(){
         exit 
     fi 
     if [[ -n "${PATTERN}" ]] ; then
-        _report "Using a file match pattern of ${PATTERN}"
-        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"     
+        _report "Using a file match pattern of ${PATTERN}*"
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}*" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"
     else
         tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"
     fi
@@ -129,8 +129,8 @@ _update_inventory(){
         exit 
     fi 
     if [[ -n "${PATTERN}" ]] ; then
-        _report "Using a file match pattern of ${PATTERN}"
-        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
+        _report "Using a file match pattern of ${PATTERN}*"
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}*" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
     else
         tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
     fi
