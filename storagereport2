@@ -390,6 +390,7 @@ _add_storage(){
     INVENTORY_XML="${1}"
     STORAGE_TYPE="${2}"
     shift 2
+    _report -dt "Adding storage info about ${STORAGE_TYPE} to ${INVENTORY_XML}."
     while [[ "${@}" != "" ]] ; do
         STATFILE="${1}"
         shift
@@ -485,11 +486,14 @@ _add_protrack_metadata "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
 # add cuny storage
 CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/nearline"
 CUNYTV_NEARLINE_STAT="${REPORT_DIR}/cunytv_on_nearline_stat.txt"
+_report -dt "Making statistic list for nearline files."
 find "${CUNYTV_NEARLINE_PATH}" ! -path "*/nycm*" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_NEARLINE_STAT}"
 CUNYTV_ACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
 CUNYTV_ACQ_STAT="${REPORT_DIR}/cunytv_on_acq_stat.txt"
+_report -dt "Making statistic list for acquisition files."
 find "${CUNYTV_ACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_ACQ_STAT}"
 xml sel -t -m ".//file" -o "- - - - " -v length -o " " -v "substring(modifytime,1,19)"  -o " "  -m "ancestor-or-self::directory" -v "name" -o "/" -b -v name -n ~/Documents/lto_indexes/E00*.schema ~/Documents/lto_indexes/A00*.schema  | grep -E ".mov$|.mxf$" > "${REPORT_DIR}/cuny_lto.txt"
+_report -dt "Making statistic list for LTO files."
 _add_storage "${INVENTORY_XML_CUNY}" "nearline" "${CUNYTV_NEARLINE_STAT}" "${CUNYTV_ACQ_STAT}"
 _add_storage "${INVENTORY_XML_CUNY}" "offline" "${REPORT_DIR}/cuny_lto.txt"
 
