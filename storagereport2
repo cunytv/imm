@@ -357,6 +357,10 @@ _add_caption_data(){
     _report -dt "Done adding embedded caption data for omneon files to ${INVENTORY_XML}."
 }
 
+# not that for some of this next function the broadcast times need to already be there.
+_add_caption_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
+
+
 # add protrack metadata
 ###cat "${NYCM_PROTRACK_CSV}"  | tr "\r" "\n" | grep -v "^$" | sed 's|^T-||g;s|/1,|,|g' > "${REPORT_DIR}/nycm_protrack_cleaned.csv"
 ###_add_protrack_metadata "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}" "${REPORT_DIR}/nycm_protrack_cleaned.csv"
@@ -475,7 +479,7 @@ _add_broadcast_schedule -t "${INVENTORY_XML_CUNY}" "${CUNY_PROTRACK_AIR_TMP}"
 #_add_broadcast_schedule -t "${INVENTORY_XML_CUNY}" "${CUNYTV_TOAIRALL}"
 #_add_broadcast_schedule "${INVENTORY_XML_CUNY}" "${CUNYTV_TOAIR}"
 
-_add_caption_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
+
 _add_protrack_metadata "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
 
 # add cuny storage
