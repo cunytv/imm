@@ -365,10 +365,18 @@ _add_caption_data(){
 _label_evergreen(){
     INVENTORY_XML="${1}"
     _report -dt "Marking evergreen files within ${INVENTORY_XML}."
+    if [[ ! -f "${EVERGREEN_LIST}" ]] ; then
+        _report -w "Expecting ${EVERGREEN_LIST}...cannot find ${EVERGREEN_LIST}"
+        WHEN="$(_get_iso8601)"
+        xml ed --inplace --subnode "/tree" --type elem -n problem -v "evergreen missing" \
+           --insert "/tree/problem[not(@when)]" --type attr -n path -v "${EVERGREEN_LIST}" \
+           --insert "/tree/problem[not(@when)]" --type attr -n when -v "${WHEN}" "${INVENTORY_XML}"
+    else
     cat "${EVERGREEN_LIST}" | \
     while read i ; do
       xml ed --inplace --insert "//file[@id='$i'][not(@evergreen)]" --type attr -n evergreen -v 'y' "${INVENTORY_XML}"
     done
+    fi
 }
 
 _label_evergreen "${INVENTORY_XML_CUNY}"
