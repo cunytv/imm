@@ -372,10 +372,10 @@ _label_evergreen(){
            --insert "/tree/problem[not(@when)]" --type attr -n path -v "${EVERGREEN_LIST}" \
            --insert "/tree/problem[not(@when)]" --type attr -n when -v "${WHEN}" "${INVENTORY_XML}"
     else
-    cat "${EVERGREEN_LIST}" | \
-    while read i ; do
-      xml ed --inplace --insert "//file[@id='$i'][not(@evergreen)]" --type attr -n evergreen -v 'y' "${INVENTORY_XML}"
-    done
+        cat "${EVERGREEN_LIST}" | \
+        while read i ; do
+          xml ed --inplace --insert "//file[@id='$i'][not(@evergreen)]" --type attr -n evergreen -v 'y' "${INVENTORY_XML}"
+        done
     fi
 }
 
