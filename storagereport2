@@ -298,7 +298,7 @@ _add_omneon_data(){
             if [[ "${FILE}" == "/Volumes${RECNAME}" ]] ; then
                 RECNAME=""
             fi
-            if [[ ! -z "${RECPORT}" ]] ; then
+            if [[ -n "${RECPORT}" ]] ; then
                 xml ed --inplace --insert "//file[@name='${FN}']" --type attr -n recport -v "${RECPORT}" \
                     --insert "//file[@name='${FN}']" --type attr -n recdate -v "${RECDATE}" \
                     --insert "//file[@name='${FN}']" --type attr -n recname -v "${RECNAME}" "${INVENTORY_XML}"
