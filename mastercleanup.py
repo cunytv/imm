@@ -11,21 +11,21 @@ import csv
 from datetime import datetime
 import datetime
 
-# Open upload file and get a unique set of ids
+# drag in the master csv file followed by csv listing mediaids you would like removed. 
 try:
-    toremove_csv = csv.DictReader(open(sys.argv[1],'r'))
+    master_csv = csv.DictReader(open(sys.argv[1],'r'))
 except IndexError:
-    print(f'Drag in csv list of files you would like to remove from master youtube summary file.')
+    print(f'Usage: Drag in your master csv file, followed by a csv of the MediaIds you would like removed [master csv file] [csv file with mediaids to remove]')
+toremove_csv = csv.DictReader(open(sys.argv[2],'r'))
+
+# finds the mediaids
 toremove = set(i.get('MediaID') for i in toremove_csv)
 
-#print(toremove)
-# Open master file and only retain the data not in the set
-master_csv = csv.DictReader(open('youtubesummary_MASTER.csv','r'))
+# removes the mediaids from the master file
 master = [i for i in master_csv if i.get('MediaID') not in toremove]
-#print(master)
 
-#Overwrite master file with the new results
-filename = 'youtubesummary_captioned_files_removed ' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S.csv")
+# create a new file after removing ids. 
+filename = 'youtubesummary_ids_removed ' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S.csv")
 with open(filename,'w') as file:
     writer = csv.DictWriter(file, master[0].keys(), lineterminator='\n')
     writer.writeheader()
