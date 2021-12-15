@@ -97,6 +97,7 @@ _update_id_and_found_attributes(){
 _make_inventory(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
+    _report -dt "Starting inventory for ${INVENTORY_PATH} at ${INVENTORY_XML}."
     # start inventory
     if [[ ! -d "${INVENTORY_PATH}" ]] ; then 
         _report "Expecting ${INVENTORY_PATH}...but ${INVENTORY_PATH} is not here!"
@@ -118,6 +119,7 @@ _make_inventory(){
 _update_inventory(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
+    _report -dt "Updating inventory for ${INVENTORY_PATH} at ${INVENTORY_XML}."
     INVENTORY_XML_TMP="$(_maketemp)"
     INVENTORY_XML_TMP2="$(_maketemp)"
     INVENTORY_SIZE_NAME_LIST="$(_maketemp)"
@@ -196,6 +198,7 @@ fi
 _label_content_type(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
+    _report -dt "Assessing content_types for ${INVENTORY_PATH} at ${INVENTORY_XML}."
     FILLER_LIST="${3}"
     PROGRAM_LIST="${4}"
     SEGMENT_LIST="${5}"
@@ -274,7 +277,8 @@ _add_protrack_metadata(){
 _add_omneon_data(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
-    _report -dt "Adding Omneon Data for unregistered files to ${INVENTORY_XML}."
+    _report -dt "Adding Omneon Data for registered files to ${INVENTORY_XML}."
+    C=0
     while read FILE ; do
         FFPROBE_REPORT="$(ffprobe -v 0 -sexagesimal "${INVENTORY_PATH}/${FILE}" -select_streams v:0 -show_entries format=duration:stream=codec_tag_string:stream_tags=timecode -of default=nw=1)"
         CODEC_TAG="$(echo "${FFPROBE_REPORT}" | grep codec_tag_string | cut -d "=" -f2)"
@@ -285,7 +289,11 @@ _add_omneon_data(){
                              --insert "//file[@name='${FILE}']" --type attr -n timecode -v "${FILE_TIMECODE}" \
                              --insert "//file[@name='${FILE}']" --type attr -n duration -v "${FILE_DURATION}" "${INVENTORY_XML}"
         fi
+        ((C++))
     done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[@content_type][not(@codec_tag)]" -v @name -n "${INVENTORY_XML}")
+    _report -dt "Done adding Omneon Data for ${C} registered files to ${INVENTORY_XML}."
+    C=0
+    _report -dt "Adding Omneon Data for unregistered QuickTime files to ${INVENTORY_XML}."
     while read FN ; do
         FILE="${INVENTORY_PATH}/${FN}"
         OMDATA="$(head -c 10000 "${FILE}" | strings -20 | awk '/.dir/' | tail -c +2 | head -n 1)"
@@ -304,6 +312,7 @@ _add_omneon_data(){
             fi
         fi
     done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[substring(@name,string-length(@name)-2)='mov'][not(@content_type)][not(@recport)]" -v @name -n "${INVENTORY_XML}")
+    _report -dt "Done adding Omneon Data for ${C} unregistered QuickTime files to ${INVENTORY_XML}."
 }
 ###_add_omneon_data "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}"
 _add_omneon_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
