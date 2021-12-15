@@ -275,8 +275,7 @@ _add_omneon_data(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
     _report -dt "Adding Omneon Data for unregistered files to ${INVENTORY_XML}."
-    xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[@content_type][not(@codec_tag)]" -v @name -n "${INVENTORY_XML}" | while read i ; do
-        FILE="${i}"
+    while read FILE ; do
         FFPROBE_REPORT="$(ffprobe -v 0 -sexagesimal "${INVENTORY_PATH}/${FILE}" -select_streams v:0 -show_entries format=duration:stream=codec_tag_string:stream_tags=timecode -of default=nw=1)"
         CODEC_TAG="$(echo "${FFPROBE_REPORT}" | grep codec_tag_string | cut -d "=" -f2)"
         FILE_TIMECODE="$(echo "${FFPROBE_REPORT}" | grep timecode | cut -d "=" -f2)"
@@ -286,8 +285,8 @@ _add_omneon_data(){
                 --insert "//file[@name='${FILE}']" --type attr -n timecode -v "${FILE_TIMECODE}" \
                 --insert "//file[@name='${FILE}']" --type attr -n duration -v "${FILE_DURATION}" "${INVENTORY_XML}"
         fi
-    done
-    xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[not(@content_type)][not(@recport)]" -v @name -n "${INVENTORY_XML}" | while read FN ; do
+    done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[@content_type][not(@codec_tag)]" -v @name -n "${INVENTORY_XML}")
+    while read FN ; do
         FILE="${INVENTORY_PATH}/${FN}"
         OMDATA="$(head -c 10000 "${FILE}" | strings -20 | awk '/.dir/' | tail -c +2 | head -n 1)"
         ## above cmd still getting in some illegal bytes
@@ -304,7 +303,7 @@ _add_omneon_data(){
                     --insert "//file[@name='${FN}']" --type attr -n recname -v "${RECNAME}" "${INVENTORY_XML}"
             fi
         fi
-    done
+    done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[substring(@name,string-length(@name)-2)='mov'][not(@content_type)][not(@recport)]" -v @name -n "${INVENTORY_XML}")
 }
 ###_add_omneon_data "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}"
 _add_omneon_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
