@@ -280,7 +280,7 @@ _add_omneon_data(){
         CODEC_TAG="$(echo "${FFPROBE_REPORT}" | grep codec_tag_string | cut -d "=" -f2)"
         FILE_TIMECODE="$(echo "${FFPROBE_REPORT}" | grep timecode | cut -d "=" -f2)"
         FILE_DURATION="$(echo "${FFPROBE_REPORT}" | grep duration | cut -d "=" -f2)"
-        if [[ ! -z "${CODEC_TAG}" ]] ; then
+        if [[ -n "${CODEC_TAG}" ]] ; then
             xml ed --inplace --insert "//file[@name='${FILE}']" --type attr -n codec_tag -v "${CODEC_TAG}" \
                              --insert "//file[@name='${FILE}']" --type attr -n timecode -v "${FILE_TIMECODE}" \
                              --insert "//file[@name='${FILE}']" --type attr -n duration -v "${FILE_DURATION}" "${INVENTORY_XML}"
