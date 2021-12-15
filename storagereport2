@@ -282,8 +282,8 @@ _add_omneon_data(){
         FILE_DURATION="$(echo "${FFPROBE_REPORT}" | grep duration | cut -d "=" -f2)"
         if [[ ! -z "${CODEC_TAG}" ]] ; then
             xml ed --inplace --insert "//file[@name='${FILE}']" --type attr -n codec_tag -v "${CODEC_TAG}" \
-                --insert "//file[@name='${FILE}']" --type attr -n timecode -v "${FILE_TIMECODE}" \
-                --insert "//file[@name='${FILE}']" --type attr -n duration -v "${FILE_DURATION}" "${INVENTORY_XML}"
+                             --insert "//file[@name='${FILE}']" --type attr -n timecode -v "${FILE_TIMECODE}" \
+                             --insert "//file[@name='${FILE}']" --type attr -n duration -v "${FILE_DURATION}" "${INVENTORY_XML}"
         fi
     done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[@content_type][not(@codec_tag)]" -v @name -n "${INVENTORY_XML}")
     while read FN ; do
@@ -299,8 +299,8 @@ _add_omneon_data(){
             fi
             if [[ -n "${RECPORT}" ]] ; then
                 xml ed --inplace --insert "//file[@name='${FN}']" --type attr -n recport -v "${RECPORT}" \
-                    --insert "//file[@name='${FN}']" --type attr -n recdate -v "${RECDATE}" \
-                    --insert "//file[@name='${FN}']" --type attr -n recname -v "${RECNAME}" "${INVENTORY_XML}"
+                                 --insert "//file[@name='${FN}']" --type attr -n recdate -v "${RECDATE}" \
+                                 --insert "//file[@name='${FN}']" --type attr -n recname -v "${RECNAME}" "${INVENTORY_XML}"
             fi
         fi
     done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[substring(@name,string-length(@name)-2)='mov'][not(@content_type)][not(@recport)]" -v @name -n "${INVENTORY_XML}")
