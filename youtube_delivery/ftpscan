@@ -31,6 +31,13 @@ else
     while read file ; do
         echo "Trying to upload ${file} to youtube"
         FILE_NAME="$(basename "${file}")"
+        UPLOADED="$(grep "${FILE_NAME}" "${logFile}" | grep "is uploaded")"
+        if [[ -n "${UPLOADED}" ]] ; then
+            echo "${FILE_NAME} was already uploaded:"
+            echo "${UPLOADED}"
+            logit "${FILE_NAME} was requested for upload but was already found to be uploaded in this log"
+            mv -v "${file}" "${dupdir}"
+        else
         SCC_NAME="${file%.*}.scc"
         if [[ -f "${SCC_NAME}" ]] ; then
             CAPTION=(-caption "${SCC_NAME}")
@@ -57,6 +64,7 @@ else
                 mv -v "${SCC_NAME}" "${errordir}"
             fi
             cat "${ytErr}" >> "${errordir}/errors.stderr.txt"
+        fi
         fi
     done < <(find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1)
     if [[ -f "$LOCK" ]] ; then
