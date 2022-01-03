@@ -38,33 +38,33 @@ else
             logit "${FILE_NAME} was requested for upload but was already found to be uploaded in this log"
             mv -v "${file}" "${dupdir}"
         else
-        SCC_NAME="${file%.*}.scc"
-        if [[ -f "${SCC_NAME}" ]] ; then
-            CAPTION=(-caption "${SCC_NAME}")
-            echo "Adding $SCC_NAME to tag along"
-        fi
-        if [[ "${FILE_NAME:0:3}" == "WPR" ]] ; then
-            PRIVACY_TYPE="unlisted"
-        else
-            PRIVACY_TYPE="private"
-        fi
-        # --credentials-file="${logDir}/.youtube-upload-credentials.json"
-        YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" "${CAPTION[@]}" -title "$(basename "${file%.*}")" -privacy "${PRIVACY_TYPE}" -filename "${file}" 2>$ytErr | grep -i "success" | awk 'NF>1{print $NF}')"
-        echo "Outcome of uploading ${file} is ${YOUTUBE_ID}."
-        if [[ "${#YOUTUBE_ID}" == 11 ]] ; then
-            mv -v "${file}" "${donedir}"
-            logit "${FILE_NAME} is uploaded, (${YOUTUBE_ID})."
+            SCC_NAME="${file%.*}.scc"
             if [[ -f "${SCC_NAME}" ]] ; then
-                mv -v "${SCC_NAME}" "${donedir}"
+                CAPTION=(-caption "${SCC_NAME}")
+                echo "Adding $SCC_NAME to tag along"
             fi
-        else
-            mv -v "${file}" "${errordir}"
-            logit "${FILE_NAME} had an error, see ${errordir}.stderr.txt."
-            if [[ -f "${SCC_NAME}" ]] ; then
-                mv -v "${SCC_NAME}" "${errordir}"
+            if [[ "${FILE_NAME:0:3}" == "WPR" ]] ; then
+                PRIVACY_TYPE="unlisted"
+            else
+                PRIVACY_TYPE="private"
             fi
-            cat "${ytErr}" >> "${errordir}/errors.stderr.txt"
-        fi
+            # --credentials-file="${logDir}/.youtube-upload-credentials.json"
+            YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" "${CAPTION[@]}" -title "$(basename "${file%.*}")" -privacy "${PRIVACY_TYPE}" -filename "${file}" 2>$ytErr | grep -i "success" | awk 'NF>1{print $NF}')"
+            echo "Outcome of uploading ${file} is ${YOUTUBE_ID}."
+            if [[ "${#YOUTUBE_ID}" == 11 ]] ; then
+                mv -v "${file}" "${donedir}"
+                logit "${FILE_NAME} is uploaded, (${YOUTUBE_ID})."
+                if [[ -f "${SCC_NAME}" ]] ; then
+                    mv -v "${SCC_NAME}" "${donedir}"
+                fi
+            else
+                mv -v "${file}" "${errordir}"
+                logit "${FILE_NAME} had an error, see ${errordir}.stderr.txt."
+                if [[ -f "${SCC_NAME}" ]] ; then
+                    mv -v "${SCC_NAME}" "${errordir}"
+                fi
+                cat "${ytErr}" >> "${errordir}/errors.stderr.txt"
+            fi
         fi
     done < <(find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1)
     if [[ -f "$LOCK" ]] ; then
