@@ -28,7 +28,7 @@ else
     unset CAPTION
     touch "$LOCK"
     # Get the current file list from the directory
-    find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1 | while read file ; do
+    while read file ; do
         echo "Trying to upload ${file} to youtube"
         FILE_NAME="$(basename "${file}")"
         SCC_NAME="${file%.*}.scc"
@@ -58,7 +58,7 @@ else
             fi
             cat "${ytErr}" >> "${errordir}/errors.stderr.txt"
         fi
-    done
+    done < <(find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1)
     if [[ -f "$LOCK" ]] ; then
         rm "$LOCK"
     fi
