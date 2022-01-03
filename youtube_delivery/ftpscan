@@ -13,12 +13,12 @@ donedir="${dir}/Uploaded"
 dupdir="${dir}/Duplicates"
 errordir="${dir}/Errors"
 logDir="/Users/cunytvadmin"
-ytErr="/tmp/youtube-upload2.stderr"
+logFile="${logDir}/ftpscan.log"
+ytErr="${logDir}/youtube-upload2.stderr"
 
 logit(){
     MSG="${1}"
     WHEN="$(date +%FT%T)"
-    logFile="${logDir}/ftpscan.log"
     echo "${WHEN}: ${MSG}" >> "$logFile"
 }
 
