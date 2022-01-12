@@ -59,12 +59,17 @@ else
                     mv -v "${SCC_NAME}" "${donedir}"
                 fi
             else
+                if grep "quotaExceeded" "${errorFile}" ; then
+                    echo "Gonna wait because ${FILE_NAME} gave a quotaExceeded error"
+                    break
+                else
                 mv -v "${file}" "${errordir}"
                 logit "${FILE_NAME} had an error, see ${errorFile}"
                 if [[ -f "${SCC_NAME}" ]] ; then
                     mv -v "${SCC_NAME}" "${errordir}"
                 fi
                 cat "${ytErr}" >> "${errorFile}"
+                fi
             fi
         fi
     done < <(find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1)
