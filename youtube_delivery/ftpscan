@@ -12,6 +12,7 @@ dir="/Volumes/From library/youtube_delivery"
 donedir="${dir}/Uploaded"
 dupdir="${dir}/Duplicates"
 errordir="${dir}/Errors"
+errorFile="${errordir}/errors.stderr.txt"
 logDir="/Users/cunytvadmin"
 logFile="${logDir}/ftpscan.log"
 ytErr="${logDir}/youtube-upload2.stderr"
@@ -59,11 +60,11 @@ else
                 fi
             else
                 mv -v "${file}" "${errordir}"
-                logit "${FILE_NAME} had an error, see ${errordir}.stderr.txt."
+                logit "${FILE_NAME} had an error, see ${errorFile}"
                 if [[ -f "${SCC_NAME}" ]] ; then
                     mv -v "${SCC_NAME}" "${errordir}"
                 fi
-                cat "${ytErr}" >> "${errordir}/errors.stderr.txt"
+                cat "${ytErr}" >> "${errorFile}"
             fi
         fi
     done < <(find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1)
