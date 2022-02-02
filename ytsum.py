@@ -32,7 +32,7 @@ print(f'Your Youtube summary report can be found here: {filename}')
 print()
 with open(filename, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile, delimiter=',')
-    writer.writerow(['MediaID', 'YouTubeID', 'Extension', 'Size', 'Resolution', 'Frame Rate', 'Captions'])
+    writer.writerow(['MediaID', 'YouTubeID', 'Title', 'Extension', 'Size', 'Resolution', 'Frame Rate', 'Captions'])
 
 for line in reader:
     
@@ -40,10 +40,12 @@ for line in reader:
 
     mediaid=(line[0])
     
+    title=(line[2])
+    
     if youtubeid == '':
         with open(filename, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
-            rows2 = [mediaid, youtubeid]
+            rows2 = [mediaid, youtubeid, title]
             writer.writerow(rows2) 
         continue
                 
@@ -76,7 +78,7 @@ for line in reader:
     if subtitles.startswith(youtubeid):
         subtitles = ''
         
-    rows = [mediaid, youtubeid, filetype, size, resolution, fps, subtitles]
+    rows = [mediaid, youtubeid, title, filetype, size, resolution, fps, subtitles]
 
     with open(filename, 'a', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
