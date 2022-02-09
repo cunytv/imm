@@ -39,6 +39,7 @@ message="These new video files showed up in $(basename "${searchdirectory}"):\n\
 if [ -n "${filelist}" ] ; then
      BOUNDARY="unique-boundary-$RANDOM"
      while read file ; do
+         file_ascii="$(echo "${file}" | iconv -f utf-8 -t ascii//TRANSLIT)"
         _get_broadcastduration "$file"
         _get_filesize "$file"
         _get_codec "$file"
@@ -47,7 +48,7 @@ if [ -n "${filelist}" ] ; then
         _get_user "$file"
         _get_chapterlist "$file"
         message+="*********\n"
-        message+="Filename: $file\n"
+        message+="Filename: ${file}\n"
         if [ -n "${BROADCASTDURATION}" ] ; then
             message+="Duration: $BROADCASTDURATION\n"
             if [ -n "${FILESIZE}" ] ; then
@@ -71,20 +72,22 @@ if [ -n "${filelist}" ] ; then
             if [ -n "${BROADCASTDURATION}" ] ; then
                 makegifsummary -o /tmp "$file"
                 gifpath="/tmp/$(basename "${file%.*}").gif"
-                if [ -f "${gifpath}" ] ; then
-                    ATT_MIMETYPE=$(file -Ib "${gifpath}" | cut -d";" -f1)
-                    ATT_ENCODED=$(base64 < "${gifpath}")
+                gifpath_ascii="/tmp/$(basename "${file_ascii%.*}").gif"
+                mv "${gifpath}" "${gifpath_ascii}"
+                if [ -f "${gifpath_ascii}" ] ; then
+                    ATT_MIMETYPE=$(file -Ib "${gifpath_ascii}" | cut -d";" -f1)
+                    ATT_ENCODED=$(base64 < "${gifpath_ascii}")
                     message+="--$BOUNDARY\n"
-                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
+                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath_ascii}")"\n"
                     message+="Content-Transfer-Encoding: base64\n"
-                    message+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
+                    message+="Content-Disposition: attachment; filename="$(basename "${gifpath_ascii}")"\n"
                     message+="\n"
                     message+="$ATT_ENCODED"
                     message+="\n\n"
                     message+="--$BOUNDARY"
                     message+="\n"
                     echo "cleaning up gif"
-                    rm -v "${gifpath}"
+                    rm -v "${gifpath_ascii}"
                 fi
             fi
             message+="\n"
