@@ -1,17 +1,23 @@
 #!/bin/bash
 
 OPTIND=1
-while getopts ":nh" OPT ; do
+while getopts ":nhP:" OPT ; do
     case "${OPT}" in
         n) REFRESH_INVENTORY="Y" ;;
         h) _usage ;;
-        *) echo "bad option -${OPTARG}" ; _usage ;;
-        :) echo "Option -${OPTARG} requires an argument" ; _writeerrorlog "makederiv" "The option selected required an argument and none was provided. The script had to exit." ; exit 1 ;;
+        P) PATTERN="${OPTARG}" ;;
+        *) echo "bad option -${OPTARG}" ; _usage ; exit 1 ;;
+        :) echo "Option -${OPTARG} requires an argument" ; exit 1 ;;
     esac
 done
 shift $(( ${OPTIND} - 1 ))
 
+# variables to hold time references
 WHEN_RUN="$(date +%Y%m%d-%H%M%S)"
+TODAY="$(date +%Y%m%d)"
+_get_iso8601(){
+    date +%FT%T
+}
 
 # omneon path
 OMNEON_CUNY="cunytv.dir"
@@ -20,7 +26,7 @@ OMNEON_ROOT="/Volumes/fs0"
 OMNEON_PATH_CUNY="${OMNEON_ROOT}/${OMNEON_CUNY}"
 OMNEON_PATH_NYCM="${OMNEON_ROOT}/${OMNEON_NYCM}"
 
-TODAY="$(date +%Y%m%d)"
+# output inventory xml paths
 INVENTORY_XML_CUNY="${HOME}/Desktop/omneon_cuny_${TODAY}.xml"
 INVENTORY_XML_NYCM="${HOME}/Desktop/omneon_nycm_${TODAY}.xml"
 REPORT_DIR="/tmp"
@@ -44,12 +50,6 @@ if [ "$(mount | grep -c /tmp/Autosaved)" = 0 ] ; then
     fi
     #mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /tmp/Autosaved
 fi
-
-
-
-_get_iso8601(){
-    date +%FT%T
-}
 
 _maketemp(){
     mktemp -q "/tmp/$(basename "${0}").XXXXXX"
@@ -97,8 +97,19 @@ _update_id_and_found_attributes(){
 _make_inventory(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
+    _report -dt "Starting inventory for ${INVENTORY_PATH} at ${INVENTORY_XML}."
     # start inventory
-    tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"
+    if [[ ! -d "${INVENTORY_PATH}" ]] ; then 
+        _report "Expecting ${INVENTORY_PATH}...but ${INVENTORY_PATH} is not here!"
+        echo "${0}: Does not compute, exiting..."
+        exit 
+    fi 
+    if [[ -n "${PATTERN}" ]] ; then
+        _report "Using a file match pattern of ${PATTERN}*"
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}*" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"
+    else
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML}"
+    fi
     # remove level 2+ directories from xml
     xml ed --inplace --delete /tree/directory/directory "${INVENTORY_XML}"
     xml ed --inplace --delete /tree/report "${INVENTORY_XML}"
@@ -108,12 +119,23 @@ _make_inventory(){
 _update_inventory(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
+    _report -dt "Updating inventory for ${INVENTORY_PATH} at ${INVENTORY_XML}."
     INVENTORY_XML_TMP="$(_maketemp)"
     INVENTORY_XML_TMP2="$(_maketemp)"
     INVENTORY_SIZE_NAME_LIST="$(_maketemp)"
     INVENTORY_SIZE_NAME_LIST_TMP="$(_maketemp)"
     NEW_FILES_TREE="$(_maketemp)"
-    tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
+    if [[ ! -d "${INVENTORY_PATH}" ]] ; then 
+        _report "Expecting ${INVENTORY_PATH}...but ${INVENTORY_PATH} is not here!"
+        echo "${0}: Does not compute, exiting..."
+        exit 
+    fi 
+    if [[ -n "${PATTERN}" ]] ; then
+        _report "Using a file match pattern of ${PATTERN}*"
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${PATTERN}*" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
+    else
+        tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" "${INVENTORY_PATH}" -o "${INVENTORY_XML_TMP}"
+    fi
     xml sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file" -v "@size" -o "|" -v "@name" -n "${INVENTORY_XML}" | sort > "${INVENTORY_SIZE_NAME_LIST}"
     xml sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file" -v "@size" -o "|" -v "@name" -n "${INVENTORY_XML_TMP}" | sort > "${INVENTORY_SIZE_NAME_LIST_TMP}"
     NEW_FILES="$(comm -1 -3 "${INVENTORY_SIZE_NAME_LIST}" "${INVENTORY_SIZE_NAME_LIST_TMP}" | cut -d "|" -f 2- | sort)"
@@ -133,17 +155,23 @@ _update_inventory(){
     echo "${DELETED_FILES}" | column
     DELETED_FILE_PATTERN1="$(echo "${DELETED_FILES}" | while read i ; do echo -n "@name='${i}' or " ; done )"
     DELETED_FILE_PATTERN="${DELETED_FILE_PATTERN1%????}" # removes the trailing ' or ' from the list of files
-    # remove and re-add modified files
-    if [[ ! -z "${MODIFIED_FILES}" ]] ; then
+    # remove modified files (will add back later)
+    if [[ -n "${MODIFIED_FILES}" ]] ; then
         xml ed --inplace --delete "/tree/directory[@name='${INVENTORY_PATH}']/file[${MODIFIED_FILE_PATTERN}]" "${INVENTORY_XML}"
     fi
-    # add new files to the inventory xml
-    if [[ ! -z "${NEW_FILE_PATTERN}" ]] ; then
+    # add new files and modified files to the inventory xml
+    if [[ -n "${NEW_FILE_PATTERN}" ]] ; then
         tree -x -X -L 1 -s -D --prune --noreport --timefmt "%Y%m%d-%H%M%S" -P "${NEW_FILE_PATTERN}" "${INVENTORY_PATH}" > "${NEW_FILES_TREE}"
         #xml ed --subnode "/tree/directory[@name='${INVENTORY_PATH}']"  --type text -n '' --value "$(xmlstarlet sel -t --copy-of '/tree/directory/file' "${NEW_FILES_TREE}")" "${INVENTORY_XML}" | xmlstarlet unescape | xml fo > "${INVENTORY_XML_TMP2}"
         # the above command doesn't work since it unescapes escaped characters within attributes
-        cat "${INVENTORY_XML}" | sed "s|<directory name=\"${INVENTORY_PATH}\">|<directory name=\"${INVENTORY_PATH}\">$(xmlstarlet sel -t --copy-of '/tree/directory/file' "${NEW_FILES_TREE}")|g" | xml fo > "${INVENTORY_XML_TMP2}"
-        mv -v "${INVENTORY_XML_TMP2}" "${INVENTORY_XML}"
+        # in the sed below, the first pattern matches the directory if it's open and the second if it's closed.
+        cat "${INVENTORY_XML}" | sed "s|<directory name=\"${INVENTORY_PATH}\">|<directory name=\"${INVENTORY_PATH}\">$(xmlstarlet sel -t --copy-of '/tree/directory/file' "${NEW_FILES_TREE}")|g;s|<directory name=\"${INVENTORY_PATH}\"/>|<directory name=\"${INVENTORY_PATH}\">$(xmlstarlet sel -t --copy-of '/tree/directory/file' "${NEW_FILES_TREE}")</directory>|g" | xml fo > "${INVENTORY_XML_TMP2}"
+        if [[ -s "${INVENTORY_XML_TMP2}" ]] ; then
+            mv -v "${INVENTORY_XML_TMP2}" "${INVENTORY_XML}"
+        else
+            _report -wt "The xml modifications, stored temporarily at ${INVENTORY_XML_TMP2} are broken, so I give up."
+            exit 1
+        fi
         _update_id_and_found_attributes "${INVENTORY_XML}"
     fi
     # move deleted files in inventory xml
@@ -170,6 +198,7 @@ fi
 _label_content_type(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
+    _report -dt "Assessing content_types for ${INVENTORY_PATH} at ${INVENTORY_XML}."
     FILLER_LIST="${3}"
     PROGRAM_LIST="${4}"
     SEGMENT_LIST="${5}"
@@ -248,20 +277,24 @@ _add_protrack_metadata(){
 _add_omneon_data(){
     INVENTORY_XML="${1}"
     INVENTORY_PATH="${2}"
-    _report -dt "Adding Omneon Data for unregistered files to ${INVENTORY_XML}."
-    xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[@content_type][not(@codec_tag)]" -v @name -n "${INVENTORY_XML}" | while read i ; do
-        FILE="${i}"
+    _report -dt "Adding Omneon Data for registered files to ${INVENTORY_XML}."
+    C=0
+    while read FILE ; do
         FFPROBE_REPORT="$(ffprobe -v 0 -sexagesimal "${INVENTORY_PATH}/${FILE}" -select_streams v:0 -show_entries format=duration:stream=codec_tag_string:stream_tags=timecode -of default=nw=1)"
         CODEC_TAG="$(echo "${FFPROBE_REPORT}" | grep codec_tag_string | cut -d "=" -f2)"
         FILE_TIMECODE="$(echo "${FFPROBE_REPORT}" | grep timecode | cut -d "=" -f2)"
         FILE_DURATION="$(echo "${FFPROBE_REPORT}" | grep duration | cut -d "=" -f2)"
-        if [[ ! -z "${CODEC_TAG}" ]] ; then
+        if [[ -n "${CODEC_TAG}" ]] ; then
             xml ed --inplace --insert "//file[@name='${FILE}']" --type attr -n codec_tag -v "${CODEC_TAG}" \
-                --insert "//file[@name='${FILE}']" --type attr -n timecode -v "${FILE_TIMECODE}" \
-                --insert "//file[@name='${FILE}']" --type attr -n duration -v "${FILE_DURATION}" "${INVENTORY_XML}"
+                             --insert "//file[@name='${FILE}']" --type attr -n timecode -v "${FILE_TIMECODE}" \
+                             --insert "//file[@name='${FILE}']" --type attr -n duration -v "${FILE_DURATION}" "${INVENTORY_XML}"
         fi
-    done
-    xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[not(@content_type)][not(@recport)]" -v @name -n "${INVENTORY_XML}" | while read FN ; do
+        ((C++))
+    done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[@content_type][not(@codec_tag)]" -v @name -n "${INVENTORY_XML}")
+    _report -dt "Done adding Omneon Data for ${C} registered files to ${INVENTORY_XML}."
+    C=0
+    _report -dt "Adding Omneon Data for unregistered QuickTime files to ${INVENTORY_XML}."
+    while read FN ; do
         FILE="${INVENTORY_PATH}/${FN}"
         OMDATA="$(head -c 10000 "${FILE}" | strings -20 | awk '/.dir/' | tail -c +2 | head -n 1)"
         ## above cmd still getting in some illegal bytes
@@ -272,13 +305,14 @@ _add_omneon_data(){
             if [[ "${FILE}" == "/Volumes${RECNAME}" ]] ; then
                 RECNAME=""
             fi
-            if [[ ! -z "${RECPORT}" ]] ; then
+            if [[ -n "${RECPORT}" ]] ; then
                 xml ed --inplace --insert "//file[@name='${FN}']" --type attr -n recport -v "${RECPORT}" \
-                    --insert "//file[@name='${FN}']" --type attr -n recdate -v "${RECDATE}" \
-                    --insert "//file[@name='${FN}']" --type attr -n recname -v "${RECNAME}" "${INVENTORY_XML}"
+                                 --insert "//file[@name='${FN}']" --type attr -n recdate -v "${RECDATE}" \
+                                 --insert "//file[@name='${FN}']" --type attr -n recname -v "${RECNAME}" "${INVENTORY_XML}"
             fi
         fi
-    done
+    done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[substring(@name,string-length(@name)-2)='mov'][not(@content_type)][not(@recport)]" -v @name -n "${INVENTORY_XML}")
+    _report -dt "Done adding Omneon Data for ${C} unregistered QuickTime files to ${INVENTORY_XML}."
 }
 ###_add_omneon_data "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}"
 _add_omneon_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
@@ -331,6 +365,10 @@ _add_caption_data(){
     _report -dt "Done adding embedded caption data for omneon files to ${INVENTORY_XML}."
 }
 
+# not that for some of this next function the broadcast times need to already be there.
+_add_caption_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
+
+
 # add protrack metadata
 ###cat "${NYCM_PROTRACK_CSV}"  | tr "\r" "\n" | grep -v "^$" | sed 's|^T-||g;s|/1,|,|g' > "${REPORT_DIR}/nycm_protrack_cleaned.csv"
 ###_add_protrack_metadata "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}" "${REPORT_DIR}/nycm_protrack_cleaned.csv"
@@ -339,10 +377,18 @@ _add_caption_data(){
 _label_evergreen(){
     INVENTORY_XML="${1}"
     _report -dt "Marking evergreen files within ${INVENTORY_XML}."
-    cat "${EVERGREEN_LIST}" | \
-    while read i ; do
-      xml ed --inplace --insert "//file[@id='$i'][not(@evergreen)]" --type attr -n evergreen -v 'y' "${INVENTORY_XML}"
-    done
+    if [[ ! -f "${EVERGREEN_LIST}" ]] ; then
+        _report -w "Expecting ${EVERGREEN_LIST}...cannot find ${EVERGREEN_LIST}"
+        WHEN="$(_get_iso8601)"
+        xml ed --inplace --subnode "/tree" --type elem -n problem -v "evergreen missing" \
+           --insert "/tree/problem[not(@when)]" --type attr -n path -v "${EVERGREEN_LIST}" \
+           --insert "/tree/problem[not(@when)]" --type attr -n when -v "${WHEN}" "${INVENTORY_XML}"
+    else
+        cat "${EVERGREEN_LIST}" | \
+        while read i ; do
+          xml ed --inplace --insert "//file[@id='$i'][not(@evergreen)]" --type attr -n evergreen -v 'y' "${INVENTORY_XML}"
+        done
+    fi
 }
 
 _label_evergreen "${INVENTORY_XML_CUNY}"
@@ -352,6 +398,7 @@ _add_storage(){
     INVENTORY_XML="${1}"
     STORAGE_TYPE="${2}"
     shift 2
+    _report -dt "Adding storage info about ${STORAGE_TYPE} to ${INVENTORY_XML}."
     while [[ "${@}" != "" ]] ; do
         STATFILE="${1}"
         shift
@@ -441,17 +488,20 @@ _add_broadcast_schedule -t "${INVENTORY_XML_CUNY}" "${CUNY_PROTRACK_AIR_TMP}"
 #_add_broadcast_schedule -t "${INVENTORY_XML_CUNY}" "${CUNYTV_TOAIRALL}"
 #_add_broadcast_schedule "${INVENTORY_XML_CUNY}" "${CUNYTV_TOAIR}"
 
-_add_caption_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
+
 _add_protrack_metadata "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
 
 # add cuny storage
 CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/nearline"
 CUNYTV_NEARLINE_STAT="${REPORT_DIR}/cunytv_on_nearline_stat.txt"
+_report -dt "Making statistic list for nearline files."
 find "${CUNYTV_NEARLINE_PATH}" ! -path "*/nycm*" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_NEARLINE_STAT}"
 CUNYTV_ACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
 CUNYTV_ACQ_STAT="${REPORT_DIR}/cunytv_on_acq_stat.txt"
+_report -dt "Making statistic list for acquisition files."
 find "${CUNYTV_ACQ_PATH}"/*/objects/service -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; | sed 's:*$::g' > "${CUNYTV_ACQ_STAT}"
-xml sel -t -m ".//file" -o "- - - - " -v length -o " " -v "substring(modifytime,1,19)"  -o " "  -m "ancestor-or-self::directory" -v "name" -o "/" -b -v name -n ~/Documents/lto_indexes/E00*.schema ~/Documents/lto_indexes/A00*.schema  | grep -E ".mov$|.mxf$" > "${REPORT_DIR}/cuny_lto.txt"
+_report -dt "Making statistic list for LTO files."
+xml sel -t -m ".//file[substring(name,string-length(name)-2)='mov' or substring(name,string-length(name)-2)='mxf']" -o "- - - - " -v length -o " " -v "substring(modifytime,1,19)"  -o " "  -m "ancestor-or-self::directory" -v "name" -o "/" -b -v name -n ~/Documents/lto_indexes/E00*.schema ~/Documents/lto_indexes/A00*.schema  | grep -E ".mov$|.mxf$" > "${REPORT_DIR}/cuny_lto.txt"
 _add_storage "${INVENTORY_XML_CUNY}" "nearline" "${CUNYTV_NEARLINE_STAT}" "${CUNYTV_ACQ_STAT}"
 _add_storage "${INVENTORY_XML_CUNY}" "offline" "${REPORT_DIR}/cuny_lto.txt"
 
