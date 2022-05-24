@@ -61,6 +61,11 @@ while [ "${*}" != "" ] ; do
         ffmpeg -v 0 -i "${FILE}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
         echo "Creating a WebVTT file to upload"
         VTT_MD5="$(md5 -q "${VTT}")"
+        IA_PUBLIC_DATE="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r '.metadata.publicdate | select( . != null )')"
+        if [[ -z "${IA_PUBLIC_DATE}" ]] ; then
+            echo "There is no ${ARCHIVE_ORG_MEDIAID} on archive.org. Ignoring request to upload ${VTT_NAME}."
+        else
+            echo "Found ${ARCHIVE_ORG_MEDIAID} on archive.org, dated ${IA_PUBLIC_DATE}."
         VTT_IA_MD5="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r ".files[] | select(.name==\"${VTT_NAME}\").md5")"
         if [[ "${VTT_MD5}" == "${VTT_IA_MD5}" ]] ; then
             echo "${VTT_NAME} was already uploaded with checksum of ${VTT_MD5}, ignoring this request."
@@ -72,6 +77,7 @@ while [ "${*}" != "" ] ; do
                 echo "${VTT_NAME} wasn't uploaded before, let's go."
                 ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
             fi
+        fi
         fi
     else
         echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
