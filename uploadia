@@ -58,15 +58,15 @@ while [ "${*}" != "" ] ; do
     VTT="/tmp/${VTT_NAME}"
 
     if  [[ "${EXT}" = "scc" ]] ; then
-        ffmpeg -i "${FILE}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
+        ffmpeg -v 0 -i "${FILE}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
         echo "Creating a WebVTT file to upload"
-        VTT_MD5="$(md5 "${VTT}")"
+        VTT_MD5="$(md5 -q "${VTT}")"
         VTT_IA_MD5="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r ".files[] | select(.name==\"${VTT_NAME}\").md5")"
         if [[ "${VTT_MD5}" == "${VTT_IA_MD5}" ]] ; then
-            echo "${VTT_NAME} was already uploaded with checksum of ${VT_MD5}, ignoring this request."
+            echo "${VTT_NAME} was already uploaded with checksum of ${VTT_MD5}, ignoring this request."
         else
             if [[ -n "${VTT_IA_MD5}" ]] ; then
-                echo "${VTT_NAME} is different, let's upload the new one."
+                echo "${VTT_NAME} is different(ia md5 is ${VTT_IA_MD5} and local md5 is ${VTT_MD5}), let's upload the new one."
                 ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
             else
                 echo "${VTT_NAME} wasn't uploaded before, let's go."
@@ -74,8 +74,9 @@ while [ "${*}" != "" ] ; do
             fi
         fi
     else
-        ia delete "${ARCHIVE_ORG_MEDIAID}"
         echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
+        ia delete "${ARCHIVE_ORG_MEDIAID}"
+        echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
         ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
         pbprotracktor "${MEDIAID}" > "${TEMP_PBCORE}"
         if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
@@ -103,5 +104,5 @@ while [ "${*}" != "" ] ; do
             ia metadata "${ARCHIVE_ORG_MEDIAID}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}"
         fi
     fi  
-    echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
+    
 done
