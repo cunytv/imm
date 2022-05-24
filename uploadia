@@ -24,7 +24,9 @@ while getopts ":c:a" OPT ; do
 done
 shift $(( ${OPTIND} - 1 ))
 
+while [ "${*}" != "" ] ; do
 FILE="${1}"
+shift
 MEDIAID="$(basename "${FILE%.*}")"
 MEDIAID_CLEAN="$(echo "${MEDIAID}" | sed 's|HD$||g;s|DV$||g;s|DV_V[0-9]$||g;s|HD_V[0-9]$||g;s|_V[0-9]$||g')"
 ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
@@ -64,3 +66,4 @@ else
     ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" ;
 fi  
 echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
+done
