@@ -1,10 +1,7 @@
 #!/bin/bash
 # This script will upload a file to CUNY TV's Internet Archive account.
-SCRIPTDIR=$(dirname $(which "${0}"))
-. "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
 DEPENDENCIES=(pbprotracktor ia ffmpeg)
-_initialize_make
- 
+
 _maketemp(){
     mktemp -q "/tmp/$(basename "${0}").XXXXXX"
     if [ "${?}" -ne 0 ]; then
@@ -18,8 +15,8 @@ OPTIND=1
 while getopts ":c:a" OPT ; do
   case "${OPT}" in
       c) METADATAOPTS+=(-o "--modify=\"licenseurl:http://creativecommons.org/licenses/by-nc-nd/4.0/\" ") ;;
+      :) echo "Option -${OPTARG} requires an argument" ; exit 1 ;;
       *) echo "bad option -${OPTARG}" ; _usage ;;
-      :) echo "Option -${OPTARG} requires an argument" ; _writeerrorlog "makebroadcast" "The option selected required an argument and none was provided. The script had to exit." ; exit 1 ;;
   esac
 done
 shift $(( ${OPTIND} - 1 ))
