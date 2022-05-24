@@ -66,18 +66,18 @@ while [ "${*}" != "" ] ; do
             echo "There is no ${ARCHIVE_ORG_MEDIAID} on archive.org. Ignoring request to upload ${VTT_NAME}."
         else
             echo "Found ${ARCHIVE_ORG_MEDIAID} on archive.org, dated ${IA_PUBLIC_DATE}."
-        VTT_IA_MD5="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r ".files[] | select(.name==\"${VTT_NAME}\").md5")"
-        if [[ "${VTT_MD5}" == "${VTT_IA_MD5}" ]] ; then
-            echo "${VTT_NAME} was already uploaded with checksum of ${VTT_MD5}, ignoring this request."
-        else
-            if [[ -n "${VTT_IA_MD5}" ]] ; then
-                echo "${VTT_NAME} is different(ia md5 is ${VTT_IA_MD5} and local md5 is ${VTT_MD5}), let's upload the new one."
-                ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+            VTT_IA_MD5="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r ".files[] | select(.name==\"${VTT_NAME}\").md5")"
+            if [[ "${VTT_MD5}" == "${VTT_IA_MD5}" ]] ; then
+                echo "${VTT_NAME} was already uploaded with checksum of ${VTT_MD5}, ignoring this request."
             else
-                echo "${VTT_NAME} wasn't uploaded before, let's go."
-                ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+                if [[ -n "${VTT_IA_MD5}" ]] ; then
+                    echo "${VTT_NAME} is different(ia md5 is ${VTT_IA_MD5} and local md5 is ${VTT_MD5}), let's upload the new one."
+                    ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+                else
+                    echo "${VTT_NAME} wasn't uploaded before, let's go."
+                    ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+                fi
             fi
-        fi
         fi
     else
         echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
