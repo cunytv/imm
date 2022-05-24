@@ -2,6 +2,29 @@
 # This script will upload a file to CUNY TV's Internet Archive account.
 DEPENDENCIES=(pbprotracktor ia ffmpeg)
 
+_check_dependencies(){
+    DEPS_OK=YES
+    while [ "${*}" != "" ] ; do
+        DEPENDENCY="${1}"
+        if [ ! "$(which "${DEPENDENCY}")" ] ; then
+            _report -wt "This script requires ${DEPENDENCY} to run but it is not installed"
+            _report -wt "If you are running ubuntu or debian you might be able to install ${DEPENDENCY} with the following command"
+            _report -wt "sudo apt-get install ${DEPENDENCY}"
+            _report -wt "If you are running mac you might be able to install ${DEPENDENCY} with the following command"
+            _report -wt "brew install ${DEPENDENCY}"
+            DEPS_OK=NO
+        fi
+        shift
+    done
+    if [[ "${DEPS_OK}" = "NO" ]]; then
+        _report -wt "Unmet dependencies"
+        _report -wt "Aborting!"
+        exit 1
+    else
+        return 0
+    fi
+}
+
 _maketemp(){
     mktemp -q "/tmp/$(basename "${0}").XXXXXX"
     if [ "${?}" -ne 0 ]; then
@@ -10,6 +33,8 @@ _maketemp(){
         exit 1
     fi
 }
+
+_check_dependencies "${DEPENDENCIES[@]}"
 
 OPTIND=1
 while getopts ":c:a" OPT ; do
