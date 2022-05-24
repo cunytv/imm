@@ -54,7 +54,7 @@ while [ "${*}" != "" ] ; do
     ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
     TEMP_PBCORE=$(_maketemp)
     EXT="${FILE##*.}"
-    VTT="${MEDIAID%.*}.vtt"
+    VTT="/tmp/${MEDIAID%.*}.vtt"
 
     pbprotracktor "${MEDIAID}" > "${TEMP_PBCORE}"
     if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
