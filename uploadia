@@ -6,12 +6,12 @@ DEPENDENCIES=(pbprotracktor ia ffmpeg)
 _initialize_make
  
 _maketemp(){
-  mktemp -q "/tmp/$(basename "${0}").XXXXXX"
-  if [ "${?}" -ne 0 ]; then
-      echo "${0}: Can't create temp file, exiting..."
-      _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
-      exit 1
-  fi
+    mktemp -q "/tmp/$(basename "${0}").XXXXXX"
+    if [ "${?}" -ne 0 ]; then
+        echo "${0}: Can't create temp file, exiting..."
+        _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
+        exit 1
+    fi
 }
 
 OPTIND=1
@@ -53,14 +53,14 @@ DATE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m
    -v "p:pbcoreAssetDate[@dateType='broadcast']" \
    -n ${TEMP_PBCORE})
        
-  if  [[ "$EXT" = "scc" ]] ; then
-	  ffmpeg -i "${@}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
-	  echo "Creating a WebVTT file to upload"
-	  ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" 
-  else
-      ia delete "${ARCHIVE_ORG_MEDIAID}" ;
-      echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..." ;
-      ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" ;
-      ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" ;
-  fi  
-	  echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
+if  [[ "$EXT" = "scc" ]] ; then
+    ffmpeg -i "${@}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
+    echo "Creating a WebVTT file to upload"
+    ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" 
+else
+    ia delete "${ARCHIVE_ORG_MEDIAID}" ;
+    echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..." ;
+    ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" ;
+    ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" ;
+fi  
+echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
