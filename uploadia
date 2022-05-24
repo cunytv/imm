@@ -54,12 +54,25 @@ while [ "${*}" != "" ] ; do
     ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
     TEMP_PBCORE=$(_maketemp)
     EXT="${FILE##*.}"
-    VTT="/tmp/${MEDIAID%.*}.vtt"
+    VTT_NAME="${MEDIAID%.*}.vtt"
+    VTT="/tmp/${VTT_NAME}"
 
     if  [[ "${EXT}" = "scc" ]] ; then
         ffmpeg -i "${FILE}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
         echo "Creating a WebVTT file to upload"
-        ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+        VTT_MD5="$(md5 "${VTT}")"
+        VTT_IA_MD5="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r ".files[] | select(.name==\"${VTT_NAME}\").md5")"
+        if [[ "${VTT_MD5}" == "${VTT_IA_MD5}" ]] ; then
+            echo "${VTT_NAME} was already uploaded with checksum of ${VT_MD5}, ignoring this request."
+        else
+            if [[ -n "${VTT_IA_MD5}" ]] ; then
+                echo "${VTT_NAME} is different, let's upload the new one."
+                ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+            else
+                echo "${VTT_NAME} wasn't uploaded before, let's go."
+                ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+            fi
+        fi
     else
         ia delete "${ARCHIVE_ORG_MEDIAID}"
         echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
