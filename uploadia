@@ -1,66 +1,114 @@
 #!/bin/bash
 # This script will upload a file to CUNY TV's Internet Archive account.
-SCRIPTDIR=$(dirname $(which "${0}"))
-. "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
 DEPENDENCIES=(pbprotracktor ia ffmpeg)
-_initialize_make
- 
-_maketemp(){
-  mktemp -q "/tmp/$(basename "${0}").XXXXXX"
-  if [ "${?}" -ne 0 ]; then
-      echo "${0}: Can't create temp file, exiting..."
-      _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
-      exit 1
-  fi
+
+_check_dependencies(){
+    DEPS_OK=YES
+    while [ "${*}" != "" ] ; do
+        DEPENDENCY="${1}"
+        if [ ! "$(which "${DEPENDENCY}")" ] ; then
+            _report -wt "This script requires ${DEPENDENCY} to run but it is not installed"
+            _report -wt "If you are running ubuntu or debian you might be able to install ${DEPENDENCY} with the following command"
+            _report -wt "sudo apt-get install ${DEPENDENCY}"
+            _report -wt "If you are running mac you might be able to install ${DEPENDENCY} with the following command"
+            _report -wt "brew install ${DEPENDENCY}"
+            DEPS_OK=NO
+        fi
+        shift
+    done
+    if [[ "${DEPS_OK}" = "NO" ]]; then
+        _report -wt "Unmet dependencies"
+        _report -wt "Aborting!"
+        exit 1
+    else
+        return 0
+    fi
 }
+
+_maketemp(){
+    mktemp -q "/tmp/$(basename "${0}").XXXXXX"
+    if [ "${?}" -ne 0 ]; then
+        echo "${0}: Can't create temp file, exiting..."
+        _writeerrorlog "_maketemp" "was unable to create the temp file, so the script had to exit."
+        exit 1
+    fi
+}
+
+_check_dependencies "${DEPENDENCIES[@]}"
 
 OPTIND=1
 while getopts ":c:a" OPT ; do
   case "${OPT}" in
       c) METADATAOPTS+=(-o "--modify=\"licenseurl:http://creativecommons.org/licenses/by-nc-nd/4.0/\" ") ;;
+      :) echo "Option -${OPTARG} requires an argument" ; exit 1 ;;
       *) echo "bad option -${OPTARG}" ; _usage ;;
-      :) echo "Option -${OPTARG} requires an argument" ; _writeerrorlog "makebroadcast" "The option selected required an argument and none was provided. The script had to exit." ; exit 1 ;;
   esac
 done
-shift $(( ${OPTIND} - 1 ))
+shift $(( OPTIND - 1 ))
 
-FILE="${1}"
-MEDIAID="$(basename "${FILE%.*}")"
-MEDIAID_CLEAN="$(echo "${MEDIAID}" | sed 's|HD$||g;s|DV$||g;s|DV_V[0-9]$||g;s|HD_V[0-9]$||g;s|_V[0-9]$||g')"
-ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
-TEMP_PBCORE=$(_maketemp)
-EXT="${FILE##*.}"
-VTT="${MEDIAID%.*}.vtt"
+while [ "${*}" != "" ] ; do
+    FILE="${1}"
+    shift
+    MEDIAID="$(basename "${FILE%.*}")"
+    MEDIAID_CLEAN="$(echo "${MEDIAID}" | sed 's|HD$||g;s|DV$||g;s|DV_V[0-9]$||g;s|HD_V[0-9]$||g;s|_V[0-9]$||g')"
+    ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
+    TEMP_PBCORE=$(_maketemp)
+    EXT="${FILE##*.}"
+    VTT_NAME="${MEDIAID%.*}.vtt"
+    VTT="/tmp/${VTT_NAME}"
 
-pbprotracktor "$MEDIAID" > "${TEMP_PBCORE}"
-if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
-    fmpbcore "$MEDIAID" > "${TEMP_PBCORE}"
-fi
+    if  [[ "${EXT}" = "scc" ]] ; then
+        ffmpeg -v 0 -i "${FILE}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
+        echo "Creating a WebVTT file to upload"
+        VTT_MD5="$(md5 -q "${VTT}")"
+        IA_PUBLIC_DATE="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r '.metadata.publicdate | select( . != null )')"
+        if [[ -z "${IA_PUBLIC_DATE}" ]] ; then
+            echo "There is no ${ARCHIVE_ORG_MEDIAID} on archive.org. Ignoring request to upload ${VTT_NAME}."
+        else
+            echo "Found ${ARCHIVE_ORG_MEDIAID} on archive.org, dated ${IA_PUBLIC_DATE}."
+            VTT_IA_MD5="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r ".files[] | select(.name==\"${VTT_NAME}\").md5")"
+            if [[ "${VTT_MD5}" == "${VTT_IA_MD5}" ]] ; then
+                echo "${VTT_NAME} was already uploaded with checksum of ${VTT_MD5}, ignoring this request."
+            else
+                if [[ -n "${VTT_IA_MD5}" ]] ; then
+                    echo "${VTT_NAME} is different(ia md5 is ${VTT_IA_MD5} and local md5 is ${VTT_MD5}), let's upload the new one."
+                    ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+                else
+                    echo "${VTT_NAME} wasn't uploaded before, let's go."
+                    ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+                fi
+            fi
+        fi
+    else
+        echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
+        ia delete "${ARCHIVE_ORG_MEDIAID}"
+        echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
+        ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+        pbprotracktor "${MEDIAID}" > "${TEMP_PBCORE}"
+        if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
+            echo "No data found in protrack, will try to getting metadata for ${MEDIAID} from filemaker."
+            fmpbcore "${MEDIAID}" > "${TEMP_PBCORE}"
+        fi
+        if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
+            echo "No metadata found in filemaker for ${MEDIAID} either :("
+        else
+            TITLE="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+              -o "${MEDIAID_CLEAN} - " -v "translate(p:pbcoreTitle[@titleType='Episode' or @titleType='Program'],'\"',\"'\")" \
+              -n "${TEMP_PBCORE}")"
 
-TITLE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
-  -o "${MEDIAID_CLEAN} - " -v "translate(p:pbcoreTitle[@titleType='Episode' or @titleType='Program'],'\"',\"'\")" \
-  -n ${TEMP_PBCORE})
+            SUBJECT="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+               -v "translate(p:pbcoreTitle[@titleType='Series'], '\"',\"'\")" \
+               -n "${TEMP_PBCORE}")"
 
-SUBJECT=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
-   -v "translate(p:pbcoreTitle[@titleType='Series'], '\"',\"'\")" \
-   -n ${TEMP_PBCORE})
-       
-DESCRIPTION=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
-   -v "translate(p:pbcoreDescription[1],'\"',\"'\")"  \
-   -n ${TEMP_PBCORE})
+            DESCRIPTION="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+               -v "translate(p:pbcoreDescription[1],'\"',\"'\")"  \
+               -n "${TEMP_PBCORE}")"
 
-DATE=$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
-   -v "p:pbcoreAssetDate[@dateType='broadcast']" \
-   -n ${TEMP_PBCORE})
-       
-  if  [[ "$EXT" = "scc" ]] ; then
-	  ffmpeg -i "${@}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
-	  echo "Creating a WebVTT file to upload"
-	  ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" 
-  else
-      ia delete "${ARCHIVE_ORG_MEDIAID}" ;
-      echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..." ;
-      ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV" ;
-      ia metadata "${ARCHIVE_ORG_MEDIAID}" "${UPLOADOPTS[@]}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}" ;
-  fi  
-	  echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
+            DATE="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+               -v "p:pbcoreAssetDate[@dateType='broadcast']" \
+               -n "${TEMP_PBCORE}")"
+            ia metadata "${ARCHIVE_ORG_MEDIAID}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}"
+        fi
+    fi  
+    
+done
