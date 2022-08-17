@@ -171,6 +171,7 @@ CUNYTV_REMOVAL_CANDIDATES_NEARLINE="${REPORTDIR}/cunytv_omneon_removal_candidate
 CUNYTV_REMOVAL_CANDIDATES_NOT_NEARLINE="${REPORTDIR}/cunytv_omneon_removal_candidates_not_on_nearline.txt"
 CUNYTV_TO_RESTORE="${REPORTDIR}/cunytv_to_recall.txt"
 NYCMG_ON_LTO_SIZE_EXT="/${REPORTDIR}/nycmg_lto_with_extension_and_size.txt"
+NYCMG_ON_LTO_SIZE_EXT_WITH_INFO="${REPORTDIR}/nycmg_lto_with_protrack_info.csv"
 NYCMG_ON_LTO_PATH="/${REPORTDIR}/nycmg_lto_with_path.txt"
 CUNYTV_ON_LTO_SIZE_EXT="${REPORTDIR}/cunytv_lto_with_extension_and_size.txt"
 CUNY_BAD_FILENAMES="${REPORTDIR}/cuny_bad_filenames.txt"
@@ -450,6 +451,13 @@ for i in $(cat "${NYCMG_NEARLINE_BY_SIZE}" | sed 's/ /,/g') ; do
     csvdata=$(grep "^${name}," "${NYCMG_MEDIAID_CSV}")
     echo "${i},${csvdata}"
 done > "${NYCMG_NEARLINE_BY_SIZE_WITH_INFO}"
+
+for i in $(cat "${NYCMG_ON_LTO_SIZE_EXT}" | sed 's/ /,/g') ; do
+    name=$(echo "$i" | cut -d. -f1)
+    csvdata=$(grep "^${name}," "${NYCMG_MEDIAID_CSV}")
+    echo "${i},${csvdata}"
+done > "${NYCMG_ON_LTO_SIZE_EXT_WITH_INFO}"
+
 for i in $(cat "/$REPORTDIR/nycmg_omneon_removal_candidates_not_on_nearline.txt" | sed 's/ /,/g') ; do
     name=$(echo "$i" | cut -d. -f1)
     csvdata=$(grep "^${name}," "${NYCMG_MEDIAID_CSV}")
