@@ -203,16 +203,15 @@ for schedule in "${abouttoruns[@]}" ; do
     TMP_SCHEDULE="/tmp/schedule_${SCHEDULE_NAME}"
     if [[ "$(find "${schedule}" -mtime +1d -print)" ]] ; then
         _report -w "WARNING ${SCHEDULE_NAME} is suspiciously over a day old."
-        exit
-    elif [[ -f "${schedule}" ]] ; then
+    fi
+    if [[ -f "${schedule}" ]] ; then
         cp "${schedule}" "${NYCMG_ABOUT_TO_RUN_DIR}/"
         SCHEDULE_MOVED="${NYCMG_ABOUT_TO_RUN_DIR}/${SCHEDULE_NAME}"
         xml sel -t -v "//media/@mediaName" "${SCHEDULE_MOVED}" | grep -v "^$" | sort -u > "${TMP_SCHEDULE}"
         LINE_COUNT="$(wc -l "${TMP_SCHEDULE}" | awk '{print $1}')"
         printf "%-32s %12d %20s \n" "${SCHEDULE_NAME}" "${LINE_COUNT}" "$(xml sel -t -v //properties/history/modified/@time "${SCHEDULE_MOVED}")"
-        if [[ "${LINE_COUNT}" -le "2" ]] ; then
+        if [[ "${LINE_COUNT}" -le "1" ]] ; then
             _report -w "ERROR: ${SCHEDULE_NAME} only lists ${LINE_COUNT} files which is suspicious. Try again later."
-            exit 1
         fi
         cat "${TMP_SCHEDULE}" >> "${NYCMG4AIR_TMP}"
     else
