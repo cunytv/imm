@@ -389,6 +389,9 @@ if [ ! -f "/${REPORTDIR}/filenameconflicts.csv" ] ; then
     done
 fi
 
+# make cunytv interstitial report
+cuny_filler_on_omneon_with_extension_and_size="${REPORTDIR}/nycmg_removal_candidates_on_omneon_with_extension_and_size.txt"
+for i in $(cat "${CUNY_FILLER_IDS}") ; do grep "/${i}\." "${CUNY_ON_OMNEON_FILES_STAT}" | awk '{print}' | sed "s:${OMNEON_PATH_CUNY}/::g" ; done  > "${cuny_filler_on_omneon_with_extension_and_size}"
 
 for i in $(cat "${CUNYTV_REMOVAL_CANDIDATES}") ; do
     grep "/${i}\." "${CUNY_ON_OMNEON_FILES_STAT}" | awk '{print $7 " " $5}' | sed "s:${OMNEON_PATH_CUNY}/::g"
