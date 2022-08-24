@@ -211,8 +211,9 @@ for schedule in "${abouttoruns[@]}" ; do
         xml sel -t -v "//media/@mediaName" "${SCHEDULE_MOVED}" | grep -v "^$" | sort -u > "${TMP_SCHEDULE}"
         LINE_COUNT="$(wc -l "${TMP_SCHEDULE}" | awk '{print $1}')"
         printf "%-32s %12d %20s \n" "${SCHEDULE_NAME}" "${LINE_COUNT}" "$(xml sel -t -v //properties/history/modified/@time "${SCHEDULE_MOVED}")"
-        if [[ "${LINE_COUNT}" -le "1" ]] ; then
+        if [[ "${LINE_COUNT}" -lt "1" ]] ; then
             _report -w "ERROR: ${SCHEDULE_NAME} only lists ${LINE_COUNT} files which is suspicious. Try again later."
+            exit
         fi
         cat "${TMP_SCHEDULE}" >> "${NYCMG4AIR_TMP}"
     else
