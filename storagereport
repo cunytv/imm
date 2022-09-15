@@ -131,6 +131,7 @@ REPORTDIRNYC="${NYCMG_ROOT}/reports"
 NYCMG_ABOUT_TO_RUN_DIR="${INTERNALDIR}/nycm_about_to_runs"
 IDS_NYCMG="${INTERNALDIR}/nycm_ids_all.txt"
 IDS_CUNYTV="${INTERNALDIR}/cuny_ids_all.txt"
+OMNEON_TREE="${INTERNALDIR}/omneon_tree.xml"
 CUNY_ON_OMNEON_FILES_STAT="${INTERNALDIR}/cuny_omneon_file_stats.txt"
 NYCM_ON_OMNEON_FILES_STAT="${INTERNALDIR}/nycm_omneon_file_stats.txt"
 CUNY_ON_OMNEON_FILES_STAT_SNAPSHOT="${CUNY_SNAPSHOTDIR}/cuny_omneon_file_stats_$(_get_iso8601_c).txt"
@@ -211,8 +212,9 @@ for schedule in "${abouttoruns[@]}" ; do
         xml sel -t -v "//media/@mediaName" "${SCHEDULE_MOVED}" | grep -v "^$" | sort -u > "${TMP_SCHEDULE}"
         LINE_COUNT="$(wc -l "${TMP_SCHEDULE}" | awk '{print $1}')"
         printf "%-32s %12d %20s \n" "${SCHEDULE_NAME}" "${LINE_COUNT}" "$(xml sel -t -v //properties/history/modified/@time "${SCHEDULE_MOVED}")"
-        if [[ "${LINE_COUNT}" -le "1" ]] ; then
+        if [[ "${LINE_COUNT}" -lt "1" ]] ; then
             _report -w "ERROR: ${SCHEDULE_NAME} only lists ${LINE_COUNT} files which is suspicious. Try again later."
+            exit
         fi
         cat "${TMP_SCHEDULE}" >> "${NYCMG4AIR_TMP}"
     else
@@ -246,8 +248,15 @@ printf "%-32s %12d %20s \n" "CUNYTV" "$(cat "${IDS_CUNYTV}" | wc -l)" ""
 printf "%-32s %12d %20s \n" "CUNYTV (interstitial)" "$(cat "${CUNY_FILLER_IDS}" | wc -l)" ""
 
 ### REPORT ON OMNEON FILES
+_report -d "Getting info about omneon inventory..."
+tree -XifspugD -L 1 --timefmt "%FT%T" --filesfirst "${OMNEON_PATH_CUNY}" "${OMNEON_PATH_NYCM}" | xml fo > "${OMNEON_TREE}"
 #### REPORT ON CUNY UNREGISTERED FILES
-gls -ld --time-style=+%FT%T "${OMNEON_PATH_CUNY}"/* | grep -v "^d" > "${CUNY_ON_OMNEON_FILES_STAT}"
+_report -d "Getting info about CUNY files on omneon..."
+xmlstarlet sel -T -t -m "/tree/directory[@name='${OMNEON_PATH_CUNY}']/file" -v @prot -o " 1 " -v @user -o " " -v @group -o " " -v @size -o " " -v @time -o " " -v @name -n "${OMNEON_TREE}" > "${CUNY_ON_OMNEON_FILES_STAT}"
+if [[ ! -s "${CUNY_ON_OMNEON_FILES_STAT}" ]] ; then
+    _report -w "Error: no files were found at ${OMNEON_PATH_CUNY}. Try again later."
+    exit
+fi
 cp "${CUNY_ON_OMNEON_FILES_STAT}" "${CUNY_ON_OMNEON_FILES_STAT_SNAPSHOT}"
 cut -d " " -f 7- "${CUNY_ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${CUNY_OMNEON_IDS}"
 awk -v date="${AGED_DATE}" '$6 <= date' "${CUNY_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${CUNY_OMNEON_IDS_OLD}"
@@ -258,7 +267,8 @@ comm -1 -2 "${CUNY_OMNEON_IDS}" "${IDS_CUNYTV}" > "${CUNY_REGISTERED}"
 echo "filename,recport,recdate,source" > "${CUNY_UNREGISTERED_DETAILS}"
 while read -r orphan ; do
   orphanpath=$(grep ".dir/${orphan}.m" "${CUNY_ON_OMNEON_FILES_STAT}" | awk '{print $7}' | head -n 1)
-  if [ -f "${orphanpath}" ] ; then
+  unset omdata recport recdate recname
+  if [[ -f "${orphanpath}"  && "${orphanpath##*.}" == "mov" ]] ; then
     omdata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
@@ -271,7 +281,12 @@ while read -r orphan ; do
 done < "${CUNY_UNREGISTERED}"
 
 #### REPORT ON NYCM UNREGISTERED FILES
-gls -ld --time-style=+%FT%T "${OMNEON_PATH_NYCM}/"* | grep -v "^d" > "${NYCM_ON_OMNEON_FILES_STAT}"
+_report -d "Getting info about NYCM files on omneon..."
+xmlstarlet sel -T -t -m "/tree/directory[@name='${OMNEON_PATH_NYCM}']/file" -v @prot -o " 1 " -v @user -o " " -v @group -o " " -v @size -o " " -v @time -o " " -v @name -n "${OMNEON_TREE}" > "${NYCM_ON_OMNEON_FILES_STAT}"
+if [[ ! -s "${NYCM_ON_OMNEON_FILES_STAT}" ]] ; then
+    _report -w "Error: no files were found at ${OMNEON_PATH_NYCM}. Try again later."
+    exit
+fi
 cp "${NYCM_ON_OMNEON_FILES_STAT}" "${NYCM_ON_OMNEON_FILES_STAT_SNAPSHOT}"
 cp "${NYCMG4AIR}" "${NYCMG4AIR_SNAPSHOT}"
 cut -d " " -f 7- "${NYCM_ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${NYCM_OMNEON_IDS}"
@@ -283,7 +298,8 @@ comm -1 -2 "${NYCM_OMNEON_IDS}" "${IDS_NYCMG}" > "${NYCM_REGISTERED}"
 echo "filename,recport,recdate,source" > "${NYCM_UNREGISTERED_DETAILS}"
 while read -r orphan ; do
   orphanpath=$(grep ".dir/${orphan}.m" "${NYCM_ON_OMNEON_FILES_STAT}" | awk '{print $7}' | head -n 1)
-  if [ -f "${orphanpath}" ] ; then
+  unset omdata recport recdate recname
+  if [[ -f "${orphanpath}"  && "${orphanpath##*.}" == "mov" ]] ; then
     omdata=$(LC_CTYPE=C && LANG=C ; head -c 10000 "${orphanpath}" | strings | grep ".dir" | head -n 1)
     recport=$(echo "${omdata}" | cut -d";" -f2)
     recdate=$(echo "${omdata}" | cut -d";" -f9)
