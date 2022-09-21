@@ -93,6 +93,12 @@ if [ "$(mount | grep -c /tmp/Autosaved)" = 0 ] ; then
     mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /tmp/Autosaved
 fi
 
+## connect to MarinaLogs folder if not already
+if [ "$(mount | grep -c /tmp/MarinaLogs)" = 0 ] ; then
+    _mkdir2 /tmp/MarinaLogs
+    mount -t smbfs "smb://archivesx@10.25.102.136/MarinaLogs" /tmp/MarinaLogs
+fi
+
 # shortcuts
 AGED_DATE=$(date -v-${keepnewforXdays}d '+%F')
 TODAY=$(date '+%F')
@@ -486,3 +492,7 @@ for i in ~/Documents/lto_indexes/C*.schema ; do
     xml sel -t -m ".//file" -v name -o " " -v length -n "$i" | sort -u
 done | sort > /tmp/ltosizes.txt
 comm -1 -2 /tmp/nearline.txt /tmp/ltosizes.txt | cut -d " " -f1 > "/${REPORTDIR}/nycmg_on_lto_and_nearline_sizename_match.txt"
+
+#back up as-runs to both nearline volumes
+rsync -rtvP /tmp/MarinaLogs "${REPORTDIRNYC}"
+rsync -rtvP /tmp/MarinaLogs "${CUNYTV_NEARLINE_PATH}"
