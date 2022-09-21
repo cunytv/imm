@@ -496,5 +496,5 @@ done | sort > /tmp/ltosizes.txt
 comm -1 -2 /tmp/nearline.txt /tmp/ltosizes.txt | cut -d " " -f1 > "/${REPORTDIR}/nycmg_on_lto_and_nearline_sizename_match.txt"
 
 #back up as-runs to both nearline volumes
-rsync -rtvP /tmp/MarinaLogs "${REPORTDIRNYC}"
-rsync -rtvP /tmp/MarinaLogs "${CUNYTV_NEARLINE_PATH}"
+rsync -rtvP /tmp/MarinaLogs/Asruns "${REPORTDIRNYC}"
+rsync -rtvP /tmp/MarinaLogs/Asruns "${CUNYTV_NEARLINE_PATH}"
