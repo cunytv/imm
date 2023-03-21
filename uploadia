@@ -46,69 +46,75 @@ while getopts ":c:a" OPT ; do
 done
 shift $(( OPTIND - 1 ))
 
-while [ "${*}" != "" ] ; do
-    FILE="${1}"
-    shift
-    MEDIAID="$(basename "${FILE%.*}")"
-    MEDIAID_CLEAN="$(echo "${MEDIAID}" | sed 's|HD$||g;s|DV$||g;s|DV_V[0-9]$||g;s|HD_V[0-9]$||g;s|_V[0-9]$||g')"
-    ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
-    TEMP_PBCORE=$(_maketemp)
-    EXT="${FILE##*.}"
-    VTT_NAME="${MEDIAID%.*}.vtt"
-    VTT="/tmp/${VTT_NAME}"
 
-    if  [[ "${EXT}" = "scc" ]] ; then
-        ffmpeg -v 0 -i "${FILE}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
-        echo "Creating a WebVTT file to upload"
-        VTT_MD5="$(md5 -q "${VTT}")"
-        IA_PUBLIC_DATE="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r '.metadata.publicdate | select( . != null )')"
-        if [[ -z "${IA_PUBLIC_DATE}" ]] ; then
-            echo "There is no ${ARCHIVE_ORG_MEDIAID} on archive.org. Ignoring request to upload ${VTT_NAME}."
+FILE="${1}"
+MEDIAID="$(basename "${FILE%.*}")"
+MEDIAID_CLEAN="$(echo "${MEDIAID}" | sed 's|HD$||g;s|DV$||g;s|DV_V[0-9]$||g;s|HD_V[0-9]$||g;s|_V[0-9]$||g')"
+ARCHIVE_ORG_MEDIAID="cunytv_${MEDIAID_CLEAN}"
+TEMP_PBCORE=$(_maketemp)
+EXT="${FILE##*.}"
+VTT_NAME="${MEDIAID%.*}.vtt"
+VTT="/tmp/${VTT_NAME}"
+ICAL="cunytv_protrack"
+
+
+if  [[ "${EXT}" = "scc" ]] ; then
+    ffmpeg -v 0 -i "${FILE}" -f webvtt - | sed 's|<font face="Monospace">{\\an7}||g;s|</font>||g;s|\\h||g' > "${VTT}"
+    echo "Creating a WebVTT file to upload"
+    VTT_MD5="$(md5 -q "${VTT}")"
+    IA_PUBLIC_DATE="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r '.metadata.publicdate | select( . != null )')"
+    if [[ -z "${IA_PUBLIC_DATE}" ]] ; then
+        echo "There is no ${ARCHIVE_ORG_MEDIAID} on archive.org. Ignoring request to upload ${VTT_NAME}."
+    else
+        echo "Found ${ARCHIVE_ORG_MEDIAID} on archive.org, dated ${IA_PUBLIC_DATE}."
+        VTT_IA_MD5="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r ".files[] | select(.name==\"${VTT_NAME}\").md5")"
+        if [[ "${VTT_MD5}" == "${VTT_IA_MD5}" ]] ; then
+            echo "${VTT_NAME} was already uploaded with checksum of ${VTT_MD5}, ignoring this request."
         else
-            echo "Found ${ARCHIVE_ORG_MEDIAID} on archive.org, dated ${IA_PUBLIC_DATE}."
-            VTT_IA_MD5="$(ia metadata "${ARCHIVE_ORG_MEDIAID}" | jq -r ".files[] | select(.name==\"${VTT_NAME}\").md5")"
-            if [[ "${VTT_MD5}" == "${VTT_IA_MD5}" ]] ; then
-                echo "${VTT_NAME} was already uploaded with checksum of ${VTT_MD5}, ignoring this request."
+            if [[ -n "${VTT_IA_MD5}" ]] ; then
+                echo "${VTT_NAME} is different(ia md5 is ${VTT_IA_MD5} and local md5 is ${VTT_MD5}), let's upload the new one."
+                ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
             else
-                if [[ -n "${VTT_IA_MD5}" ]] ; then
-                    echo "${VTT_NAME} is different(ia md5 is ${VTT_IA_MD5} and local md5 is ${VTT_MD5}), let's upload the new one."
-                    ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
-                else
-                    echo "${VTT_NAME} wasn't uploaded before, let's go."
-                    ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
-                fi
+                echo "${VTT_NAME} wasn't uploaded before, let's go."
+                ia upload "${ARCHIVE_ORG_MEDIAID}" "${VTT}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
             fi
         fi
+    fi
+else    
+    if [[ "${EXT}" = "ics" ]] ; then
+        echo "Going to upload the latest Protrack ical file. Find it here: archive.org/${ICAL}"
+        ia upload "${ICAL}" "${@}" --metadata="mediatype:data" --metadata="collection:cunytv" --metadata="creator:CUNY TV" --metadata="title:Protrack"
     else
-        echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
-        ia delete "${ARCHIVE_ORG_MEDIAID}"
-        echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
-        ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
-        pbprotracktor "${MEDIAID}" > "${TEMP_PBCORE}"
-        if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
-            echo "No data found in protrack, will try to getting metadata for ${MEDIAID} from filemaker."
-            fmpbcore "${MEDIAID}" > "${TEMP_PBCORE}"
+        if [[ "$EXT" != "ics" ]] ;then 
+            echo "Deleting archive.org/details/${ARCHIVE_ORG_MEDIAID} if exists..."
+            ia delete "${ARCHIVE_ORG_MEDIAID}"
+            echo "Uploading ${MEDIAID} to archive.org/details/cunytv_${MEDIAID_CLEAN}..."
+            ia upload "${ARCHIVE_ORG_MEDIAID}" "${@}" --metadata="mediatype:movies" --metadata="collection:cunytv" --metadata="creator:CUNY TV"
+            pbprotracktor "${MEDIAID}" > "${TEMP_PBCORE}"
         fi
-        if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
-            echo "No metadata found in filemaker for ${MEDIAID} either :("
-        else
-            TITLE="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
-              -o "${MEDIAID_CLEAN} - " -v "translate(p:pbcoreTitle[@titleType='Episode' or @titleType='Program'],'\"',\"'\")" \
-              -n "${TEMP_PBCORE}")"
+            if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
+                echo "No data found in protrack, will try to getting metadata for ${MEDIAID} from filemaker."
+                fmpbcore "${MEDIAID}" > "${TEMP_PBCORE}"
+            fi
+            if [[ -f "${TEMP_PBCORE}" ]] && [[ ! -s "${TEMP_PBCORE}" ]] ; then
+                echo "No metadata found in filemaker for ${MEDIAID} either :("
+            else
+                TITLE="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+                    -o "${MEDIAID_CLEAN} - " -v "translate(p:pbcoreTitle[@titleType='Episode' or @titleType='Program'],'\"',\"'\")" \
+                    -n "${TEMP_PBCORE}")"
 
-            SUBJECT="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
-               -v "translate(p:pbcoreTitle[@titleType='Series'], '\"',\"'\")" \
-               -n "${TEMP_PBCORE}")"
+                SUBJECT="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+                    -v "translate(p:pbcoreTitle[@titleType='Series'], '\"',\"'\")" \
+                    -n "${TEMP_PBCORE}")"
 
-            DESCRIPTION="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
-               -v "translate(p:pbcoreDescription[1],'\"',\"'\")"  \
-               -n "${TEMP_PBCORE}")"
+                DESCRIPTION="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+                    -v "translate(p:pbcoreDescription[1],'\"',\"'\")"  \
+                    -n "${TEMP_PBCORE}")"
 
-            DATE="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
-               -v "p:pbcoreAssetDate[@dateType='broadcast']" \
-               -n "${TEMP_PBCORE}")"
-            ia metadata "${ARCHIVE_ORG_MEDIAID}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}"
+                DATE="$(xml sel -T -N p="http://www.pbcore.org/PBCore/PBCoreNamespace.html" -t -m /p:pbcoreCollection/p:pbcoreDescriptionDocument \
+                    -v "p:pbcoreAssetDate[@dateType='broadcast']" \
+                    -n "${TEMP_PBCORE}")"
+                ia metadata "${ARCHIVE_ORG_MEDIAID}" --modify="title:${TITLE}" --modify="description:${DESCRIPTION}" --modify="date:${DATE:0:10}" --modify="subject:${SUBJECT}"
+            fi
         fi
-    fi  
-    
-done
+    fi
