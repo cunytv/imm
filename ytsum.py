@@ -50,7 +50,7 @@ for line in reader:
         continue
                 
     try:
-        videoinfo = subprocess.check_output(['youtube-dl', '--list-formats', '--skip-download','--', youtubeid])
+        videoinfo = subprocess.check_output(['yt-dlp', '--list-formats','--compat-options','format-sort','--skip-download','--', youtubeid])
     
         videoinfosplit = videoinfo.splitlines()
         videolastline = (videoinfosplit[-1])
@@ -59,8 +59,8 @@ for line in reader:
         videosep = videolastline.split()
         filetype = videosep[1]
         size = videosep[2]
-        resolution = videosep[3]
-        fps = videosep[7]
+        resolution = videosep[-1]
+        fps = videosep[3]
     except subprocess.CalledProcessError:
         with open(filename, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
@@ -69,7 +69,7 @@ for line in reader:
         print(f'{youtubeid} is unavailable')
         continue
     
-    subtitles = subprocess.check_output(['youtube-dl', '--skip-download', '--list-subs','--', youtubeid])
+    subtitles = subprocess.check_output(['yt-dlp', '--skip-download', '--list-subs','--', youtubeid])
 
     splitsub = subtitles.splitlines()
     subtitles = (splitsub[-1])
