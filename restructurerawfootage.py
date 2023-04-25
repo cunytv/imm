@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 """
-    restructure.py reorganizes files from an XQD card into an organized package.
-    Last Revised: 2023-04-20
+    restructure.py reorganizes files from an XQD card into an organized package. To be expanded
+    to handle other card formats
+    Last Revised: 2023-04-25
 """
 
 import subprocess
@@ -17,10 +18,18 @@ try:
 except IndexError:
     print(f'usage: restructurerawfootage.py [package]')
 
+### check for an objects folder ###
 
-#### handling empty folders ######
+### handling of multiple cards ###
 
-# creating a camera logs metadata directory
+objectsdir = os.path.join(rawpackage, "objects")
+
+# if not os.path.exists(objectsdir):
+#     os.mkdir(objectsdir)
+# else: 
+#     print(f'{rawpackage}/objects already exists')
+
+# create a camera logs metadata directory
 
 camera_log_path_xdroot = os.path.join(rawpackage, "metadata/logs/camera/XDROOT")
 
@@ -33,12 +42,12 @@ if not os.path.exists(camera_log_path_clip):
 else:
     print(f' metadata/logs/camera/XDROOT/clip already exists')
 
-# moving metadata camera files into a logs folder
+# Move camera logs into a metadata/logs/camera folder
 
-for root, dirs, files in os.walk(rawpackage):
+for root, dirs, files in os.walk(rawpackage, topdown=False):
+
     for name in files:
         file_name = os.path.join(root, name)
-        #print(file_name)
 
         searchstring_cueup = 'CUEUP.XML'
         searchstring_discmeta = 'DISCMETA.XML'
@@ -77,7 +86,13 @@ for root, dirs, files in os.walk(rawpackage):
                 except shutil.Error:
                     continue
 
-         
+# Delete empty folders
 
-         
+for root, dirs, files in os.walk(rawpackage, topdown=False):
+
+    for empty in dirs:
+        if len(os.listdir(os.path.join(root, empty))) == 0:
+            os.rmdir(os.path.join(root, empty))
+        else:
+            print(f'{(os.path.join(root,empty))} is not empty. These will not be removed')
 
