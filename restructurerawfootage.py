@@ -2,8 +2,8 @@
 
 """
     restructure.py reorganizes files from an XQD card into an organized package. To be expanded
-    to handle other card formats
-    Last Revised: 2023-04-25
+    to handle other card formats and to handle multiple cards in one package.
+    Last Revised: 2023-04-26
 """
 
 import subprocess
@@ -18,17 +18,6 @@ try:
 except IndexError:
     print(f'usage: restructurerawfootage.py [package]')
 
-### check for an objects folder ###
-
-### handling of multiple cards ###
-
-objectsdir = os.path.join(rawpackage, "objects")
-
-# if not os.path.exists(objectsdir):
-#     os.mkdir(objectsdir)
-# else: 
-#     print(f'{rawpackage}/objects already exists')
-
 # create a camera logs metadata directory
 
 camera_log_path_xdroot = os.path.join(rawpackage, "metadata/logs/camera/XDROOT")
@@ -38,9 +27,9 @@ camera_log_path_clip = os.path.join(rawpackage, "metadata/logs/camera/XDROOT/Cli
 
 if not os.path.exists(camera_log_path_clip):
     os.makedirs(camera_log_path_clip)
-    print(f'creating a folder called metadata/logs/camera_log_path_xdroot')
+    print(f'creating a folder called {camera_log_path_clip}')
 else:
-    print(f' metadata/logs/camera/XDROOT/clip already exists')
+    print(f'{camera_log_path_clip} already exists')
 
 # Move camera logs into a metadata/logs/camera folder
 
@@ -86,6 +75,23 @@ for root, dirs, files in os.walk(rawpackage, topdown=False):
                 except shutil.Error:
                     continue
 
+
+# create an objects directory if there isn't one. 
+
+objectspath = os.path.join(rawpackage, "objects")
+
+if not os.path.exists(objectspath):
+    os.mkdir(objectspath)
+
+# move XDROOT folder if it is not in objects directory already
+
+xdroot_path = os.path.join(rawpackage, "XDROOT")
+
+if os.path.exists(objectspath) and os.path.exists(xdroot_path):
+    shutil.move(xdroot_path, objectspath)
+else:
+    print(f'XDROOT folder was already in an objects folder. No need to move it')
+
 # Delete empty folders
 
 for root, dirs, files in os.walk(rawpackage, topdown=False):
@@ -95,4 +101,5 @@ for root, dirs, files in os.walk(rawpackage, topdown=False):
             os.rmdir(os.path.join(root, empty))
         else:
             print(f'{(os.path.join(root,empty))} is not empty. These will not be removed')
+
 
