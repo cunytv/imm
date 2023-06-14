@@ -7,10 +7,7 @@ import shutil
 
 cameradirectory = "/Users/catrionaschlosser/Desktop/restructuretest/"
 
-#outputdirectory = "Users/catrionaschlosser/Desktop/xdrootoutput"
-
 for cameratype in os.listdir(cameradirectory):
-#	print(cameratype)
 
 	searchstring_xdroot = 'XDROOT'
 
@@ -19,16 +16,19 @@ for cameratype in os.listdir(cameradirectory):
 		print(f'this is an XAVC (SONY)')
 
 		package_name = input("Enter a package name for this material: ")
-		#print(package_name) 
 
-		#if not os.path.exists(package_destination):
-		#	os.makedirs(package_destination)
+		outputdirectory = "/Volumes/G-DRIVE/sxs"
+		
+		package_destination = os.path.join(outputdirectory, package_name)
 
-		package_destination = os.path.join(os.getenv("HOME")), r"Desktop/xdrootoutput/"
-		print(package_destination)
+		os.makedirs(package_destination)
 
-		#package_destination = os.path.join(outputdirectory, package_name)
-		#print(package_destination)
+		camera_card_number = input("Enter the card number: ")
+
+		camera_card_number_path = os.path.join(package_destination, camera_card_number)
+		print(camera_card_number_path)
+
+		os.makedirs(camera_card_number_path)
 		
 		
 
