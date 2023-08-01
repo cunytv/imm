@@ -57,7 +57,7 @@ for cameratype in os.listdir(cameradirectory):
 
 						os.makedirs(camera_card_number_path)
 
-						subprocess.call(["rsync", "-rtvP", sourcedirectory, camera_card_number_path])
+						subprocess.call(["rsync", "-rtvP", "--exclude=.*", sourcedirectory, camera_card_number_path])
 
 						# create an objects directory and move files into folder		
 
@@ -176,7 +176,7 @@ for cameratype in os.listdir(cameradirectory):
  						itemstomove = os.path.join(inputdirectory, items)
  						print(f'this is what i want to move {itemstomove}')
 
- 						subprocess.call(["rsync", "-rtvP", itemstomove, camera_card_number_path])
+ 						subprocess.call(["rsync", "-rtvP", "--exclude=.*", itemstomove, camera_card_number_path])
 
  					#create an objects directory and move files into folder		
 
