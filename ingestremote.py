@@ -2,7 +2,7 @@
 
 """
     ingestremote.py moves files from a camera card and organizes them into a package. 
-    Last Revised: 2023-07-12
+    Last Revised: 2023-08-07
 """
 
 import sys
@@ -144,10 +144,45 @@ for cameratype in os.listdir(cameradirectory):
  				  					print(f'{(os.path.join(root,empty))} is not empty. These will not be removed')
 
 
-			#BPAV workflow to expand upon.  				  					
+			#BPAV workflow. This is a workaround to handle shows shot in the radio studio. This will be revised.    				  					
 			
 			if searchstring_BPAV in cameracard_id:
 				print(f'This is SONY XDCAM BPAV. These files will rsync to the sxs_ingests-unique and will be rewrapped')
+
+				sourcedirectory = "/Volumes/Untitled/"
+
+				camera_card_number = ''
+
+				while camera_card_number != 'quit':
+
+					camera_card_number = input("Enter the card number. If finished ingesting, type 'quit': ")
+
+					if camera_card_number != 'quit':
+					
+						camera_card_number_path = os.path.join(package_destination, camera_card_number)
+
+						os.makedirs(camera_card_number_path)
+
+						subprocess.call(["rsync", "-rtvP", "--exclude=.*", sourcedirectory, camera_card_number_path])
+
+						# create an objects directory and move files into folder		
+
+						objectspath = os.path.join(package_destination, "objects")
+
+						if not os.path.exists(objectspath):
+							os.mkdir(objectspath)
+
+						if os.path.exists(objectspath) and os.path.exists(camera_card_number_path):
+							shutil.move(camera_card_number_path, objectspath)
+
+						for root, dirs, files, in os.walk(objectspath):
+							
+							for name in files:
+ 								file_name = os.path.join(root,name)
+ 								if file_name.endswith('.MP4'):
+ 									print(file_name)
+ 									subprocess.call(["makeprores", file_name])						
+
 
 	# SSD workflow
 
