@@ -10,6 +10,28 @@ import os
 import subprocess
 import shutil 
 
+def ingest_camera_data(package_destination, sourcedirectory):
+    camera_card_number = None
+    
+	while camera_card_number != 'quit':
+    	camera_card_number = input("Enter the card number. If finished ingesting, type 'quit': ")
+        
+    	if camera_card_number != 'quit':
+			camera_card_number_path = os.path.join(package_destination, camera_card_number)
+            
+            os.makedirs(camera_card_number_path)
+            
+            subprocess.call(["rsync", "-rtvP", "--exclude=.*", sourcedirectory, camera_card_number_path])
+            
+            objectspath = os.path.join(package_destination, "objects")
+            
+            if not os.path.exists(objectspath):
+                os.mkdir(objectspath)
+            
+            if os.path.exists(objectspath) and os.path.exists(camera_card_number_path):
+                shutil.move(camera_card_number_path, objectspath)
+
+
 package_name = input("Enter a package name for this material: ")
 
 outputdirectory = "/Volumes/CUNYTV_Media/archive_projects/sxs_ingests-unique"
