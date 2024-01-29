@@ -24,7 +24,7 @@ _get_codec(){
 }
 
 _get_chapterlist(){
-    CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of compact=p=0:nk=1)"
+    CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep='|'" | sed 's/|/\t/g')"
 }
 
 if [ ! -f "${timefile}" ] ; then 
