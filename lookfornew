@@ -39,7 +39,6 @@ message="These new video files showed up in $(basename "${searchdirectory}"):\n\
 if [ -n "${filelist}" ] ; then
      BOUNDARY="unique-boundary-$RANDOM"
      while read file ; do
-         file_ascii="$(echo "${file}" | iconv -f utf-8 -t ascii//TRANSLIT)"
         _get_broadcastduration "${file}"
         _get_filesize "${file}"
         _get_codec "${file}"
@@ -70,24 +69,22 @@ if [ -n "${filelist}" ] ; then
                 message+="\nChapters:\n${CHAPTER_LIST}\n\n\n"
             fi
             if [ -n "${BROADCASTDURATION}" ] ; then
-                makegifsummary -o /tmp "$file"
-                gifpath="/tmp/$(basename "${file%.*}").gif"
-                gifpath_ascii="/tmp/$(basename "${file_ascii%.*}").gif"
-                mv "${gifpath}" "${gifpath_ascii}"
-                if [ -f "${gifpath_ascii}" ] ; then
-                    ATT_MIMETYPE=$(file -Ib "${gifpath_ascii}" | cut -d";" -f1)
-                    ATT_ENCODED=$(base64 < "${gifpath_ascii}")
+                gifpath="$(_maketemp).gif"
+                makegifsummary -o "${gifpath}" "${file}"
+                if [ -f "${gifpath}" ] ; then
+                    ATT_MIMETYPE="$(file -Ib "${gifpath}" | cut -d";" -f1)"
+                    ATT_ENCODED="$(base64 < "${gifpath}")"
                     message+="--$BOUNDARY\n"
-                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath_ascii}")"\n"
+                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
                     message+="Content-Transfer-Encoding: base64\n"
-                    message+="Content-Disposition: attachment; filename="$(basename "${gifpath_ascii}")"\n"
+                    message+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
                     message+="\n"
                     message+="$ATT_ENCODED"
                     message+="\n\n"
                     message+="--$BOUNDARY"
-                    message+="\n"
+                    message+="\n\n\n"
                     echo "cleaning up gif"
-                    rm -v "${gifpath_ascii}"
+                    rm -v "${gifpath}"
                 fi
             fi
             message+="\n"
