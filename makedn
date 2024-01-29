@@ -73,6 +73,8 @@ SCC_FILE="https://www.democracynow.org/scc/dn${DN_DATE}.scc"
 MP4_ONLINE=$(_validate_url "${MP4_FILE}")
 SCC_ONLINE=$(_validate_url "${SCC_FILE}")
 
+### loop until both mp4 and scc are processed, else check scc first then mp4
+
 if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     #download
     _report -dt "DN files for ${DN_DATE} are online. Processing files in ${PROCESS_DIR}."
@@ -86,6 +88,8 @@ if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     wget "${MP4_FILE}" -O "${PROCESS_DIR}/${MEDIA_ID}.mp4"
     _report -dt "Running makebroadcast on ${MEDIA_ID}.mp4"
 
+    ### log downloads with times
+
     #transcode
     makebroadcast "${PROCESS_DIR}/${MEDIA_ID}.mp4"
 
@@ -94,6 +98,9 @@ if [[ "${MP4_ONLINE}" == "true" && "${SCC_ONLINE}" == "true" ]] ; then
     uploadomneon "${PROCESS_DIR}/service/${MEDIA_ID}.mov"
     _report -dt "Delivering scc to Omneon"
     uploadomneon "${PROCESS_DIR}/${MEDIA_ID}.scc"
+
+    ### double check that file is on omneon before deleting
+    ### log deliveries with times
 
     # cleanup
     _report -dt "Cleaning up temporary files."
@@ -111,3 +118,5 @@ else
         _report -wt "The SCC file for ${DN_DATE} is not online at https://www.democracynow.org/static yet. See ${SCC_FILE}."
     fi
 fi
+
+### before final exit, doubel check that the scc online is the same as the one gathered (as is perhaps the scc updated since processing the mp4)

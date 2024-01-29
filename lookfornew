@@ -1,36 +1,44 @@
 #!/bin/bash
 # This script sends an email when a new file is dropped off in the To Library folder. A cron job is set up to read the folder every 10 minutes. To edit the cron job, type crontab -e in the Terminal. 
-searchdirectory="$1"
-timefile=$HOME/.timefile_$(basename "${searchdirectory}")
+searchdirectory="${1}"
+timefile="$HOME/.timefile_$(basename "${searchdirectory}")"
+
+_maketemp(){
+    mktemp -q -t "$(basename "${0}")"
+    if [ "${?}" -ne 0 ]; then
+        echo "${0}: Can't create temp file, exiting..."
+        exit 1
+    fi
+}
 
 _get_broadcastduration(){
-    BROADCASTDURATION=$(mediainfo --inform="General;%Duration_String4%" "${1}")
+    BROADCASTDURATION="$(mediainfo --inform="General;%Duration_String4%" "${1}")"
 }
 _get_filesize(){
-    FILESIZE=$(ls -hl "${1}" | awk '{print $5}')
+    FILESIZE="$(ls -hl "${1}" | awk '{print $5}')"
 }
 _get_user(){
-    USER=$(ls -hl "${1}" | awk '{print $3}')
+    USER="$(ls -hl "${1}" | awk '{print $3}')"
 }
 _get_framerate(){
     FRAMERATE="$(mediainfo --inform="Video;%FrameRate%" "${1}")"
 }
 _get_framesize(){
-    WIDTH=$(mediainfo --inform="Video;%Width%" "${1}")
-    HEIGHT=$(mediainfo --inform="Video;%Height%" "${1}")
+    WIDTH="$(mediainfo --inform="Video;%Width%" "${1}")"
+    HEIGHT="$(mediainfo --inform="Video;%Height%" "${1}")"
 }
 _get_codec(){
-    CODEC=$(mediainfo --inform="Video;%Format% %Format_Version% %Format_Profile% %Format_Commercial_IfAny% (%CodecID%)" "${1}")
+    CODEC="$(mediainfo --inform="Video;%Format% %Format_Version% %Format_Profile% %Format_Commercial_IfAny% (%CodecID%)" "${1}")"
 }
 
 _get_chapterlist(){
-    CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of compact=p=0:nk=1)"
+    CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep='|'" | sed 's/|/\t/g')"
 }
 
 if [ ! -f "${timefile}" ] ; then 
-    filelist=$(find "${searchdirectory}" -type f ! -name .DS_Store)
+    filelist="$(find "${searchdirectory}" -type f ! -name .DS_Store)"
 else
-    filelist=$(find "${searchdirectory}" -cnewer "${timefile}" ! -newermt '-20 seconds' -type f ! -name .DS_Store)
+    filelist="$(find "${searchdirectory}" -cnewer "${timefile}" ! -newermt '-20 seconds' -type f ! -name .DS_Store)"
 fi
 touch -t "$(date -v -20S "+%Y%m%d%H%M.%S")" "${timefile}"
 
@@ -39,14 +47,13 @@ message="These new video files showed up in $(basename "${searchdirectory}"):\n\
 if [ -n "${filelist}" ] ; then
      BOUNDARY="unique-boundary-$RANDOM"
      while read file ; do
-         file_ascii="$(echo "${file}" | iconv -f utf-8 -t ascii//TRANSLIT)"
-        _get_broadcastduration "$file"
-        _get_filesize "$file"
-        _get_codec "$file"
-        _get_framerate "$file"
-        _get_framesize "$file"
-        _get_user "$file"
-        _get_chapterlist "$file"
+        _get_broadcastduration "${file}"
+        _get_filesize "${file}"
+        _get_codec "${file}"
+        _get_framerate "${file}"
+        _get_framesize "${file}"
+        _get_user "${file}"
+        _get_chapterlist "${file}"
         message+="*********\n"
         message+="Filename: ${file}\n"
         if [ -n "${BROADCASTDURATION}" ] ; then
@@ -70,24 +77,22 @@ if [ -n "${filelist}" ] ; then
                 message+="\nChapters:\n${CHAPTER_LIST}\n\n\n"
             fi
             if [ -n "${BROADCASTDURATION}" ] ; then
-                makegifsummary -o /tmp "$file"
-                gifpath="/tmp/$(basename "${file%.*}").gif"
-                gifpath_ascii="/tmp/$(basename "${file_ascii%.*}").gif"
-                mv "${gifpath}" "${gifpath_ascii}"
-                if [ -f "${gifpath_ascii}" ] ; then
-                    ATT_MIMETYPE=$(file -Ib "${gifpath_ascii}" | cut -d";" -f1)
-                    ATT_ENCODED=$(base64 < "${gifpath_ascii}")
+                gifpath="$(_maketemp).gif"
+                makegifsummary -o "${gifpath}" "${file}"
+                if [ -f "${gifpath}" ] ; then
+                    ATT_MIMETYPE="$(file -Ib "${gifpath}" | cut -d";" -f1)"
+                    ATT_ENCODED="$(base64 < "${gifpath}")"
                     message+="--$BOUNDARY\n"
-                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath_ascii}")"\n"
+                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
                     message+="Content-Transfer-Encoding: base64\n"
-                    message+="Content-Disposition: attachment; filename="$(basename "${gifpath_ascii}")"\n"
+                    message+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
                     message+="\n"
                     message+="$ATT_ENCODED"
                     message+="\n\n"
                     message+="--$BOUNDARY"
-                    message+="\n"
+                    message+="\n\n\n"
                     echo "cleaning up gif"
-                    rm -v "${gifpath_ascii}"
+                    rm -v "${gifpath}"
                 fi
             fi
             message+="\n"
