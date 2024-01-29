@@ -3,6 +3,14 @@
 searchdirectory="${1}"
 timefile="$HOME/.timefile_$(basename "${searchdirectory}")"
 
+_maketemp(){
+    mktemp -q -t "$(basename "${0}")"
+    if [ "${?}" -ne 0 ]; then
+        echo "${0}: Can't create temp file, exiting..."
+        exit 1
+    fi
+}
+
 _get_broadcastduration(){
     BROADCASTDURATION="$(mediainfo --inform="General;%Duration_String4%" "${1}")"
 }
