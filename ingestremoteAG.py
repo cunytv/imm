@@ -184,6 +184,7 @@ if __name__ == "__main__":
     while cont != 'q':
         input("Insert camera cards. Press enter to continue. ")
         i1 = input("Fixity check before and after transfer? y/n: ")
+        i2 = input("Run makeyoutube, makemetdata, checksumpackage? y/n: ")
         if i1 == 'y':
             checks0m = True
 
@@ -212,7 +213,9 @@ if __name__ == "__main__":
             eject()
             message = f"Content transferred. Safe to eject all card(s)"
             notification(message)
-            commands()
+
+            if i2 == 'y':
+                commands()
 
         else:
             print("No cards detected")
