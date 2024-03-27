@@ -35,7 +35,7 @@ def volume_paths ():
     output_str = output.decode("utf-8")
     rows = output_str.split('\n')
 
-    #array of volume_paths
+    # Array of volume_paths
     volume_paths = []
 
     for row in rows:
