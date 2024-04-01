@@ -3,14 +3,12 @@
 import detectrecentlyinserteddrives
 import restructurepackage
 import ingestcommands
-import validatepackagename
+import validateuserinput
 import dropboxuploadsession
 import re
-import time
 import sys
 import os
 import subprocess
-import shutil
 
 # Checks if user is connected to server
 def server_check():
@@ -44,12 +42,43 @@ def ingest():
 
     # 2. Perform ingest scripts on successfully transferred packages
     for package in packages_dict:
-        if packages_dict[package]["transfer_okay"] and packages_dict[package]["do_fixity"]:
-            ingestcommands.commands((os.path.join(server, package_name)))
 
-    # 3. Upload successfully transferred packages
+        # Run makeyoutube on succesfully transferred packages
+        if packages_dict[package]["transfer_okay"] and packages_dict[package]["do_fixity"]:
+            makeyoutube_okay, makeyoutube_error = ingestcommands.makeyoutube(os.path.join(server, package_name))
+        else:
+            packages_dict[package]["makeyoutube_okay"] = False
+            packages_dict[package]["makemetadata_okay"] = False
+            packages_dict[package]["makechecksumpackage_okay"] = False
+            continue
+
+        # Run makemetadata on package if makeyoutube was successfully run
+        packages_dict[package]["makeyoutube_okay"] = makeyoutube_okay
+        if makeyoutube_okay:
+            makemetadata_okay, makemetadata_error = ingestcommands.makemetadata(os.path.join(server, package_name))
+        else:
+            packages_dict[package]["makeyoutube_error"] = makeyoutube_error
+            packages_dict[package]["makemetadata_okay"] = False
+            packages_dict[package]["makechecksumpackage_okay"] = False
+            continue
+
+        # Run makechecksum on package if makemetadata was successfully run
+        packages_dict[package]["makemetadata_okay"] = makemetadata_okay
+        if makemetadata_okay:
+            makechecksumpackage_okay, makechecksumpackage_error = ingestcommands.makechecksumpackage(os.path.join(server, package_name))
+        else:
+            packages_dict[package]["makemetadata_error"] = makemetadata_error
+            packages_dict[package]["makechecksumpackage_okay"] = False
+            continue
+
+        packages_dict[package]["makechecksumpackage_okay"] = makechecksumpackage_okay
+        if not makechecksumpackage_okay:
+            packages_dict[package]["makechecksumpackage_error"] = makechecksumpackage_error
+
+
+    # 3. Upload packages that have at least successfully went through makeyoutube
     for package in packages_dict:
-        if packages_dict[package]["transfer_okay"] and packages_dict[package]["emails"]:
+        if packages_dict[package]["makeyoutube_okay"]:
             dropbox_directory = dropbox_prefix(package)
             emails = packages_dict[package]["emails"]
             emails.extend(["agarrkoch@gmail.com", "david.rice@tv.cuny.edu", "catriona.schlosser@tv.cuny.edu"])
@@ -89,15 +118,15 @@ if __name__ == "__main__":
         for input_path in volume_paths:
             print(f"- {input_path}")
 
-            package_name = validatepackagename.package(input(f"\tEnter a package name: "))
-            camera_card_number = validatepackagename.subfolder(input(f"\tEnter the corresponding card number or name on sticker (serialize from 1 if none): "))
+            package_name = validateuserinput.card_package_name(input(f"\tEnter a package name: "))
+            camera_card_number = validateuserinput.card_subfolder_name(input(f"\tEnter the corresponding card number or name on sticker (serialize from 1 if none): "))
 
             if package_name not in packages_dict:
                 # Additional file processing options
                 do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
                 do_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
                 do_commands = (input("\tRun makeyoutube, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
-                emails = input("\tUpload to dropbox? List email(s) delimited by space or press enter to continue: ")
+                emails = validateuserinput.emails(input("\tUpload to dropbox? List email(s) delimited by space or press enter to continue: "))
                 # Create key-value pair
                 packages_dict[package_name] = {
                     "cards": [camera_card_number],
@@ -105,7 +134,7 @@ if __name__ == "__main__":
                     "do_fixity": do_fixity,
                     "do_delete": do_delete,
                     "do_commands": do_commands,
-                    "emails": emails.split()
+                    "emails": emails
                 }
 
             else:
