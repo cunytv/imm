@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import re
 
 # Validates package name by confirming show code and date pattern, capitalizing all letters, deleting spaces
