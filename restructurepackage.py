@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import ingestcommands
-import validatepackagename
+import validateuserinput
 import sys
 import os
 import hashlib
@@ -165,31 +165,26 @@ if __name__ == "__main__":
     input_output_tuples = []
 
     # Input folder to be restructured
-    input_directory = input("Input folder path: ")
-    while os.path.exists(input_directory) == False:
-        input_directory = input("Invalid path. Please reenter: ")
+    input_directory = validateuserinput.path(input("Input folder path: "))
 
     # Option for user to input custom output directory or to default to input directory
     output_directory = input(f"Output directory path. Or press enter to save in default directory {input_directory.rsplit('/', 1)[0]}: ")
     if output_directory == '':
         output_directory = input_directory.rsplit('/', 1)[0]
     else:
-        while os.path.exists(output_directory) == False:
-            output_directory = input("Invalid path. Please reenter: ")
+        output_directory = validateuserinput.path(output_directory)
 
     # Package follow the structure of package_name/metadata | objects /subfolder_name
     # The files from the input folder path are saved in the subfolder_name
-    package_name = validatepackagename.package(input(f"Enter package name: "))
-    package_subfolder_name = validatepackagename.subfolder(input(f"Enter subfolder name (or serialize from 1 if none): "))
+    package_name = validateuserinput.card_package_name(input(f"Enter package name: "))
+    package_subfolder_name = validateuserinput.card_subfolder_name(input(f"Enter subfolder name (or serialize from 1 if none): "))
     input_output_tuples.append((input_directory, package_subfolder_name))
 
     # Continue processing additional package subfolders if user types 'y'
     cont = (input("Process additional folders for this package? y/n: ")).lower() == 'y'
     while cont:
-        input_directory = input("Input folder path: ")
-        while os.path.exists(input_directory) == False:
-            input_directory = input("Invalid path. Please reenter: ")
-        package_subfolder_name = input(f"Enter subfolder name: ")
+        input_directory = validateuserinput.path(input("Input folder path: "))
+        package_subfolder_name = validateuserinput.card_subfolder_name(input(f"Enter subfolder name: "))
         input_output_tuples.append((input_directory, package_subfolder_name))
         cont = (input("Process additional folders for this package? y/n: ")).lower() == 'y'
 
