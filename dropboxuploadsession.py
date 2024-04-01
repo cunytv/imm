@@ -3,7 +3,6 @@
 import os
 import requests
 import sys
-import re
 from requests.exceptions import ConnectionError
 import datetime
 
@@ -273,7 +272,7 @@ def folder (folder_path, emails, dropbox_path_prefix):
         id = get_shared_folder_id(ROOT_PATH)
 
         # Share with colleagues
-        message = f"If this email is forwarded, this folder can be accessed using the following link: {link}"
+        message = f"This folder has been shared with: {emails}. If this email is forwarded, this folder can be accessed using the following link: {link}"
         add_folder_member(message, emails, id)  # update so it can iterate through multiple emails
 
 # Handles file uploads
