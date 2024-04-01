@@ -4,8 +4,7 @@ import os
 import subprocess
 
 # Performs CUNY TV bash scripts makeyoutube, makemetadata, and checksumpackage
-def commands(directory):
-    # Makeyoutube
+def makeyoutube(directory):
     command = f"makeyoutube -t {directory}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
@@ -14,13 +13,13 @@ def commands(directory):
         print(line, end='')
     # Wait for the process to finish
     process.wait()
+
     # Check the return code
     if process.returncode == 0:
-        print("\nCommand executed successfully")
+        return True, None
     else:
-        print("\nCommand failed with return code:", process.returncode)
-
-    # Makemetadata
+        return False, process.returncode
+def makemetadata(directory):
     command = f"makemetadata {directory}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
@@ -28,11 +27,11 @@ def commands(directory):
         print(line, end='')
     process.wait()
     if process.returncode == 0:
-        print("\nCommand executed successfully")
+        return True, None
     else:
-        print("\nCommand failed with return code:", process.returncode)
+        return False, process.returncode
 
-    # Checksumpackage
+def makechecksumpackage(directory):
     command = f"checksumpackage {directory}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
@@ -40,13 +39,15 @@ def commands(directory):
         print(line, end='')
     process.wait()
     if process.returncode == 0:
-        print("\nCommand executed successfully")
+        return True, None
     else:
-        print("\nCommand failed with return code:", process.returncode)
+        return False, process.returncode
 
 if __name__ == "__main__":
     input_directory = input("Input folder path(s): ")
     input_directories = input_directory.split()
 
     for directory in input_directories:
-        commands(directory)
+        makeyoutube(directory)
+        makemetadata(directory)
+        makechecksumpackage(directory)
