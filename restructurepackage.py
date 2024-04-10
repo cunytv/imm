@@ -28,7 +28,8 @@ class RestructurePackage:
 
     # Checks if file is mac system metadata, e.g. .DS_STORE
     def mac_system_metadata(self, file):
-        return file.startswith('.')
+        if "uuid" in file.lower() or file.startswith('.'):
+            return True
 
     # Checks if folder is empty
     def empty_folder(self, folder):
@@ -78,7 +79,11 @@ class RestructurePackage:
         else:
             duration = float(duration)
 
-        if nb_streams >= 1 and duration > 1:
+        print(file_path)
+        print(nb_streams)
+        print(duration)
+        print()
+        if nb_streams >= 1 and duration > 0:
             return ("objects")
         else:
             return ("metadata")
