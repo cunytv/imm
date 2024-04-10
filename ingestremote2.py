@@ -17,15 +17,22 @@ def server_check():
         sys.exit(1)
 
 # Creates dropbox upload prefix by concatenating scoped folder with show code
-def dropbox_prefix(string):
-    scoped_folder = '/Apps/Automate Camera Card Upload/'
-    # Extracts show codes by splitting string at first number or underscore
-    match = re.search(r'[\d_]', string)
+def dropbox_prefix(s):
+    # Split string at first underscore
+    s = s.split('_', 1)[0]
+
+    # Find string before first digit
+    match = re.search(r'\d', s)
     if match:
-        index = match.start()
-        if index != '':
-            return "/_CUNY TV CAMERA CARD DELIVERY/" + string[:index]
-    return '/_CUNY TV CAMERA CARD DELIVERY/NOSHOW'
+        showcode = s[:match.start()]
+    else:
+        showcode = s
+
+    # Dropbox path
+    if showcode:
+        return f'/_CUNY TV CAMERA CARD DELIVERY/{showcode}'
+    else:
+        return '/_CUNY TV CAMERA CARD DELIVERY/NOSHOW'
 
 # Ingests files
 def ingest():
@@ -42,14 +49,13 @@ def ingest():
 
     # 2. Perform ingest scripts on successfully transferred packages
     for package in packages_dict:
-
         # Run makeyoutube on succesfully transferred packages
-        if packages_dict[package]["transfer_okay"] and packages_dict[package]["do_fixity"]:
+        if packages_dict[package]["transfer_okay"] and packages_dict[package]["do_commands"]:
             makeyoutube_okay, makeyoutube_error = ingestcommands.makeyoutube(os.path.join(server, package_name))
         else:
-            packages_dict[package]["makeyoutube_okay"] = False
-            packages_dict[package]["makemetadata_okay"] = False
-            packages_dict[package]["makechecksumpackage_okay"] = False
+            packages_dict[package]["makeyoutube_okay"] = None
+            packages_dict[package]["makemetadata_okay"] = None
+            packages_dict[package]["makechecksumpackage_okay"] = None
             continue
 
         # Run makemetadata on package if makeyoutube was successfully run
@@ -58,8 +64,8 @@ def ingest():
             makemetadata_okay, makemetadata_error = ingestcommands.makemetadata(os.path.join(server, package_name))
         else:
             packages_dict[package]["makeyoutube_error"] = makeyoutube_error
-            packages_dict[package]["makemetadata_okay"] = False
-            packages_dict[package]["makechecksumpackage_okay"] = False
+            packages_dict[package]["makemetadata_okay"] = None
+            packages_dict[package]["makechecksumpackage_okay"] = None
             continue
 
         # Run makechecksum on package if makemetadata was successfully run
@@ -68,20 +74,18 @@ def ingest():
             makechecksumpackage_okay, makechecksumpackage_error = ingestcommands.makechecksumpackage(os.path.join(server, package_name))
         else:
             packages_dict[package]["makemetadata_error"] = makemetadata_error
-            packages_dict[package]["makechecksumpackage_okay"] = False
+            packages_dict[package]["makechecksumpackage_okay"] = None
             continue
 
         packages_dict[package]["makechecksumpackage_okay"] = makechecksumpackage_okay
         if not makechecksumpackage_okay:
             packages_dict[package]["makechecksumpackage_error"] = makechecksumpackage_error
 
-
-    # 3. Upload packages that have at least successfully went through makeyoutube
+    # 3. Upload packages that have at successfully went through makeyoutube
     for package in packages_dict:
-        if packages_dict[package]["makeyoutube_okay"]:
+        if packages_dict[package]["makeyoutube_okay"] or packages_dict[package]["makeyoutube_okay"] is None:
             dropbox_directory = dropbox_prefix(package)
             emails = packages_dict[package]["emails"]
-            emails.extend(["agarrkoch@gmail.com", "david.rice@tv.cuny.edu", "catriona.schlosser@tv.cuny.edu"])
             dropboxuploadsession.folder(os.path.join(server, package), emails, dropbox_directory)
 
 # Ejects mounted drive
@@ -124,9 +128,15 @@ if __name__ == "__main__":
             if package_name not in packages_dict:
                 # Additional file processing options
                 do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
-                do_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
+                #do_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
+                do_delete = False
                 do_commands = (input("\tRun makeyoutube, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
-                emails = validateuserinput.emails(input("\tUpload to dropbox? List email(s) delimited by space or press enter to continue: "))
+                do_dropbox = (input("\tUpload to dropbox? y/n: ")).lower() == 'y'
+                emails = []
+                if do_dropbox:
+                    emails = validateuserinput.emails(input("\tList email(s) delimited by space or press enter to continue: "))
+                    emails.extend(["agarrkoch@gmail.com", "david.rice@tv.cuny.edu", "catriona.schlosser@tv.cuny.edu"])
+
                 # Create key-value pair
                 packages_dict[package_name] = {
                     "cards": [camera_card_number],
