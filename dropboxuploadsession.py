@@ -6,6 +6,8 @@ import sys
 from requests.exceptions import ConnectionError
 import datetime
 
+import validateuserinput
+
 # Credentials for creating access token
 client_id = 'wjmmemxgpuxh911'
 client_secret = 'mynnf0nelu4xahk'
@@ -61,7 +63,9 @@ def list_files(directory, split_s, prefix):
         for filename in files:
             if not filename.startswith('.') and '.' in filename:
                 file_paths.append(os.path.join(root, filename))
-                dropbox_paths.append(prefix + os.path.join(root.rsplit(split_s, 1)[1], filename))
+                dropbox_path = os.path.join(prefix + os.path.join(root.rsplit(split_s, 1)[1], filename))
+                dropbox_path = dropbox_path.replace("//", "/")
+                dropbox_paths.append(dropbox_path)
                 total_size += os.path.getsize(os.path.join(root, filename))
     return file_paths, dropbox_paths
 
@@ -135,6 +139,31 @@ def upload_file_to_dropbox(file_path, dropbox_path, max_retries=5):
             else:
                 raise e
 
+# Get shared link
+def get_shared_link(path):
+    # Define the endpoint URL
+    url = "https://api.dropboxapi.com/2/sharing/list_shared_links"
+
+    # Define request headers
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    # Define request body data
+    data = {
+        "path": path
+    }
+
+    # Send the POST request
+    response = requests.post(url, headers=headers, json=data)
+
+    # Check if request was successful
+    if response.json()['links']:
+        return response.json()['links'][0]['url'], response.json()['links'][0]['id']
+    else:
+        return create_shared_link_with_settings(path)
+
 # Creates share link that anyone can use to access
 def create_shared_link_with_settings(path):
     url = 'https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings'
@@ -165,8 +194,44 @@ def create_shared_link_with_settings(path):
         print(f"Response content: {response.content}")
         return None
 
-# Generates shared folder id. Necessary for the API call to add member(s) to folder
+# Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
 def get_shared_folder_id(path):
+    global ACCESS_TOKEN
+    # Define the endpoint URL
+    url = "https://api.dropboxapi.com/2/files/get_metadata"
+
+    # Replace '<get access token>' with your actual access token
+    access_token = ACCESS_TOKEN
+
+    # Define the headers
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    # Define the data payload
+    data = {
+        "include_deleted": True,
+        "include_has_explicit_shared_members": True,
+        "include_media_info": True,
+        "path": path  # Removed curly braces
+    }
+
+    # Make the POST request
+    response = requests.post(url, headers=headers, json=data)
+
+    # Check the response
+    if response.status_code == 200:
+        if 'sharing_info' in response.json():
+            print(response.json())
+            return response.json()["sharing_info"]["parent_shared_folder_id"]
+        else:
+            return create_shared_folder_id(path)
+    else:
+        print("Error sharing folder:", response.text)
+
+
+def create_shared_folder_id(path):
     url = 'https://api.dropboxapi.com/2/sharing/share_folder'
 
     headers = {
@@ -186,11 +251,12 @@ def get_shared_folder_id(path):
 
     # Check the response
     if response.status_code == 200:
-        return response.json()['shared_folder_id']
+        return response.json()["shared_folder_id"]
     else:
         print("Error sharing folder:", response.text)
 
-# Adds member(s) to folder and sends email notification
+
+#Adds member(s) to folder and sends email notification
 def add_folder_member(message, emails, id):
     url = 'https://api.dropboxapi.com/2/sharing/add_folder_member'
     headers = {
@@ -200,7 +266,7 @@ def add_folder_member(message, emails, id):
 
     members = []
     for email in emails:
-        members.append({"access_level": "viewer", "member": {".tag": "email","email": email}})
+        members.append({"access_level": "viewer", "member": {".tag": "email", "email": email}})
 
     data = {
         "custom_message": message,
@@ -219,32 +285,32 @@ def add_folder_member(message, emails, id):
 
 # Adds member(s) to file and sends email notification
 def add_file_member(message, emails, id):
-    url = "https://api.dropboxapi.com/2/sharing/add_file_member"
-    headers = {
-        "Authorization": "Bearer " + ACCESS_TOKEN,
-        "Content-Type": "application/json"
-    }
+     url = "https://api.dropboxapi.com/2/sharing/add_file_member"
+     headers = {
+         "Authorization": "Bearer " + ACCESS_TOKEN,
+         "Content-Type": "application/json"
+     }
 
-    members = []
-    for email in emails:
-        members.append({"access_level": "viewer", "member": {".tag": "email","email": email}})
+     members = []
+     for email in emails:
+         members.append({"access_level": "viewer", "member": {".tag": "email","email": email}})
 
-    data = {
-        "access_level": "viewer",
-        "add_message_as_comment": False,
-        "custom_message": message,
-        "file": id,
-        "members": members,
-        "quiet": False
-    }
+     data = {
+         "access_level": "viewer",
+         "add_message_as_comment": False,
+         "custom_message": message,
+         "file": id,
+         "members": members,
+         "quiet": False
+     }
 
-    response = requests.post(url, headers=headers, json=data)
+     response = requests.post(url, headers=headers, json=data)
 
-    # Check the response
-    if response.status_code == 200:
-        print(f"\nFile succesfully shared with {email}")
-    else:
-        print("Error sharing file:", response.text)
+     # Check the response
+     if response.status_code == 200:
+         print(f"\nFile succesfully shared with {email}")
+     else:
+         print("Error sharing file:", response.text)
 
 # Handles folder uploads
 def folder (folder_path, emails, dropbox_path_prefix):
@@ -252,7 +318,7 @@ def folder (folder_path, emails, dropbox_path_prefix):
     # /Users/archivesx/Desktop/Test => /Test
     ROOT_PATH = '/' + folder_path.rsplit('/', 1)[1]
     # Append root to prefix, /Test -> prefix/Test
-    if dropbox_path_prefix is not None:
+    if dropbox_path_prefix:
         ROOT_PATH = dropbox_path_prefix + ROOT_PATH
 
     # Split all files paths in directory at the following string to create dropbox paths
@@ -264,16 +330,16 @@ def folder (folder_path, emails, dropbox_path_prefix):
     for f, d in zip(file_paths, dropbox_file_paths):
         upload_file_to_dropbox(f, d)
 
-    if emails is not None:
-        # Create shared link
-        link = create_shared_link_with_settings(ROOT_PATH)[0]
+    if emails:
+        # Get or create shared link
+        link = get_shared_link(ROOT_PATH)[0]
 
-        # Create share folder
+        # Get or create share folder
         id = get_shared_folder_id(ROOT_PATH)
 
         # Share with colleagues
         message = f"This folder has been shared with: {emails}. If this email is forwarded, this folder can be accessed using the following link: {link}"
-        add_folder_member(message, emails, id)  # update so it can iterate through multiple emails
+        add_folder_member(message, emails, id)
 
 # Handles file uploads
 def file (file_path, emails, dropbox_path_prefix):
@@ -283,7 +349,7 @@ def file (file_path, emails, dropbox_path_prefix):
     # /Users/archivesx/Desktop/test.png => /test.png
     ROOT_PATH = '/' + file_path.rsplit('/', 1)[1]
     # Append root to prefix, /test.png -> prefix/test.png
-    if dropbox_path_prefix is not None:
+    if dropbox_path_prefix:
         ROOT_PATH = dropbox_path_prefix + ROOT_PATH
 
     # Get size of file to keep track of upload progress
@@ -292,33 +358,34 @@ def file (file_path, emails, dropbox_path_prefix):
     # Upload file
     upload_file_to_dropbox(file_path, ROOT_PATH)
 
-    if emails is not None:
+    if emails:
         # Create shared link (do you want to create shared link for the file or for the folder??, test and figure out
-        link, id = create_shared_link_with_settings(ROOT_PATH)
+        link, id = get_shared_link(ROOT_PATH)
 
         # Share with colleagues
         message = f"If this email is forwarded, this file can be accessed using the following link: {link}"
-        add_file_member(message, emails, id)  # update so it can iterate through multiple emails
+        add_file_member(message, emails, id)
 
 
 if __name__ == "__main__":
+    # (Input, Emails, Output), ...
+    input_emails_output_tuple = []
 
-    # Change variables below into arguments
-    # Local file path
+    cont = True
+    while cont:
+        input_path = validateuserinput.path(input("Input folder or file path: "))
+        emails = validateuserinput.emails(input("List email(s) delimited by space or press enter to continue: "))
 
-    input_path = input("Input folder or file path: ")
-    while os.path.exists(input_path) == False:
-        input_path = input("Invalid path. Please reenter: ")
-    
-    emails = input("List email(s) delimited by space: ")
+        # Custom dropbox parent folder path, otherwise defaults to root dropbox folder in the case of a file
+        # and show code workflow in the case of a folder
+        #custom_prefix = "/Apps/Automate Camera Card Upload"
+        custom_prefix = input('Specify dropbox path (/Example/Example) or press enter to continue: ')
+        input_emails_output_tuple.append([input_path, emails, custom_prefix])
+        cont = (input("\tQueue more dropbox uploads? y/n: ")).lower() == 'y'
 
-            # Custom dropbox parent folder path, otherwise defaults to root dropbox folder in the case of a file
-    # and show code workflow in the case of a folder
-    #custom_prefix = "/Apps/Automate Camera Card Upload"
-    custom_prefix = 'Specify dropbox path (/Example/Example) or press enter to continue: '
+    for tuple in input_emails_output_tuple:
+        if os.path.isfile(tuple[0]):
+            file (tuple[0], tuple[1], tuple[2])
 
-    if os.path.isfile(input_path):
-        file (input_path, emails, custom_prefix)
-
-    elif os.path.isdir(input_path):
-        folder(input_path, emails, custom_prefix)
+        elif os.path.isdir(input_path):
+            folder(tuple[0], tuple[1], tuple[2])
