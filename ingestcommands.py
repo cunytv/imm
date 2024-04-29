@@ -3,9 +3,12 @@
 import os
 import subprocess
 
-# Performs CUNY TV bash scripts makeyoutube, makemetadata, and checksumpackage
-def makeyoutube(directory):
-    command = f"makeyoutube -t {directory}"
+import validateuserinput
+
+
+# Performs CUNY TV bash scripts makewindow, makemetadata, and checksumpackage
+def makewindow(directory):
+    command = f"makewindow {directory}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
     # Print the output line by line in real-time
@@ -44,10 +47,10 @@ def makechecksumpackage(directory):
         return False, process.returncode
 
 if __name__ == "__main__":
-    input_directory = input("Input folder path(s): ")
+    input_directory = validateuserinput.path(input("Input folder path(s): "))
     input_directories = input_directory.split()
 
     for directory in input_directories:
-        makeyoutube(directory)
+        makewindow(directory)
         makemetadata(directory)
         makechecksumpackage(directory)
