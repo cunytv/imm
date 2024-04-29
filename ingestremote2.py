@@ -5,6 +5,7 @@ import restructurepackage
 import ingestcommands
 import validateuserinput
 import dropboxuploadsession
+import sendnetworkmail
 import re
 import sys
 import os
@@ -34,6 +35,7 @@ def dropbox_prefix(s):
     else:
         return '/_CUNY TV CAMERA CARD DELIVERY/NOSHOW'
 
+
 # Ingests files
 def ingest():
     # 1. Transfer files to server
@@ -49,21 +51,21 @@ def ingest():
 
     # 2. Perform ingest scripts on successfully transferred packages
     for package in packages_dict:
-        # Run makeyoutube on succesfully transferred packages
+        # Run makewindow on succesfully transferred packages
         if packages_dict[package]["transfer_okay"] and packages_dict[package]["do_commands"]:
-            makeyoutube_okay, makeyoutube_error = ingestcommands.makeyoutube(os.path.join(server, package_name))
+            makewindow_okay, makewindow_error = ingestcommands.makewindow(os.path.join(server, package_name))
         else:
-            packages_dict[package]["makeyoutube_okay"] = None
+            packages_dict[package]["makewindow_okay"] = None
             packages_dict[package]["makemetadata_okay"] = None
             packages_dict[package]["makechecksumpackage_okay"] = None
             continue
 
-        # Run makemetadata on package if makeyoutube was successfully run
-        packages_dict[package]["makeyoutube_okay"] = makeyoutube_okay
-        if makeyoutube_okay:
+        # Run makemetadata on package if makewindow was successfully run
+        packages_dict[package]["makewindow_okay"] = makewindow_okay
+        if makewindow_okay:
             makemetadata_okay, makemetadata_error = ingestcommands.makemetadata(os.path.join(server, package_name))
         else:
-            packages_dict[package]["makeyoutube_error"] = makeyoutube_error
+            packages_dict[package]["makewindow_error"] = makewindow_error
             packages_dict[package]["makemetadata_okay"] = None
             packages_dict[package]["makechecksumpackage_okay"] = None
             continue
@@ -81,12 +83,44 @@ def ingest():
         if not makechecksumpackage_okay:
             packages_dict[package]["makechecksumpackage_error"] = makechecksumpackage_error
 
-    # 3. Upload packages that have at successfully went through makeyoutube
+    # 3. Upload packages that have at successfully transferred and went through makewindow, and send email notification
     for package in packages_dict:
-        if packages_dict[package]["makeyoutube_okay"] or packages_dict[package]["makeyoutube_okay"] is None:
-            dropbox_directory = dropbox_prefix(package)
+        if packages_dict[package]["emails"] and packages_dict[package]["transfer_okay"] and (packages_dict[package]["makewindow_okay"] or packages_dict[package]["makewindow_okay"] is None):
+            dropbox_directory = dropbox_prefix(package) + f'/{package}'
+            server_object_directory = os.path.join(server, package) + "/objects"
             emails = packages_dict[package]["emails"]
-            dropboxuploadsession.folder(os.path.join(server, package), emails, dropbox_directory)
+
+            uploadsession = dropboxuploadsession.DropboxUploadSession(server_object_directory)
+
+            for root, directories, files in os.walk(server_object_directory):
+                for filename in files:
+                    filepath = os.path.join(root, filename)
+                    dropboxpath = dropbox_directory + f"/{filename}"
+                    uploadsession.upload_file_to_dropbox(filepath, dropboxpath)
+                    uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
+
+            notification = sendnetworkmail.SendNetworkEmail()
+            notification.sender("library@tv.cuny.edu")
+            notification.recipients(emails)
+            notification.subject(f"Dropbox Upload: {package}")
+
+            # Write text content with HTML formatting
+            html_content = f"""
+            <html>
+              <body>
+                <p>Hello, </p>
+                <p></p>
+                <p>See the link below: </p>
+                <p><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.</p>
+                <p>Best, </p>
+                <p>Library Bot</p>
+              </body>
+            </html>
+            """
+
+            notification.content(html_content)
+            notification.send()
+
 
 # Ejects mounted drive
 def eject(path):
@@ -106,9 +140,9 @@ if __name__ == "__main__":
     packages_dict = {}
 
     # Check if connected to server
-    server = "/Volumes/CUNYTV_Media/archive_projects/sxs_ingests-unique"
-    server_check()
-    #server = "/Users/archivesx/Desktop"
+    #server = "/Volumes/CUNYTV_Media/archive_projects/sxs_ingests-unique"
+    #server_check()
+    server = "/Users/archivesx/Desktop"
 
     # Detect recently inserted drives and cards
     volume_paths = detectrecentlyinserteddrives.volume_paths()
@@ -130,12 +164,12 @@ if __name__ == "__main__":
                 do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
                 #do_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
                 do_delete = False
-                do_commands = (input("\tRun makeyoutube, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
+                do_commands = (input("\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
                 do_dropbox = (input("\tUpload to dropbox? y/n: ")).lower() == 'y'
                 emails = []
                 if do_dropbox:
                     emails = validateuserinput.emails(input("\tList email(s) delimited by space or press enter to continue: "))
-                    emails.extend(["agarrkoch@gmail.com", "david.rice@tv.cuny.edu", "catriona.schlosser@tv.cuny.edu"])
+                    emails.extend(["library@tv.cuny.edu"])
 
                 # Create key-value pair
                 packages_dict[package_name] = {
