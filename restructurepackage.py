@@ -23,7 +23,7 @@ class RestructurePackage:
     # Creates a directory using package and card names from user input
     def create_output_directory(self, output_directory, package, subfolder):
         os.makedirs(output_directory + f'/{package}', exist_ok=True)
-        os.makedirs(self.unique_directory_path(output_directory + f'/{package}' + f'/metadata/{subfolder}'))
+        os.makedirs(self.unique_directory_path(output_directory + f'/{package}' + f'/metadata/logs/{subfolder}'))
         os.makedirs(self.unique_directory_path(output_directory + f'/{package}' + f'/objects/{subfolder}'))
 
     # Checks if file is mac system metadata, e.g. .DS_STORE
@@ -62,13 +62,13 @@ class RestructurePackage:
         command = f"ffprobe -loglevel quiet {file_path} -show_entries format=nb_streams -of default=nw=1:nk=1"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                    text=True)
-        nb_streams = process.stdout.readline().strip()
+        nb_streams = process.stdout.readline()
 
         # Stream duration
         command = f"ffprobe -loglevel quiet {file_path} -show_entries stream=duration -of default=nw=1:nk=1"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                    text=True)
-        duration = process.stdout.readline().strip()
+        duration = process.stdout.readline()
 
         if not nb_streams:
             nb_streams = 0
@@ -79,14 +79,10 @@ class RestructurePackage:
         else:
             duration = float(duration)
 
-        print(file_path)
-        print(nb_streams)
-        print(duration)
-        print()
         if nb_streams >= 1 and duration > 0:
             return ("objects")
         else:
-            return ("metadata")
+            return ("metadata/logs")
 
     # Creates checksum
     def calculate_sha256_checksum(self, file_path):
