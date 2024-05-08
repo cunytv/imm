@@ -5,6 +5,7 @@ import requests
 import sys
 from requests.exceptions import ConnectionError
 import datetime
+import time
 
 import validateuserinput
 import sendnetworkmail
@@ -95,6 +96,7 @@ class DropboxUploadSession:
         self.refresh_access_token()
 
         for attempt in range(max_retries):
+            self.refresh_access_token()
             try:
                 #Step 0: Check if ACCESS_TOKEN is still valid
                 if self.token_expired():
@@ -118,6 +120,7 @@ class DropboxUploadSession:
                 chunk_size = 4 * 1024 * 1024  # 4MB chunk size
                 with open(file_path, 'rb') as file:
                     while True:
+                        self.refresh_access_token()
                         chunk = file.read(chunk_size)
                         if not chunk:
                             break
@@ -128,9 +131,27 @@ class DropboxUploadSession:
                             'Dropbox-API-Arg': '{"cursor": {"session_id": "' + session_id + '", "offset": ' + str(offset) + '}}'
                         }
                         response = requests.post(upload_url, headers=headers, data=chunk)
-                        if response.status_code != 200:
+
+                        if response.status_code == 429:
+                            seconds = response.json()["error"]["retry_after"]
+                            for i in range(seconds, 0, -1):
+                                sys.stdout.write("\rToo many requests. Retrying chunk upload in {:2d} seconds.".format(i))
+                                sys.stdout.flush()
+                                time.sleep(1)
+                            continue
+                        # eventually edit this statement for exponential back off
+                        # for some reason dropbox outputs this response as HTML, instead of JSON
+                        elif 'Error: 503' in response.text:
+                            seconds = 10
+                            for i in range(seconds, 0, -1):
+                                sys.stdout.write("\rDropbox service availability issue. Retrying chunk upload in {:2d} seconds.".format(i))
+                                sys.stdout.flush()
+                                time.sleep(1)
+                            continue
+                        elif response.status_code != 200:
                             print("Failed to upload chunk:", response.text)
                             return
+
                         offset += len(chunk)
                         self.bytes_read += len(chunk)
                         progress = min(self.bytes_read / self.total_size, 1.0) * 100
@@ -436,7 +457,7 @@ if __name__ == "__main__":
     while cont:
         input_path = validateuserinput.path(input("Input folder or file path: "))
         emails = validateuserinput.emails(input("List email(s) delimited by space or press enter to continue: "))
-        #emails.extend(["library@tv.cuny.edu"])
+        emails.extend(["library@tv.cuny.edu"])
 
         # Custom dropbox parent folder path, otherwise defaults to root dropbox folder in the case of a file
         # and show code workflow in the case of a folder
