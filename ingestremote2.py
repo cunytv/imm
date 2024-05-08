@@ -103,6 +103,7 @@ def ingest():
                     uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
 
                     xsanpath = os.path.join("/Volumes/XsanVideo/Camera\ Card\ Delivery", dropbox_directory.rsplit("/", 1)[1])
+                    xsanpath = os.path.join(xsanpath, package)
                     if not os.path.exists(xsanpath):
                         os.makedirs(xsanpath)
                     shutil.copyfile(filepath, os.path.join(xsanpath, filename))
