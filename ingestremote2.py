@@ -10,6 +10,7 @@ import re
 import sys
 import os
 import subprocess
+import shutil
 
 # Checks if user is connected to server
 def server_check():
@@ -83,7 +84,8 @@ def ingest():
         if not makechecksumpackage_okay:
             packages_dict[package]["makechecksumpackage_error"] = makechecksumpackage_error
 
-    # 3. Upload packages that have at successfully transferred and went through makewindow, and send email notification
+    # 3. Upload to dropbox & transfer to XSAN packages that have successfully transferred,
+    # went through makewindow, and send email notification
     for package in packages_dict:
         if packages_dict[package]["emails"] and packages_dict[package]["transfer_okay"] and (packages_dict[package]["makewindow_okay"] or packages_dict[package]["makewindow_okay"] is None):
             dropbox_directory = dropbox_prefix(package) + f'/{package}'
@@ -95,9 +97,15 @@ def ingest():
             for root, directories, files in os.walk(server_object_directory):
                 for filename in files:
                     filepath = os.path.join(root, filename)
+
                     dropboxpath = dropbox_directory + f"/{filename}"
                     uploadsession.upload_file_to_dropbox(filepath, dropboxpath)
                     uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
+
+                    xsanpath = os.path.join("/Volumes/XsanVideo/Camera\ Card\ Delivery", dropbox_directory.rsplit("/", 1)[1])
+                    if not os.path.exists(xsanpath):
+                        os.makedirs(xsanpath)
+                    shutil.copyfile(filepath, os.path.join(xsanpath, filename))
 
             notification = sendnetworkmail.SendNetworkEmail()
             notification.sender("library@tv.cuny.edu")
@@ -140,9 +148,9 @@ if __name__ == "__main__":
     packages_dict = {}
 
     # Check if connected to server
-    #server = "/Volumes/CUNYTV_Media/archive_projects/sxs_ingests-unique"
-    #server_check()
-    server = "/Users/archivesx/Desktop"
+    server = "/Volumes/CUNYTV_Media/archive_projects/sxs_ingests-unique"
+    server_check()
+    #server = "/Users/archivesx/Desktop"
 
     # Detect recently inserted drives and cards
     volume_paths = detectrecentlyinserteddrives.volume_paths()
