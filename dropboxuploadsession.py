@@ -26,6 +26,9 @@ class DropboxUploadSession:
         self.total_size = self.get_size(path)
         self.bytes_read = 0
 
+        # Dropbox access token and expiration
+        self.refresh_access_token()
+
         # Dropbox errors
         #self.dropbox_okay = True
 
@@ -58,7 +61,7 @@ class DropboxUploadSession:
         expires_in = response.json()['expires_in']
 
         time_now = datetime.datetime.now()
-        self.time_expire = time_now + datetime.timedelta(seconds=expires_in - 350)
+        self.time_expire = time_now + datetime.timedelta(seconds=expires_in - 1000)
 
     # Checks if access token has expired
     def token_expired(self):
@@ -70,7 +73,7 @@ class DropboxUploadSession:
             return False
 
     def mac_system_metadata(self, file):
-        if "uuid" in file.lower() or file.startswith('.'):
+        if '.' not in file or file.startswith('.'):
             return True
 
     # Creates dropbox output paths for each file in a folder and calculates total size
@@ -89,14 +92,9 @@ class DropboxUploadSession:
                     dropbox_paths.append(dropbox_path)
         return file_paths, dropbox_paths
 
-
     # Uploads file to dropbox
     def upload_file_to_dropbox(self, file_path, dropbox_path, max_retries=5):
-        # Dropbox access token and expiration
-        self.refresh_access_token()
-
         for attempt in range(max_retries):
-            self.refresh_access_token()
             try:
                 #Step 0: Check if ACCESS_TOKEN is still valid
                 if self.token_expired():
@@ -120,7 +118,9 @@ class DropboxUploadSession:
                 chunk_size = 4 * 1024 * 1024  # 4MB chunk size
                 with open(file_path, 'rb') as file:
                     while True:
-                        self.refresh_access_token()
+                        if self.token_expired():
+                            self.refresh_access_token()
+
                         chunk = file.read(chunk_size)
                         if not chunk:
                             break
@@ -196,10 +196,11 @@ class DropboxUploadSession:
 
         # Send the POST request
         response = requests.post(url, headers=headers, json=data)
-
-        # Check if request was successful
-        if response.json()['links']:
-            return response.json()['links'][0]['url'], response.json()['links'][0]['id']
+        if response.status_code == 200:
+            if response.json()['links']:
+                return response.json()['links'][0]['url'], response.json()['links'][0]['id']
+            else:
+                return self.create_shared_link_with_settings(path)
         else:
             return self.create_shared_link_with_settings(path)
 
@@ -223,6 +224,9 @@ class DropboxUploadSession:
             'settings': settings
         }
         response = requests.post(url, headers=headers, json=data)
+        print("CREATE SHARED LINK")
+        print(response)
+
         # Check Response
         try:
             response.raise_for_status()
@@ -288,7 +292,7 @@ class DropboxUploadSession:
             else:
                 return self.create_shared_folder_id(path)
         else:
-            print("Error sharing folder:", response.text)
+            return self.create_shared_folder_id(path)
 
 
     def create_shared_folder_id(self, path):
@@ -317,7 +321,7 @@ class DropboxUploadSession:
 
 
     #Adds member(s) to folder and sends email notification
-    def add_folder_member(self, emails, id, quiet_bool):
+    def add_folder_member(self, emails, id, quiet_bool, msg):
         url = 'https://api.dropboxapi.com/2/sharing/add_folder_member'
         headers = {
             'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
@@ -329,7 +333,7 @@ class DropboxUploadSession:
             members.append({"access_level": "viewer", "member": {".tag": "email", "email": email}})
 
         data = {
-            "custom_message": None,
+            "custom_message": msg,
             "members": members,
             "quiet": quiet_bool,
             "shared_folder_id": id
@@ -408,11 +412,11 @@ class DropboxUploadSession:
                 self.email(cuny_emails, folder_path.rsplit('/', 1)[1], self.share_link)
 
             # Get or create share folder
-            #id = self.get_shared_folder_id(ROOT_PATH)
+            id = self.get_shared_folder_id(ROOT_PATH)
 
             # Dropbox notification
-            #if other_emails:
-            #    self.add_folder_member(other_emails, id, False)
+            if other_emails:
+                self.add_folder_member(other_emails, id, False, None)
 
     # Handles file uploads
     def file (self, file_path, emails, dropbox_path_prefix):
