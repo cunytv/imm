@@ -10,6 +10,7 @@ import re
 import sys
 import os
 import subprocess
+import time
 import shutil
 
 # Checks if user is connected to server
@@ -17,6 +18,18 @@ def server_check():
     if not os.path.exists(server):
         print(f'You might not be connected to the server. Reconnect and try again')
         sys.exit(1)
+
+# Timer, used as buffer between mounting of hard drive and start of program
+def countdown(seconds):
+    for i in range(seconds, 0, -1):
+        print(i, end='...', flush=True)
+        time.sleep(1)
+    print()
+
+# Checks if file is mac system metadata
+def mac_system_metadata(file):
+    if '.' not in file or file.startswith('.'):
+        return True
 
 # Creates dropbox upload prefix by concatenating scoped folder with show code
 def dropbox_prefix(s):
@@ -36,15 +49,13 @@ def dropbox_prefix(s):
     else:
         return '/_CUNY TV CAMERA CARD DELIVERY/NOSHOW'
 
-
 # Ingests files
 def ingest():
     # 1. Transfer files to server
     for package in packages_dict:
         # Create package object from RestructurePackage class
-        package_obj = restructurepackage.RestructurePackage()
+        package_obj = restructurepackage.RestructurePackage(server, package)
         for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
-            package_obj.create_output_directory(server, package, card)
             package_obj.restructure_folder(input_path, server, package, card, packages_dict[package]["do_fixity"], packages_dict[package]["do_delete"])
             eject(input_path)
         packages_dict[package]["files_dict"] = package_obj.FILES_DICT
@@ -84,33 +95,49 @@ def ingest():
         if not makechecksumpackage_okay:
             packages_dict[package]["makechecksumpackage_error"] = makechecksumpackage_error
 
-    # 3. Upload to dropbox & transfer to XSAN packages that have successfully transferred,
-    # went through makewindow, and send email notification
+    # 3. Upload to dropbox & transfer to XSAN packages that have successfully transferred, went through makewindow, and send email notification
     for package in packages_dict:
+        server_object_directory = os.path.join(server, package) + "/objects"
+        dropbox_directory = dropbox_prefix(package) + f'/{package}'
+        emails = packages_dict[package]["emails"]
+
         if packages_dict[package]["emails"] and packages_dict[package]["transfer_okay"] and (packages_dict[package]["makewindow_okay"] or packages_dict[package]["makewindow_okay"] is None):
-            dropbox_directory = dropbox_prefix(package) + f'/{package}'
-            server_object_directory = os.path.join(server, package) + "/objects"
-            emails = packages_dict[package]["emails"]
-
+            do_dropbox = True
             uploadsession = dropboxuploadsession.DropboxUploadSession(server_object_directory)
+        else:
+            do_dropbox = False
 
-            for root, directories, files in os.walk(server_object_directory):
-                for filename in files:
+        for root, directories, files in os.walk(server_object_directory):
+            for filename in files:
+                if not mac_system_metadata(filename):
                     filepath = os.path.join(root, filename)
 
-                    dropboxpath = dropbox_directory + f"/{filename}"
-                    uploadsession.upload_file_to_dropbox(filepath, dropboxpath)
-                    uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
+                    if do_dropbox:
+                        dropboxpath = dropbox_directory + f"/{filename}"
+                        uploadsession.upload_file_to_dropbox(filepath, dropboxpath)
 
-                    xsanpath = os.path.join("/Volumes/XsanVideo/Camera\ Card\ Delivery", dropbox_directory.rsplit("/", 1)[1])
-                    xsanpath = os.path.join(xsanpath, package)
-                    if not os.path.exists(xsanpath):
-                        os.makedirs(xsanpath)
-                    shutil.copyfile(filepath, os.path.join(xsanpath, filename))
+                    #xsanpath = os.path.join("/Volumes/XsanVideo/Camera Card Delivery", dropbox_directory.rsplit("/", 2)[1] + f"/{package}")
+                    #if not os.path.exists(xsanpath):
+                    #    os.makedirs(xsanpath)
+                    #shutil.copyfile(filepath, os.path.join(xsanpath, filename))
 
+        if do_dropbox:
+            # Bifurcate email type
+            if emails:
+                for email in emails:
+                    cuny_emails = []
+                    other_emails = []
+
+                    if "@tv.cuny.edu" in email:
+                        cuny_emails.append(email)
+                    else:
+                        other_emails.append(email)
+
+            # Send network email to CUNY recipients
+            uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
             notification = sendnetworkmail.SendNetworkEmail()
             notification.sender("library@tv.cuny.edu")
-            notification.recipients(emails)
+            notification.recipients(cuny_emails)
             notification.subject(f"Dropbox Upload: {package}")
 
             # Write text content with HTML formatting
@@ -130,6 +157,9 @@ def ingest():
             notification.content(html_content)
             notification.send()
 
+            # Send dropbox notification to non-CUNY recipients
+            msg = f"{dropbox_directory} has finished uploading."
+            uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory), False, msg)
 
 # Ejects mounted drive
 def eject(path):
@@ -154,6 +184,7 @@ if __name__ == "__main__":
     #server = "/Users/archivesx/Desktop"
 
     # Detect recently inserted drives and cards
+    countdown(5)
     volume_paths = detectrecentlyinserteddrives.volume_paths()
 
     # Organizes user inputs into dictionary
@@ -178,7 +209,8 @@ if __name__ == "__main__":
                 emails = []
                 if do_dropbox:
                     emails = validateuserinput.emails(input("\tList email(s) delimited by space or press enter to continue: "))
-                    emails.extend(["library@tv.cuny.edu"])
+                    #emails.extend(["library@tv.cuny.edu"])
+                    emails.extend(["agarrkoch@gmail.com"])
 
                 # Create key-value pair
                 packages_dict[package_name] = {
