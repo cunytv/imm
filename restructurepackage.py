@@ -10,7 +10,7 @@ import shutil
 import re
 
 class RestructurePackage:
-    def __init__(self):
+    def __init__(self, output_directory, package):
         self.FILES_DICT = {}
         self.TRANSFER_OKAY = True
 
