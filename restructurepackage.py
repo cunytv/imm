@@ -13,6 +13,7 @@ class RestructurePackage:
     def __init__(self, output_directory, package):
         self.FILES_DICT = {}
         self.TRANSFER_OKAY = True
+        os.makedirs(output_directory + f'/{package}', exist_ok=True)
 
     # Checks if directory is a mounted volume
     def mounted_volume(self, directory):
