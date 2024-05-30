@@ -56,6 +56,7 @@ def ingest():
         # Create package object from RestructurePackage class
         package_obj = restructurepackage.RestructurePackage(server, package)
         for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
+            package_obj.create_output_directory(server, package, card)
             package_obj.restructure_folder(input_path, server, package, card, packages_dict[package]["do_fixity"], packages_dict[package]["do_delete"])
             eject(input_path)
         packages_dict[package]["files_dict"] = package_obj.FILES_DICT
