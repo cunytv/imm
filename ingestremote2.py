@@ -180,7 +180,7 @@ if __name__ == "__main__":
     packages_dict = {}
 
     # Check if connected to server
-    server = "/Volumes/CUNYTV_Media/archive_projects/sxs_ingests-unique"
+    server = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
     server_check()
     #server = "/Users/archivesx/Desktop"
 

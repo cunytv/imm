@@ -12,7 +12,7 @@ import shutil
 
 package_name = input("Enter a package name for this material: ")
 
-outputdirectory = "/Volumes/CUNYTV_Media/archive_projects/sxs_ingests-unique"
+outputdirectory = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
 
 if not os.path.exists(outputdirectory):
 	print(f'you might not be connected to the server. Reconnect and try again')
@@ -41,7 +41,7 @@ for cameratype in os.listdir(cameradirectory):
 			# XQD workflow
 
 			if searchstring_xdroot in cameracard_id:
-				print(f'This is an XAVC. These files will rsync to the sxs_ingests-unique folder. Logs will be moved to metadata folder')
+				print(f'This is an XAVC. These files will rsync to the camera card ingests folder. Logs will be moved to metadata folder')
 			
 				sourcedirectory = "/Volumes/Untitled/"
 
@@ -147,7 +147,7 @@ for cameratype in os.listdir(cameradirectory):
 			#BPAV workflow. This is a workaround to handle shows shot in the radio studio. This will be revised.    				  					
 			
 			if searchstring_BPAV in cameracard_id:
-				print(f'This is SONY XDCAM BPAV. These files will rsync to the sxs_ingests-unique and will be rewrapped')
+				print(f'This is SONY XDCAM BPAV. These files will rsync to the camera card ingests folder and will be rewrapped')
 
 				sourcedirectory = "/Volumes/Untitled/"
 
@@ -190,7 +190,7 @@ for cameratype in os.listdir(cameradirectory):
 		searchstring_ssd = "DiskHFS"
 
 		if searchstring_ssd in cameratype:
-			print('This material is from an SSD. Will rsync to the sxs_ingests-unique folder')
+			print('This material is from an SSD. Will rsync to the camera card ingests folder')
 
 			inputdirectory = "/Volumes/DiskHFS/"
 
