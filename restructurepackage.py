@@ -111,50 +111,55 @@ class RestructurePackage:
                            do_fixity, do_delete):
         for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
             for file in filenames:
-                if file.startswith('.') or self.mac_system_metadata(file):
+                if any(pattern in file.lower() for pattern in ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.' , 'reverse' , 'shutdown', 'store' , 'plist', 'cab'])
                     continue
-                # Construct input and output paths
-                input_file_path = os.path.join(foldername, file)
-                output_file_path = os.path.join(output_directory, output_package_name, self.file_type(os.path.join(foldername, file)),
+
+                if self.mac_system_metadata(file):
+                    os.remove(os.path.join(foldername, file))
+                else:
+                    print(f'Transferring file {file}')
+                    # Construct input and output paths
+                    input_file_path = os.path.join(foldername, file)
+                    output_file_path = os.path.join(output_directory, output_package_name, self.file_type(os.path.join(foldername, file)),
                                                     output_subfolder_name, file)
-                # Check if file path is unique, otherwise appends counter
-                output_file_path = self.unique_file_path(output_file_path)
-                # Checksum variables
-                cs1 = None
-                cs2 = None
+                    # Check if file path is unique, otherwise appends counter
+                    output_file_path = self.unique_file_path(output_file_path)
+                    # Checksum variables
+                    cs1 = None
+                    cs2 = None
 
-                # Create pre-transfer checksum
-                if do_fixity:
-                    cs1 = self.calculate_sha256_checksum(input_file_path)
+                    # Create pre-transfer checksum
+                    if do_fixity:
+                        cs1 = self.calculate_sha256_checksum(input_file_path)
 
-                # Copy file from source to destination, iterate to next file if error
-                try:
-                    shutil.copy2(input_file_path, output_file_path)
-                except Exception as e:
-                    self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                    self.TRANSFER_OKAY = False
-                    print(f"An error occurred while copying the file: {e}")
-                    continue
-
-                # Create post-transfer checksum
-                if do_fixity:
-                    cs2 = self.calculate_sha256_checksum(output_file_path)
-                    if cs1 == cs2:
-                        print(f'File {file} transferred and passed fixity check')
-                        self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
-                        if do_delete:
-                            os.remove(input_file_path)
-                    else:
-                        print(f'File {file} transferred but did not pass fixity check')
+                    # Copy file from source to destination, iterate to next file if error
+                    try:
+                        shutil.copy2(input_file_path, output_file_path)
+                    except Exception as e:
                         self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
                         self.TRANSFER_OKAY = False
-                else:
-                    self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
-                    if do_delete:
-                        os.remove(input_file_path)
+                        print(f"An error occurred while copying the file: {e}")
+                        continue
 
-            if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
-                os.rmdir(foldername)
+                    # Create post-transfer checksum
+                    if do_fixity:
+                        cs2 = self.calculate_sha256_checksum(output_file_path)
+                        if cs1 == cs2:
+                            print(f'File {file} transferred and passed fixity check')
+                            self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
+                            if do_delete:
+                                os.remove(input_file_path)
+                        else:
+                            print(f'File {file} transferred but did not pass fixity check')
+                            self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                            self.TRANSFER_OKAY = False
+                    else:
+                        self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
+                        if do_delete:
+                            os.remove(input_file_path)
+
+                if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
+                    os.rmdir(foldername)
 
 
 if __name__ == "__main__":
