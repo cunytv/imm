@@ -60,18 +60,25 @@ class RestructurePackage:
     def file_type(self, file_path):
 
         # Number of streams
-        command = f"ffprobe -loglevel quiet -show_entries format=nb_streams -of default=nw=1:nk=1 {file_path} "
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        nb_streams = process.stdout.readline().strip()
+        command = f"ffprobe -loglevel quiet {file_path} -show_entries format=nb_streams -of default=nw=1:nk=1"
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   text=True)
+        nb_streams = process.stdout.readline()
 
         # Stream duration
-        command = f"ffprobe -loglevel quiet -show_entries stream=duration -of default=nw=1:nk=1 {file_path}"
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        duration = process.stdout.readline().strip()
+        command = f"ffprobe -loglevel quiet {file_path} -show_entries stream=duration -of default=nw=1:nk=1"
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   text=True)
+        duration = process.stdout.readline()
 
-        nb_streams = int(nb_streams) if nb_streams else 0
-        duration = float(duration) if duration else 0.0
-
+        if not nb_streams:
+            nb_streams = 0
+        else:
+            nb_streams = int(nb_streams)
+        if not duration:
+            duration = 0
+        else:
+            duration = float(duration)
 
         if nb_streams >= 1 and duration > 0:
             return ("objects")
@@ -106,49 +113,48 @@ class RestructurePackage:
             for file in filenames:
                 if file.startswith('.') or self.mac_system_metadata(file):
                     continue
-
-                    # Construct input and output paths
-                    input_file_path = os.path.join(foldername, file)
-                    output_file_path = os.path.join(output_directory, output_package_name, self.file_type(os.path.join(foldername, file)),
+                # Construct input and output paths
+                input_file_path = os.path.join(foldername, file)
+                output_file_path = os.path.join(output_directory, output_package_name, self.file_type(os.path.join(foldername, file)),
                                                     output_subfolder_name, file)
-                    # Check if file path is unique, otherwise appends counter
-                    output_file_path = self.unique_file_path(output_file_path)
-                    # Checksum variables
-                    cs1 = None
-                    cs2 = None
+                # Check if file path is unique, otherwise appends counter
+                output_file_path = self.unique_file_path(output_file_path)
+                # Checksum variables
+                cs1 = None
+                cs2 = None
 
-                    # Create pre-transfer checksum
-                    if do_fixity:
-                        cs1 = self.calculate_sha256_checksum(input_file_path)
+                # Create pre-transfer checksum
+                if do_fixity:
+                    cs1 = self.calculate_sha256_checksum(input_file_path)
 
-                    # Copy file from source to destination, iterate to next file if error
-                    try:
-                        shutil.copy2(input_file_path, output_file_path)
-                    except Exception as e:
-                        self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                        self.TRANSFER_OKAY = False
-                        print(f"An error occurred while copying the file: {e}")
-                        continue
+                # Copy file from source to destination, iterate to next file if error
+                try:
+                    shutil.copy2(input_file_path, output_file_path)
+                except Exception as e:
+                    self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                    self.TRANSFER_OKAY = False
+                    print(f"An error occurred while copying the file: {e}")
+                    continue
 
-                    # Create post-transfer checksum
-                    if do_fixity:
-                        cs2 = self.calculate_sha256_checksum(output_file_path)
-                        if cs1 == cs2:
-                            print(f'File {file} transferred and passed fixity check')
-                            self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
-                            if do_delete:
-                                os.remove(input_file_path)
-                        else:
-                            print(f'File {file} transferred but did not pass fixity check')
-                            self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                            self.TRANSFER_OKAY = False
-                    else:
-                        self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
+                # Create post-transfer checksum
+                if do_fixity:
+                    cs2 = self.calculate_sha256_checksum(output_file_path)
+                    if cs1 == cs2:
+                        print(f'File {file} transferred and passed fixity check')
+                        self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
                         if do_delete:
                             os.remove(input_file_path)
+                    else:
+                        print(f'File {file} transferred but did not pass fixity check')
+                        self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                        self.TRANSFER_OKAY = False
+                else:
+                    self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
+                    if do_delete:
+                        os.remove(input_file_path)
 
-                if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
-                    os.rmdir(foldername)
+            if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
+                os.rmdir(foldername)
 
 
 if __name__ == "__main__":
