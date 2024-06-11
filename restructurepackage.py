@@ -111,12 +111,19 @@ class RestructurePackage:
                            do_fixity, do_delete):
         for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
             for file in filenames:
+                if any(pattern in file.lower() for pattern in ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.' , 'reverse' , 'shutdown', 'store' , 'plist', 'cab', 'psid.db', 'Exclusion', 'Lion']):
+                    continue
+
                 if self.mac_system_metadata(file):
                     os.remove(os.path.join(foldername, file))
                 else:
                     print(f'Transferring file {file}')
                     # Construct input and output paths
                     input_file_path = os.path.join(foldername, file)
+
+                    if os.path.getsize(input_file_path) == 0:
+                        continue    
+
                     output_file_path = os.path.join(output_directory, output_package_name, self.file_type(os.path.join(foldername, file)),
                                                     output_subfolder_name, file)
                     # Check if file path is unique, otherwise appends counter
