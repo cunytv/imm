@@ -258,7 +258,7 @@ _report -d "Getting info about omneon inventory..."
 tree -XifspugD -L 1 --timefmt "%FT%T" --filesfirst "${OMNEON_PATH_CUNY}" "${OMNEON_PATH_NYCM}" | xml fo > "${OMNEON_TREE}"
 #### REPORT ON CUNY UNREGISTERED FILES
 _report -d "Getting info about CUNY files on omneon..."
-xmlstarlet sel -T -t -m "/tree/directory[@name='${OMNEON_PATH_CUNY}']/file" -v @prot -o " 1 " -v @user -o " " -v @group -o " " -v @size -o " " -v @time -o " " -v @name -n "${OMNEON_TREE}" > "${CUNY_ON_OMNEON_FILES_STAT}"
+xmlstarlet sel -T -t -m "/tree/directory[@name='${OMNEON_PATH_CUNY}']/file" -v @prot -o " 1 " -v @user -o " " -v @group -o " " -v @size -o " " -v @time -o " " -v @name -n "${OMNEON_TREE}" | sed 's|Domain Users|Domain_Users|g' > "${CUNY_ON_OMNEON_FILES_STAT}"
 if [[ ! -s "${CUNY_ON_OMNEON_FILES_STAT}" ]] ; then
     _report -w "Error: no files were found at ${OMNEON_PATH_CUNY}. Try again later."
     exit
@@ -267,7 +267,7 @@ cp "${CUNY_ON_OMNEON_FILES_STAT}" "${CUNY_ON_OMNEON_FILES_STAT_SNAPSHOT}"
 cut -d " " -f 7- "${CUNY_ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${CUNY_OMNEON_IDS}"
 awk -v date="${AGED_DATE}" '$6 <= date' "${CUNY_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${CUNY_OMNEON_IDS_OLD}"
 comm -2 -3 "${CUNY_OMNEON_IDS_OLD}" <(sort "${EVERGREEN_LIST}") > "$CUNY_OMNEON_IDS_NO_EVERGREEN"
-cat "${CUNY_ON_OMNEON_FILES_STAT}" | grep -v ".dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.mxf\)$" | cut -d " " -f 7- | cut -d/ -f 5- > "${CUNY_BAD_FILENAMES}"
+cat "${CUNY_ON_OMNEON_FILES_STAT}" | grep -v ".dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.mxf\)$" | awk -F "/" '{print $(NF)}' > "${CUNY_BAD_FILENAMES}"
 comm -2 -3 "${CUNY_OMNEON_IDS}" "${IDS_CUNYTV}" > "${CUNY_UNREGISTERED}"
 comm -1 -2 "${CUNY_OMNEON_IDS}" "${IDS_CUNYTV}" > "${CUNY_REGISTERED}"
 echo "filename,recport,recdate,source" > "${CUNY_UNREGISTERED_DETAILS}"
@@ -288,7 +288,7 @@ done < "${CUNY_UNREGISTERED}"
 
 #### REPORT ON NYCM UNREGISTERED FILES
 _report -d "Getting info about NYCM files on omneon..."
-xmlstarlet sel -T -t -m "/tree/directory[@name='${OMNEON_PATH_NYCM}']/file" -v @prot -o " 1 " -v @user -o " " -v @group -o " " -v @size -o " " -v @time -o " " -v @name -n "${OMNEON_TREE}" > "${NYCM_ON_OMNEON_FILES_STAT}"
+xmlstarlet sel -T -t -m "/tree/directory[@name='${OMNEON_PATH_NYCM}']/file" -v @prot -o " 1 " -v @user -o " " -v @group -o " " -v @size -o " " -v @time -o " " -v @name -n "${OMNEON_TREE}" | sed 's|Domain Users|Domain_Users|g' > "${NYCM_ON_OMNEON_FILES_STAT}"
 if [[ ! -s "${NYCM_ON_OMNEON_FILES_STAT}" ]] ; then
     _report -w "Error: no files were found at ${OMNEON_PATH_NYCM}. Try again later."
     exit
@@ -298,7 +298,7 @@ cp "${NYCMG4AIR}" "${NYCMG4AIR_SNAPSHOT}"
 cut -d " " -f 7- "${NYCM_ON_OMNEON_FILES_STAT}" |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${NYCM_OMNEON_IDS}"
 awk -v date="${AGED_DATE}" '$6 <= date' "${NYCM_ON_OMNEON_FILES_STAT}" | cut -d " " -f 7- |cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" > "${NYCM_OMNEON_IDS_OLD}"
 comm -2 -3 "${NYCM_OMNEON_IDS_OLD}" <(sort "${EVERGREEN_LIST}") > "$NYCM_OMNEON_IDS_NO_EVERGREEN"
-cat "${NYCM_ON_OMNEON_FILES_STAT}" | grep -v ".dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.mxf\)$" | awk '{print $7}' | cut -d/ -f 5- > "${NYCM_BAD_FILENAMES}"
+cat "${NYCM_ON_OMNEON_FILES_STAT}" | grep -v ".dir/[A-Z0-9][A-Z0-9_-]\+\(.mov\|.mxf\)$" | awk -F "/" '{print $(NF)}' > "${NYCM_BAD_FILENAMES}"
 comm -2 -3 "${NYCM_OMNEON_IDS}" "${IDS_NYCMG}" > "${NYCM_UNREGISTERED}"
 comm -1 -2 "${NYCM_OMNEON_IDS}" "${IDS_NYCMG}" > "${NYCM_REGISTERED}"
 echo "filename,recport,recdate,source" > "${NYCM_UNREGISTERED_DETAILS}"
@@ -341,7 +341,7 @@ if [ -s "${NYCM_BAD_FILENAMES}" ] ; then
 fi
 
 ### REPORT ON NEARLINE FILES
-gls -ld --time-style=+%FT%T "${NYCMG_NEARLINE_PATH}/"*.m[ox][vf] | grep -v "^d" > "${NYCMG_NEARLINE_STAT}"
+gls -ld --time-style=+%FT%T "${NYCMG_NEARLINE_PATH}/"*.m[ox][vf] | sed 's|Domain Users|Domain_Users|g' | grep -v "^d" > "${NYCMG_NEARLINE_STAT}"
 cut -d " " -f 7- "${NYCMG_NEARLINE_STAT}" | cut -d/ -f5 | cut -d. -f1 | sort | grep -v "^$" | grep -v "^ $" > "${NYCMG_NEARLINE}"
 comm -2 -3 "${NYCMG_NEARLINE}" "${NYCM_FILLER_IDS}" > "${NYCMG_NEARLINE_NOT_FILLER}"
 if [ ! -f "${CUNYTV_NEARLINE_STAT}" ] ; then
