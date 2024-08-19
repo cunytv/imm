@@ -60,15 +60,13 @@ class RestructurePackage:
     def file_type(self, file_path):
 
         # Number of streams
-        command = f"ffprobe -loglevel quiet {file_path} -show_entries format=nb_streams -of default=nw=1:nk=1"
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                   text=True)
+        command = ["ffprobe", "-loglevel", "quiet", file_path, "-show_entries", "format=nb_streams", "-of", "default=nw=1:nk=1"]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         nb_streams = process.stdout.readline()
 
         # Stream duration
-        command = f"ffprobe -loglevel quiet {file_path} -show_entries stream=duration -of default=nw=1:nk=1"
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                   text=True)
+        command = ["ffprobe", "-loglevel", "quiet", file_path, "-show_entries", "stream=duration", "-of", "default=nw=1:nk=1"]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         duration = process.stdout.readline()
 
         if not nb_streams:
