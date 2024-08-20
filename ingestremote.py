@@ -59,7 +59,7 @@ def ingest():
         for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
             package_obj.create_output_directory(server, package, card)
             package_obj.restructure_folder(input_path, server, package, card, packages_dict[package]["do_fixity"], packages_dict[package]["do_delete"])
-            #eject(input_path)
+            eject(input_path)
         packages_dict[package]["files_dict"] = package_obj.FILES_DICT
         packages_dict[package]["transfer_okay"] = package_obj.TRANSFER_OKAY
 
@@ -163,7 +163,7 @@ def ingest():
                 if not mac_system_metadata(filename):
                     filepath = os.path.join(root, filename)
                     
-                    xsanpath = os.path.join("/Users/cschlosser/Desktop/xsantest", dropbox_directory.rsplit("/", 2)[1], package)
+                    xsanpath = os.path.join("/Volumes/XsanVideo/Camera Card Delivery", dropbox_directory.rsplit("/", 2)[1], package)
                     if not os.path.exists(xsanpath):
                         os.makedirs(xsanpath)
                     shutil.copyfile(filepath, os.path.join(xsanpath, filename))
