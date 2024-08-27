@@ -5,6 +5,7 @@ import restructurepackage
 import ingestcommands
 import validateuserinput
 import dropboxuploadsession
+from dropboxuploadsession import DropboxUploadSession
 import sendnetworkmail
 import re
 import sys
@@ -102,26 +103,20 @@ def ingest():
         dropbox_directory = dropbox_prefix(package) + f'/{package}'
         emails = packages_dict[package]["emails"]
 
-        if packages_dict[package]["emails"] and packages_dict[package]["transfer_okay"] and (packages_dict[package]["makewindow_okay"] or packages_dict[package]["makewindow_okay"] is None):
-            do_dropbox = True
+        do_dropbox = packages_dict[package]["emails"] and packages_dict[package]["transfer_okay"] and (packages_dict[package]["makewindow_okay"] or packages_dict[package]["makewindow_okay"] is None)
+
+        if do_dropbox:
             uploadsession = dropboxuploadsession.DropboxUploadSession(server_object_directory)
-        else:
-            do_dropbox = False
 
-        for root, directories, files in os.walk(server_object_directory):
-            for filename in files:
-                if not mac_system_metadata(filename):
-                    filepath = os.path.join(root, filename)
-
-                    if do_dropbox:
-                        dropboxpath = dropbox_directory + f"/{filename}"
+        # upload to dropbox    
+        if do_dropbox:
+            for root, _, files in os.walk(server_object_directory):
+                for filename in files:
+                    if not mac_system_metadata(filename):
+                        filepath = os.path.join(root, filename)
+                        dropboxpath = os.path.join(dropbox_directory, filename)
                         uploadsession.upload_file_to_dropbox(filepath, dropboxpath)
-
-                    xsanpath = os.path.join("/Volumes/XsanVideo/Camera Card Delivery", dropbox_directory.rsplit("/", 2)[1] + f"/{package}")
-                    if not os.path.exists(xsanpath):
-                        os.makedirs(xsanpath)
-                    shutil.copyfile(filepath, os.path.join(xsanpath, filename))
-
+        
         if do_dropbox:
             # Bifurcate email type
             if emails:
@@ -162,6 +157,18 @@ def ingest():
             msg = f"{dropbox_directory} has finished uploading."
             uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory), False, msg)
 
+        # upload to Xsan
+        for root, _, files in os.walk(server_object_directory):
+            for filename in files:
+                if not mac_system_metadata(filename):
+                    filepath = os.path.join(root, filename)
+                    
+                    xsanpath = os.path.join("/Volumes/XsanVideo/Camera Card Delivery", dropbox_directory.rsplit("/", 2)[1], package)
+                    if not os.path.exists(xsanpath):
+                        os.makedirs(xsanpath)
+                    shutil.copyfile(filepath, os.path.join(xsanpath, filename))
+
+        
 # Ejects mounted drive
 def eject(path):
     subprocess.run(["diskutil", "eject", path])
@@ -205,13 +212,14 @@ if __name__ == "__main__":
                 do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
                 #do_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
                 do_delete = False
-                do_commands = (input("\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
-                do_dropbox = (input("\tUpload to dropbox? y/n: ")).lower() == 'y'
+                do_commands = (input("\tRun makewindow, makemetdata, checksumpackage? If ingesting multiple cards, run this command when ingesting the last card. y/n?: ")).lower() == 'y'
+                do_dropbox = (input("\tUpload to dropbox? If ingesting multiple cards, run this command when ingesting the last card. y/n: ")).lower() == 'y'
                 emails = []
                 if do_dropbox:
                     emails = validateuserinput.emails(input("\tList email(s) delimited by space or press enter to continue: "))
                     emails.extend(["library@tv.cuny.edu"])
-                    #emails.extend(["agarrkoch@gmail.com"])
+                    #email_input = input("\tList email(s) delimited by space or press enter to continue: ")
+                    #emails = validateuserinput.emails(email_input)
 
                 # Create key-value pair
                 packages_dict[package_name] = {
