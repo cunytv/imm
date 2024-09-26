@@ -103,6 +103,18 @@ def ingest():
         dropbox_directory = dropbox_prefix(package) + f'/{package}'
         emails = packages_dict[package]["emails"]
 
+        # upload to Xsan
+        for root, _, files in os.walk(server_object_directory):
+            for filename in files:
+                if not mac_system_metadata(filename):
+                    filepath = os.path.join(root, filename)
+                    
+                    xsanpath = os.path.join("/Volumes/XsanVideo/Camera Card Delivery", dropbox_directory.rsplit("/", 2)[1], package)
+                    if not os.path.exists(xsanpath):
+                        os.makedirs(xsanpath)
+                    shutil.copyfile(filepath, os.path.join(xsanpath, filename))
+
+
         do_dropbox = packages_dict[package]["emails"] and packages_dict[package]["transfer_okay"] and (packages_dict[package]["makewindow_okay"] or packages_dict[package]["makewindow_okay"] is None)
 
         if do_dropbox:
