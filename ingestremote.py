@@ -97,7 +97,26 @@ def ingest():
         if not makechecksumpackage_okay:
             packages_dict[package]["makechecksumpackage_error"] = makechecksumpackage_error
 
-    # 3. Upload to dropbox & transfer to XSAN packages that have successfully transferred, went through makewindow, and send email notification
+    # 3. Transfer to XSAN
+    for package in packages_dict:
+        src_dir = os.path.join(server, package, "objects")
+        dest_dir = os.path.join("/Volumes/XsanVideo/Camera Card Delivery", package)
+        os.makedirs(dest_dir, exist_ok=True)
+
+        # Traverse the source directory
+        for root, dirs, files in os.walk(src_dir):
+            for file in files:
+                # Construct the full file path
+                src_file_path = os.path.join(root, file)
+                # Construct the destination file path
+                dest_file_path = os.path.join(dest_dir, file)
+
+                # Copy the file to the destination
+                shutil.copy2(src_file_path, dest_file_path)
+                print(f'Copied: {src_file_path} to {dest_file_path}')
+
+    
+    # 4. Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
     for package in packages_dict:
         server_object_directory = os.path.join(server, package) + "/objects"
         dropbox_directory = dropbox_prefix(package) + f'/{package}'
@@ -156,17 +175,6 @@ def ingest():
             if other_emails is not None:
                 msg = f"{dropbox_directory} has finished uploading."
                 uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory), False, msg)
-
-        # upload to Xsan
-        for root, _, files in os.walk(server_object_directory):
-            for filename in files:
-                if not mac_system_metadata(filename):
-                    filepath = os.path.join(root, filename)
-                    
-                    xsanpath = os.path.join("/Volumes/XsanVideo/Camera Card Delivery", dropbox_directory.rsplit("/", 2)[1], package)
-                    if not os.path.exists(xsanpath):
-                        os.makedirs(xsanpath)
-                    shutil.copyfile(filepath, os.path.join(xsanpath, filename))
 
         
 # Ejects mounted drive
