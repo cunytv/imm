@@ -54,23 +54,33 @@ def mac_system_metadata(file):
     if '.' not in file or file.startswith('.'):
         return True
 
+# Extracts showcode from package name string
+def get_showcode(input_string):
+    # Split at first underescore
+    input_string = input_string.split('_', 1)[0]  # Max split of 1
+    
+    # Search for the first digit in the string
+    match = re.search(r'(\d)', input_string)
+
+    if not match:
+        # No numbers found, return the whole string
+        return input_string.strip()
+
+    # If a number is found, get the position of the first digit
+    first_number_index = match.start()
+
+    # Extract the substring before the first number
+    substring = input_string[:first_number_index].strip()
+
+    if substring:  # If there's something before the number
+        return substring
+    else:  # If there's nothing before the first number
+        return "NOSHOW"
+
 # Creates dropbox upload prefix by concatenating scoped folder with show code
 def dropbox_prefix(s):
-    # Split string at first underscore
-    s = s.split('_', 1)[0]
-
-    # Find string before first digit
-    match = re.search(r'\d', s)
-    if match:
-        showcode = s[:match.start()]
-    else:
-        showcode = s
-
-    # Dropbox path
-    if showcode:
-        return f'/_CUNY TV CAMERA CARD DELIVERY/{showcode}'
-    else:
-        return '/_CUNY TV CAMERA CARD DELIVERY/NOSHOW'
+    showcode = get_showcode(s)
+    return f'/_CUNY TV CAMERA CARD DELIVERY/{showcode}'
 
 # Ingests files
 def ingest():
@@ -122,7 +132,8 @@ def ingest():
     # 3. Transfer to XSAN
     for package in packages_dict:
         src_dir = os.path.join(server, package, "objects")
-        dest_dir = os.path.join("/Volumes/XsanVideo/Camera Card Delivery", package)
+        showcode = get_showcode(package)
+        dest_dir = os.path.join("/Volumes/XsanVideo/Camera Card Delivery",showcode, package)
         os.makedirs(dest_dir, exist_ok=True)
 
         # Traverse the source directory
@@ -132,6 +143,16 @@ def ingest():
                 src_file_path = os.path.join(root, file)
                 # Construct the destination file path
                 dest_file_path = os.path.join(dest_dir, file)
+
+                # Handle potential filename collisions by renaming files
+                if os.path.exists(dest_file_path):
+                    base, extension = os.path.splitext(file)
+                    counter = 1
+                    new_dest_file_path = os.path.join(dest_dir, f"{base}_{counter}{extension}")
+                    while os.path.exists(new_dest_file_path):
+                        counter += 1
+                        new_dest_file_path = os.path.join(dest_dir, f"{base}_{counter}{extension}")
+                    dest_file_path = new_dest_file_path
 
                 # Copy the file to the destination
                 shutil.copy2(src_file_path, dest_file_path)
