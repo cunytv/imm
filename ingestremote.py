@@ -119,11 +119,10 @@ def ingest():
         
         if do_dropbox:
             # Bifurcate email type
+            cuny_emails = []
+            other_emails = []
             if emails:
                 for email in emails:
-                    cuny_emails = []
-                    other_emails = []
-
                     if "@tv.cuny.edu" in email:
                         cuny_emails.append(email)
                     else:
@@ -154,8 +153,9 @@ def ingest():
             notification.send()
 
             # Send dropbox notification to non-CUNY recipients
-            msg = f"{dropbox_directory} has finished uploading."
-            uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory), False, msg)
+            if other_emails is not None:
+                msg = f"{dropbox_directory} has finished uploading."
+                uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory), False, msg)
 
         # upload to Xsan
         for root, _, files in os.walk(server_object_directory):
