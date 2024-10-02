@@ -5,6 +5,7 @@ import restructurepackage
 import ingestcommands
 import validateuserinput
 import dropboxuploadsession
+import cunymediaids
 from dropboxuploadsession import DropboxUploadSession
 import sendnetworkmail
 import re
@@ -26,6 +27,27 @@ def countdown(seconds):
         print(i, end='...', flush=True)
         time.sleep(1)
     print()
+
+# Prints first ten filenames in a directory
+def print_first_ten_filenames(src_dir):
+    file_count = 0  # Counter for files found
+    filenames = []   # List to store the filenames
+
+    # Traverse the source directory
+    for root, dirs, files in os.walk(src_dir):
+        for file in files:
+            filenames.append(file)  # Add the filename to the list
+            file_count += 1
+
+            if file_count >= 10:  # Stop after collecting 5 files
+                break
+        if file_count >= 10:  # Break the outer loop as well
+            break
+
+    if filenames:
+        print("...".join(filenames))  # Print the filenames joined by semicolons
+    else:
+        print("No files found in the directory.")
 
 # Checks if file is mac system metadata
 def mac_system_metadata(file):
@@ -207,10 +229,13 @@ if __name__ == "__main__":
     if not volume_paths:
         print("No cards detected")
     else:
+        cunymediaids.print_media_dict()
+        print()
         print(f"{len(volume_paths)} card(s) detected")
 
         for input_path in volume_paths:
             print(f"- {input_path}")
+            print_first_ten_filenames(input_path)
 
             package_name = validateuserinput.card_package_name(input(f"\tEnter a package name: "))
             camera_card_number = validateuserinput.card_subfolder_name(input(f"\tEnter the corresponding card number or name on sticker (serialize from 1 if none): "))
