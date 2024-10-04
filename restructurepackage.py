@@ -11,8 +11,10 @@ import re
 
 class RestructurePackage:
     def __init__(self, output_directory, package):
-        self.FILES_DICT = {}
-        self.TRANSFER_OKAY = True
+        self.ARCHIVE_FILES_DICT = {}
+        self.ARCHIVE_TRANSFER_OKAY = True
+        self.DELIVERY_FILES_DICT = {}
+        self.DELIVERY_TRANSFER_OKAY = True
         os.makedirs(output_directory +f'/{package}', exist_ok=True)
 
     # Checks if directory is a mounted volume
@@ -104,8 +106,8 @@ class RestructurePackage:
 
         return (hash_object.hexdigest())
 
-    # Copies files into package structure, performs fixity check (optional), deletes old directory (optional)
-    def restructure_folder(self, input_folder_path, output_directory, output_package_name, output_subfolder_name,
+    # Copies files into archive package structure, performs fixity check (optional), deletes old directory (optional)
+    def archive_restructure_folder(self, input_folder_path, output_directory, output_package_name, output_subfolder_name,
                            do_fixity, do_delete):
         for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
             for file in filenames:
@@ -115,7 +117,7 @@ class RestructurePackage:
                 if self.mac_system_metadata(file):
                     os.remove(os.path.join(foldername, file))
                 else:
-                    print(f'Transferring file {file}')
+                    print(f'Transferring file {file} to CUNYTV Media')
                     # Construct input and output paths
                     input_file_path = os.path.join(foldername, file)
 
@@ -138,8 +140,8 @@ class RestructurePackage:
                     try:
                         shutil.copy2(input_file_path, output_file_path)
                     except Exception as e:
-                        self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                        self.TRANSFER_OKAY = False
+                        self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                        self.ARCHIVE_TRANSFER_OKAY = False
                         print(f"An error occurred while copying the file: {e}")
                         continue
 
@@ -148,29 +150,75 @@ class RestructurePackage:
                         cs2 = self.calculate_sha256_checksum(output_file_path)
                         if cs1 == cs2:
                             print(f'File {file} transferred and passed fixity check')
-                            self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
+                            self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
                             if do_delete:
                                 os.remove(input_file_path)
                         else:
                             print(f'File {file} transferred but did not pass fixity check')
-                            self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                            self.TRANSFER_OKAY = False
+                            self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                            self.ARCHIVE_TRANSFER_OKAY = False
                     else:
-                        self.FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
+                        self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
                         if do_delete:
                             os.remove(input_file_path)
 
                 if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
                     os.rmdir(foldername)
 
+    # Copies files into archive package structure, performs fixity check (optional), deletes old directory (optional)
+    def delivery_restructure_folder(self, input_folder_path, output_directory, output_package_name,
+                           do_fixity):
+        for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
+            for file in filenames:
+                if any(pattern in file.lower() for pattern in ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.' , 'reverse' , 'shutdown', 'store' , 'plist', 'cab', 'psid.db', 'Exclusion', 'Lion']):
+                    continue
+
+                if self.mac_system_metadata(file):
+                    os.remove(os.path.join(foldername, file))
+                else:
+                    print(f'Transferring file {file} to XSAN')
+                    # Construct input and output paths
+                    input_file_path = os.path.join(foldername, file)
+
+                    if os.path.getsize(input_file_path) == 0:
+                        continue
+
+                    output_file_path = os.path.join(output_directory, output_package_name, file)
+                    os.makedirs(os.path.join(output_directory, output_package_name), exist_ok=True)
+                    # Check if file path is unique, otherwise appends counter
+                    output_file_path = self.unique_file_path(output_file_path)
+                    # Checksum variables
+                    cs1 = None
+                    cs2 = None
+
+                    # Create pre-transfer checksum
+                    if do_fixity:
+                        cs1 = self.calculate_sha256_checksum(input_file_path)
+
+                    # Copy file from source to destination, iterate to next file if error
+                    try:
+                        shutil.copy2(input_file_path, output_file_path)
+                    except Exception as e:
+                        self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                        self.DELIVERY_TRANSFER_OKAY = False
+                        print(f"An error occurred while copying the file: {e}")
+                        continue
+
+                    # Create post-transfer checksum
+                    if do_fixity:
+                        cs2 = self.calculate_sha256_checksum(output_file_path)
+                        if cs1 == cs2:
+                            print(f'File {file} transferred and passed fixity check')
+                            self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
+                        else:
+                            print(f'File {file} transferred but did not pass fixity check')
+                            self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                            self.DELIVERY_TRANSFER_OKAY = False
+                    else:
+                        self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
+
 
 if __name__ == "__main__":
-    # Create package object
-    package = RestructurePackage()
-
-    # Array of input folder and output subfolder tuples (input, output)
-    input_output_tuples = []
-
     # Input folder to be restructured
     input_directory = validateuserinput.path(input("Input folder path: "))
 
@@ -180,6 +228,10 @@ if __name__ == "__main__":
         output_directory = input_directory.rsplit('/', 1)[0]
     else:
         output_directory = validateuserinput.path(output_directory)
+
+
+    # Array of input folder and output subfolder tuples (input, output)
+    input_output_tuples = []
 
     # Package follow the structure of package_name/metadata | objects /subfolder_name
     # The files from the input folder path are saved in the subfolder_name
@@ -200,13 +252,16 @@ if __name__ == "__main__":
     do_delete = (input("Delete folder after succesful transfer? y/n: ")).lower() == 'y'
     do_commands = (input("Run makeyoutube, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
 
+    # Create package object
+    package = RestructurePackage(output_directory, package_name)
+
     # Begin file processing
     for tuple in input_output_tuples:
         package.create_output_directory(output_directory, package_name, package_subfolder_name)
-        package.restructure_folder(tuple[0], output_directory, package_name, tuple[1], do_fixity, do_delete)
+        package.archive_restructure_folder(tuple[0], output_directory, package_name, tuple[1], do_fixity, do_delete)
 
     # If user wants commands to run and transfer occured with no issues
-    if do_commands and package.TRANSFER_OKAY:
+    if do_commands and package.ARCHIVE_TRANSFER_OKAY:
         ingestcommands.commands(os.path.join(output_directory, package_name))
 
     #print error log in output directory
