@@ -86,25 +86,41 @@ class RestructurePackage:
             return ("metadata/logs")
 
     # Creates checksum
-    def calculate_sha256_checksum(self, file_path):
-        # Open the file for reading in binary mode
+    def calculate_sha256_checksum(self, file_path, block_size=4 * 1024 * 1024):
+        # Get the total size of the file
         total_size = os.path.getsize(file_path)
-        block_size = 4096  # Adjust as needed
         hash_object = hashlib.sha256()
         bytes_read = 0
+        block_hashes = []
 
+        # Open the file for reading in binary mode
         with open(file_path, 'rb') as f:
             while True:
-                chunk = f.read(block_size)
-                if not chunk:
-                    break
-                hash_object.update(chunk)
-                bytes_read += len(chunk)
+                # Read a block of data
+                block = f.read(block_size)
+                if not block:
+                    break  # End of file
+
+                # Compute the hash of the block and store it
+                block_hash = hashlib.sha256(block).digest()
+                block_hashes.append(block_hash)
+
+                # Update the total bytes read
+                bytes_read += len(block)
+
+                # Update the main hash with the current block hash
+                hash_object.update(block_hash)
+
+                # Calculate and display progress
                 progress = min(int((bytes_read / total_size) * 100), 100)
                 sys.stdout.write("\rChecksum progress: [{:<50}] {:d}% ".format('=' * (progress // 2), progress))
                 sys.stdout.flush()
 
-        return (hash_object.hexdigest())
+        # Compute the final hash of the concatenated block hashes
+        final_hash = hash_object.hexdigest()
+
+        print()  # Move to the next line after progress
+        return final_hash
 
     # Copies files into archive package structure, performs fixity check (optional), deletes old directory (optional)
     def archive_restructure_folder(self, input_folder_path, output_directory, output_package_name, output_subfolder_name,
@@ -167,7 +183,7 @@ class RestructurePackage:
 
     # Copies files into archive package structure, performs fixity check (optional), deletes old directory (optional)
     def delivery_restructure_folder(self, input_folder_path, output_directory, output_package_name,
-                           do_fixity):
+                           do_fixity, files_dict):
         for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
             for file in filenames:
                 if any(pattern in file.lower() for pattern in ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.' , 'reverse' , 'shutdown', 'store' , 'plist', 'cab', 'psid.db', 'Exclusion', 'Lion']):
@@ -191,9 +207,14 @@ class RestructurePackage:
                     cs1 = None
                     cs2 = None
 
-                    # Create pre-transfer checksum
-                    if do_fixity:
+                    # Create pre-transfer checksum or retrieve existing checksum from files_dict
+                    if do_fixity and files_dict is None:
                         cs1 = self.calculate_sha256_checksum(input_file_path)
+                    elif do_fixity and files_dict:
+                        for key, value in files_dict.items():
+                            if key[1] == input_file_path:  # Check the destination path
+                                cs1 = value[1]  # The first element is the checksum
+                                break
 
                     # Copy file from source to destination, iterate to next file if error
                     try:
