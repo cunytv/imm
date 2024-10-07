@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+
 from email.mime.image import MIMEImage
 import subprocess
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 class SendNetworkEmail:
     def __init__(self):
@@ -45,12 +48,20 @@ class SendNetworkEmail:
         text = MIMEText(content, 'html')
         self.MSG.attach(text)
 
-    #def image(self):
-        # Add an image attachment
-        #with open("/Users/archivesx/Desktop/Felis_silvestris_silvestris_small_gradual_decrease_of_quality.png", 'rb') as fp:
-        #    img = MIMEImage(fp.read())
-        #img.add_header('Content-Disposition', 'attachment', filename="image.jpg")
-        #msg.attach(img)
+    def attachment(self, file):
+        try:
+            with open(file, 'rb') as attachment:
+                part = MIMEBase('application', 'octet-stream')
+                part.set_payload(attachment.read())
+                encoders.encode_base64(part)
+                part.add_header(
+                    'Content-Disposition',
+                    f'attachment; filename={file.split("/")[-1]}'
+                )
+                self.MSG.attach(part)
+        except Exception as e:
+            print(f"Failed to attach the file: {e}")
+            return
 
     def send(self):
         # Print the MIME message
