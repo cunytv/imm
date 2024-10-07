@@ -127,7 +127,8 @@ def XSAN_access_transfer(package_obj, package, access_input_path, access_output_
             else:
                 packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, None]
 
-def print_log(log_dest, package):
+
+def print_log(log_dest, package, packages_dict):
     # Specify the order for printing
     keys_order = [
         'cards',
@@ -144,8 +145,10 @@ def print_log(log_dest, package):
         'MAKEMETADATA_error',
         'MAKECHECKSUMPACKAGE_okay',
         'MAKECHECKSUMPACKAGE_error',
+        'DROPBOX_transfer_okay',
         'ARCHIVE_files_dict',
-        'DELIVERY_files_dict'
+        'DELIVERY_files_dict',
+        'DROPBOX_files_dict'  # Fixed missing comma
     ]
 
     with open(log_dest, 'w') as f:
@@ -155,6 +158,7 @@ def print_log(log_dest, package):
             if key in packages_dict[package]:
                 value = packages_dict[package][key]
                 f.write(f"{key}:\n")
+
                 if isinstance(value, list):
                     for item in value:
                         f.write(f"  - {item}\n")
@@ -178,6 +182,57 @@ def print_log(log_dest, package):
 
                 f.write("\n")  # Extra newline for spacing
 
+    ato = packages_dict[package]["ARCHIVE_transfer_okay"]
+    dto = packages_dict[package]["DELIVERY_transfer_okay"]
+    mwo = packages_dict[package]["MAKEWINDOW_okay"]
+    mmo = packages_dict[package]["MAKEMETADATA_okay"]
+    mcpo = packages_dict[package]["MAKECHECKSUMPACKAGE_okay"]
+    dbto = packages_dict[package]["DROPBOX_transfer_okay"]
+
+    if ato is False or dto is False or mwo is False or mmo is False or mcpo is False or dbto is False:
+        atop = f"ARCHIVE_transfer_okay...{ato}"
+        dtop = f"DELIVERY_transfer_okay...{dto}"
+        mwop = f"MAKEWINDOW_okay...{mwo}"
+        mmop = f"MAKEMETADATA_okay...{mmo}"
+        mcpop = f"MAKECHECKSUMPACKAGE_okay...{mcpo}"
+        dbtop = f"DROPBOX_transfer_okay...{dbto}"
+
+        notification = sendnetworkmail.SendNetworkEmail()
+        notification.sender("library@tv.cuny.edu")
+        notification.recipients(["library@tv.cuny.edu"])
+        notification.subject(f"Ingest error: {package}")
+
+        # Write text content with HTML formatting
+        html_content = f"""
+                        <html>
+                          <body>
+                            <p>Hello, </p>
+                            <p></p>
+                            <p>An error occuring during ingest: </p>
+                            <br>
+                            {atop}<br>
+                            {dtop}<br>
+                            {mwop}<br>
+                            {mmop}<br>
+                            {mcpop}<br>
+                            {dbtop}<br>
+                            <br>
+                            <p>Check attachment for more information or navigate to {os.path.join(server, package, "metadata", "ingestlog.txt")}</p>
+                            <p>Best, </p>
+                            <p>Library Bot</p>
+                          </body>
+                        </html>
+                        """
+
+        notification.content(html_content)
+        # Specify the attachment path
+        attachment_path = os.path.join(server, package, "metadata", "ingestlog.txt")
+
+        # Add the attachment
+        notification.attachment(attachment_path)
+
+        notification.send()
+
 # Ingests files
 def ingest():
     # 1. Transfer files to server
@@ -191,14 +246,20 @@ def ingest():
                                            packages_dict[package]["do_delete"])
             eject(input_path)
 
-        # Transfer files to XSAN
-        package_obj.delivery_restructure_folder(os.path.join(server, package, "objects"), os.path.join(server2, get_showcode(package)), package, packages_dict[package]["do_fixity"])
 
-        # Save transfer results and checksums
+        # Save archive transfer results and checksums
         packages_dict[package]["ARCHIVE_files_dict"] = package_obj.ARCHIVE_FILES_DICT
         packages_dict[package]["ARCHIVE_transfer_okay"] = package_obj.ARCHIVE_TRANSFER_OKAY
+
+        # Transfer files to XSAN
+        package_obj.delivery_restructure_folder(os.path.join(server, package, "objects"), os.path.join(server2, get_showcode(package)), package, packages_dict[package]["do_fixity"], packages_dict[package]["ARCHIVE_files_dict"])
+
+        # Save delivery transfer results and checksums
         packages_dict[package]["DELIVERY_files_dict"] = package_obj.DELIVERY_FILES_DICT
         packages_dict[package]["DELIVERY_transfer_okay"] = package_obj.DELIVERY_TRANSFER_OKAY
+
+        #print
+        #print(packages_dict[package])
 
     # 2. Perform ingest scripts on successfully transferred packages
     for package in packages_dict:
@@ -243,12 +304,12 @@ def ingest():
 
     # 3. Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
     for package in packages_dict:
+        do_dropbox = packages_dict[package]["emails"] and packages_dict[package]["ARCHIVE_transfer_okay"] and (
+                    packages_dict[package]["MAKEWINDOW_okay"] or packages_dict[package]["MAKEWINDOW_okay"] is None)
+
         server_object_directory = os.path.join(server, package) + "/objects"
         dropbox_directory = dropbox_prefix(package) + f'/{package}'
         emails = packages_dict[package]["emails"]
-
-        do_dropbox = packages_dict[package]["emails"] and packages_dict[package]["transfer_okay"] and (
-                    packages_dict[package]["MAKEWINDOW_okay"] or packages_dict[package]["MAKEWINDOW_okay"] is None)
 
         if do_dropbox:
             uploadsession = dropboxuploadsession.DropboxUploadSession(server_object_directory)
@@ -258,53 +319,67 @@ def ingest():
                     if not mac_system_metadata(filename):
                         filepath = os.path.join(root, filename)
                         dropboxpath = os.path.join(dropbox_directory, filename)
-                        uploadsession.upload_file_to_dropbox(filepath, dropboxpath)
 
-            # Bifurcate email type
-            cuny_emails = []
-            other_emails = []
-            if emails:
-                for email in emails:
-                    if "@tv.cuny.edu" in email:
-                        cuny_emails.append(email)
-                    else:
-                        other_emails.append(email)
+                        try:
+                            uploadsession.upload_file_to_dropbox(filepath, dropboxpath, packages_dict[package]["do_fixity"], packages_dict[package]["DELIVERY_files_dict"])
+                        except ConnectionError:
+                            print("Connection error.")
 
-            # Send network email to CUNY recipients
-            uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
-            notification = sendnetworkmail.SendNetworkEmail()
-            notification.sender("library@tv.cuny.edu")
-            notification.recipients(cuny_emails)
-            notification.subject(f"Dropbox Upload: {package}")
+            packages_dict[package]["DROPBOX_files_dict"] = uploadsession.DROPBOX_FILES_DICT
+            packages_dict[package]["DROPBOX_transfer_okay"] = uploadsession.DROPBOX_TRANSFER_OKAY
 
-            # Write text content with HTML formatting
-            html_content = f"""
-            <html>
-              <body>
-                <p>Hello, </p>
-                <p></p>
-                <p>See the link below: </p>
-                <p><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.</p>
-                <p>Best, </p>
-                <p>Library Bot</p>
-              </body>
-            </html>
-            """
 
-            notification.content(html_content)
-            notification.send()
+            # Send email notification if Dropbox transfer goes well.
+            if packages_dict[package]["DROPBOX_transfer_okay"]:
+                # Bifurcate email type
+                cuny_emails = []
+                other_emails = []
+                if emails:
+                    for email in emails:
+                        if "@tv.cuny.edu" in email:
+                            cuny_emails.append(email)
+                        else:
+                            other_emails.append(email)
 
-            # Send dropbox notification to non-CUNY recipients
-            if other_emails is not None:
-                msg = f"{dropbox_directory} has finished uploading."
-                uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
-                                                False, msg)
-    # 4. Print logs
+                # Send network email to CUNY recipients
+                uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
+                notification = sendnetworkmail.SendNetworkEmail()
+                notification.sender("library@tv.cuny.edu")
+                notification.recipients(cuny_emails)
+                notification.subject(f"Dropbox Upload: {package}")
+
+                # Write text content with HTML formatting
+                html_content = f"""
+                <html>
+                  <body>
+                    <p>Hello, </p>
+                    <p></p>
+                    <p>See the link below: </p>
+                    <p><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.</p>
+                    <p>Best, </p>
+                    <p>Library Bot</p>
+                  </body>
+                </html>
+                """
+
+                notification.content(html_content)
+                notification.send()
+
+                # Send dropbox notification to non-CUNY recipients
+                if other_emails is not None:
+                    msg = f"{dropbox_directory} has finished uploading."
+                    uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
+                                                    False, msg)
+        else:
+            packages_dict[package]["DROPBOX_files_dict"] = None
+            packages_dict[package]["DROPBOX_transfer_okay"] = None
+
+
+    # 4. Print logs and send email to library in case of errror
     for package in packages_dict:
         # Write dictionary to a text file
         log_dest = os.path.join(server, package, "metadata", "ingestlog.txt" )
-        print_log(log_dest, package)
-
+        print_log(log_dest, package, packages_dict)
 
 # Ejects mounted drive
 def eject(path):
@@ -368,6 +443,7 @@ if __name__ == "__main__":
                     emails = validateuserinput.emails(
                         input("\tList email(s) delimited by space or press enter to continue: "))
                     emails.extend(["library@tv.cuny.edu"])
+                    #emails.extend(["agarrkoch@gmail.com"])
                     # email_input = input("\tList email(s) delimited by space or press enter to continue: ")
                     # emails = validateuserinput.emails(email_input)
 
