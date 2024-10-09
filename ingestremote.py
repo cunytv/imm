@@ -216,8 +216,8 @@ def print_log(log_dest, package, packages_dict):
     if not all([ato, dto, mwo, mmo, mcpo, dbto]):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
-        #notification.recipients(["library@tv.cuny.edu"])
-        notification.recipients(["aida.garrido@tv.cuny.edu"])
+        notification.recipients(["library@tv.cuny.edu"])
+        #notification.recipients(["aida.garrido@tv.cuny.edu"])
         notification.subject(f"Ingest error: {package}")
 
         # Exclude the last three keys
@@ -448,13 +448,13 @@ if __name__ == "__main__":
     packages_dict = {}
 
     # Check if connected to servers
-    #server = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
-    #server_check(server)
-    server = "/Users/aidagarrido/Desktop"
+    server = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
+    server_check(server)
+    #server = "/Users/aidagarrido/Desktop"
 
-    server2 = "/Users/aidagarrido/Desktop/Camera Card Delivery"
-    #server2 = "/Volumes/XsanVideo/Camera Card Delivery"
-    #server_check(server2)
+    #server2 = "/Users/aidagarrido/Desktop/Camera Card Delivery"
+    server2 = "/Volumes/XsanVideo/Camera Card Delivery"
+    server_check(server2)
 
     # Detect recently inserted drives and cards
     countdown(5)
@@ -489,8 +489,8 @@ if __name__ == "__main__":
                 if do_dropbox:
                     emails = validateuserinput.emails(
                         input("\tList email(s) delimited by space or press enter to continue: "))
-                    #emails.extend(["library@tv.cuny.edu"])
-                    emails.extend(["agarrkoch@gmail.com"])
+                    emails.extend(["library@tv.cuny.edu"])
+                    #emails.extend(["agarrkoch@gmail.com"])
                     # email_input = input("\tList email(s) delimited by space or press enter to continue: ")
                     # emails = validateuserinput.emails(email_input)
 
