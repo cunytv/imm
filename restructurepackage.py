@@ -7,14 +7,17 @@ import os
 import hashlib
 import subprocess
 import shutil
+import time
 import re
 
 class RestructurePackage:
     def __init__(self, output_directory, package):
         self.ARCHIVE_FILES_DICT = {}
         self.ARCHIVE_TRANSFER_OKAY = True
+        self.ARCHIVE_TRANSFER_ERROR = ''
         self.DELIVERY_FILES_DICT = {}
         self.DELIVERY_TRANSFER_OKAY = True
+        self.DELIVERY_TRANSFER_ERROR = ''
         os.makedirs(output_directory +f'/{package}', exist_ok=True)
 
     # Checks if directory is a mounted volume
@@ -85,6 +88,31 @@ class RestructurePackage:
         else:
             return ("metadata/logs")
 
+    def file_transfer(self, input_file_path, output_file_path):
+        # Variables for retry loop
+        max_retries = 3
+        retries = 0
+        # Copy file from source to destination, iterate to next file if error
+        while retries < max_retries:
+            try:
+                if not os.path.exists(input_file_path):
+                    raise FileNotFoundError(f"{input_file_path} does not exist.")
+
+                shutil.copy2(input_file_path, output_file_path)
+                # If successful, break out of the retry loop
+                print(f"Successfully copied {input_file_path} to {output_file_path}.")
+                return None, True
+
+            except Exception as e:
+                retries += 1
+                print(f"Attempt {retries} of {max_retries} failed: An error occurred while copying the file: {e}")
+                if retries >= max_retries:
+                    print(
+                        f"Failed to copy {input_file_path} after {max_retries} attempts. Moving to the next file.")
+                    return e, False
+                else:
+                    time.sleep(2)  # Optional wait before retrying
+
     # Creates checksum
     def calculate_sha256_checksum(self, file_path, block_size=4 * 1024 * 1024):
         # Get the total size of the file
@@ -152,31 +180,48 @@ class RestructurePackage:
                     if do_fixity:
                         cs1 = self.calculate_sha256_checksum(input_file_path)
 
-                    # Copy file from source to destination, iterate to next file if error
-                    try:
-                        shutil.copy2(input_file_path, output_file_path)
-                    except Exception as e:
-                        self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                        self.ARCHIVE_TRANSFER_OKAY = False
-                        print(f"An error occurred while copying the file: {e}")
-                        continue
+                    # Transfer file using file_transfer method, which returns boolean upon succesful or unsuccesful transfer
+                    self.ARCHIVE_TRANSFER_ERROR, self.ARCHIVE_TRANSFER_OKAY = self.file_transfer(input_file_path, output_file_path)
 
-                    # Create post-transfer checksum
-                    if do_fixity:
-                        cs2 = self.calculate_sha256_checksum(output_file_path)
-                        if cs1 == cs2:
-                            print(f'File {file} transferred and passed fixity check')
-                            self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
+                    if not self.ARCHIVE_TRANSFER_OKAY:
+                        self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                        continue  # Continue to next file on unsuccessful transfer
+
+                    # If checksum validation unsuccessful, retry file_transfer method up to 3 times
+                    max_retries = 3
+                    retries = 0
+                    while retries < max_retries:
+                        if do_fixity:
+                            cs2 = self.calculate_sha256_checksum(output_file_path)
+                            if cs1 == cs2:
+                                print(f'File {file} transferred and passed fixity check')
+                                self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
+                                if do_delete:
+                                    os.remove(input_file_path)
+                                break #Exit on succesful transfer
+                            else:
+                                if retries >= max_retries:
+                                    print(
+                                        f"Failed to transfer {input_file_path} after {max_retries} attempts. Moving to the next file.")
+                                    self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                                    self.ARCHIVE_TRANSFER_OKAY = False
+                                    self.ARCHIVE_TRANSFER_ERROR = 'Fixity check'
+                                    break #Exit on max retries
+
+                                print(f'File {file} transferred but did not pass fixity check. Retrying file transfer.')
+                                retries += 1
+                                os.remove(output_file_path)
+                                self.ARCHIVE_TRANSFER_ERROR, self.ARCHIVE_TRANSFER_OKAY = self.file_transfer(input_file_path, output_file_path)
+
+                                if not self.ARCHIVE_TRANSFER_OKAY:
+                                    self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, None, False]
+                                    self.ARCHIVE_TRANSFER_OKAY = False
+                                    break #Exit on file transfer failure
+                        else:
+                            self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
                             if do_delete:
                                 os.remove(input_file_path)
-                        else:
-                            print(f'File {file} transferred but did not pass fixity check')
-                            self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                            self.ARCHIVE_TRANSFER_OKAY = False
-                    else:
-                        self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
-                        if do_delete:
-                            os.remove(input_file_path)
+                            break #No fixity check, exit loop
 
                 if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
                     os.rmdir(foldername)
@@ -216,27 +261,44 @@ class RestructurePackage:
                                 cs1 = value[1]  # The first element is the checksum
                                 break
 
-                    # Copy file from source to destination, iterate to next file if error
-                    try:
-                        shutil.copy2(input_file_path, output_file_path)
-                    except Exception as e:
-                        self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                        self.DELIVERY_TRANSFER_OKAY = False
-                        print(f"An error occurred while copying the file: {e}")
-                        continue
+                    # Transfer file using file_transfer method, which returns boolean upon succesful or unsuccesful transfer
+                    self.DELIVERY_TRANSFER_ERROR, self.DELIVERY_TRANSFER_OKAY = self.file_transfer(input_file_path, output_file_path)
 
-                    # Create post-transfer checksum
-                    if do_fixity:
-                        cs2 = self.calculate_sha256_checksum(output_file_path)
-                        if cs1 == cs2:
-                            print(f'File {file} transferred and passed fixity check')
-                            self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
+                    if not self.DELIVERY_TRANSFER_OKAY:
+                        self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                        continue  # Continue to next file on unsuccessful transfer
+
+                    # If checksum validation unsuccessful, retry file_transfer method up to 3 times
+                    max_retries = 3
+                    retries = 0
+                    while retries < max_retries:
+                        if do_fixity:
+                            cs2 = self.calculate_sha256_checksum(output_file_path)
+                            if cs1 == cs2:
+                                print(f'File {file} transferred and passed fixity check')
+                                self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
+                                break #Exit on succesful transfer
+                            else:
+                                if retries >= max_retries:
+                                    print(
+                                        f"Failed to transfer {input_file_path} after {max_retries} attempts. Moving to the next file.")
+                                    self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
+                                    self.DELIVERY_TRANSFER_OKAY = False
+                                    self.DELIVERY_TRANSFER_ERROR = 'Fixity check'
+                                    break #Exit on max retries
+
+                                print(f'File {file} transferred but did not pass fixity check. Retrying file transfer.')
+                                retries += 1
+                                os.remove(output_file_path)
+                                self.DELIVERY_TRANSFER_ERROR, self.DELIVERY_TRANSFER_OKAY = self.file_transfer(input_file_path, output_file_path)
+
+                                if not self.ARCHIVE_TRANSFER_OKAY:
+                                    self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, None, False]
+                                    self.DELIVERY_TRANSFER_OKAY = False
+                                    break #Exit on file transfer failure
                         else:
-                            print(f'File {file} transferred but did not pass fixity check')
-                            self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                            self.DELIVERY_TRANSFER_OKAY = False
-                    else:
-                        self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
+                            self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
+                            break #No fixity check, exit loop
 
 
 if __name__ == "__main__":
