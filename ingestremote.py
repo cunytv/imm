@@ -105,27 +105,48 @@ def XSAN_access_transfer(package_obj, package, access_input_path, access_output_
             if do_fixity:
                 cs1 = package_obj.calculate_sha256_checksum(input_path)
 
-            # Copy file from source to destination, iterate to next file if error
-            try:
-                shutil.copy2(input_path, output_path)
-            except Exception as e:
-                packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, False]
-                packages_dict[package]['DELIVERY_transfer_okay'] = False
-                print(f"An error occurred while copying the file: {e}")
-                return
 
-            # Create post-transfer checksum
-            if packages_dict[package]["do_fixity"]:
-                cs2 = package_obj.calculate_sha256_checksum(output_path)
-                if cs1 == cs2:
-                    print(f'File {package + "WINDOW.mp4"} transferred and passed fixity check')
-                    packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, True]
+            # Transfer file using file_transfer method, which returns boolean upon succesful or unsuccesful transfer
+            error, packages_dict[package]['DELIVERY_transfer_okay'] = package_obj.file_transfer(input_path,
+                                                                                           output_path)
+
+            if not packages_dict[package]['DELIVERY_transfer_okay']:
+                packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, False]
+                packages_dict[package]['DELIVERY_transfer_error'] = error
+                continue  # Continue to next file on unsuccessful transfer
+
+            # If checksum validation unsuccessful, retry file_transfer method up to 3 times
+            max_retries = 3
+            retries = 0
+            while retries < max_retries:
+                if do_fixity:
+                    cs2 = package_obj.calculate_sha256_checksum(output_path)
+                    if cs1 == cs2:
+                        print(f'File {file} transferred and passed fixity check')
+                        packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, True]
+                        break  # Exit on succesful transfer
+                    else:
+                        if retries >= max_retries:
+                            print(
+                                f"Failed to transfer {input_path} after {max_retries} attempts. Moving to the next file.")
+                            packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, False]
+                            packages_dict[package]['DELIVERY_transfer_okay'] = False
+                            packages_dict[package]['DELIVERY_transfer_error'] = 'Fixity check'
+                            break  # Exit on max retries
+
+                        print(f'File {file} transferred but did not pass fixity check. Retrying file transfer.')
+                        retries += 1
+                        os.remove(output_path)
+                        error, packages_dict[package]['DELIVERY_transfer_okay'] = package_obj.file_transfer(input_path,
+                                                                                                       output_path)
+
+                        if not packages_dict[package]['DELIVERY_transfer_okay']:
+                            packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, None, False]
+                            packages_dict[package]['DELIVERY_transfer_error'] = error
+                            break  # Exit on file transfer failure
                 else:
-                    print(f'File {package + "WINDOW.mp4"} transferred but did not pass fixity check')
-                    packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, False]
-                    packages_dict[package]['DELIVERY_transfer_okay'] = False
-            else:
-                packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, None]
+                    packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, None]
+                    break  # No fixity check, exit loop
 
 
 def print_log(log_dest, package, packages_dict):
@@ -133,12 +154,15 @@ def print_log(log_dest, package, packages_dict):
     keys_order = [
         'cards',
         'input_paths',
-        'do_fixity',
         'do_delete',
+        'do_fixity',
         'do_commands',
+        'do_dropbox',
         'emails',
         'ARCHIVE_transfer_okay',
+        'ARCHIVE_transfer_error',
         'DELIVERY_transfer_okay',
+        'DELIVERY_transfer_error',
         'MAKEWINDOW_okay',
         'MAKEWINDOW_error',
         'MAKEMETADATA_okay',
@@ -148,7 +172,7 @@ def print_log(log_dest, package, packages_dict):
         'DROPBOX_transfer_okay',
         'ARCHIVE_files_dict',
         'DELIVERY_files_dict',
-        'DROPBOX_files_dict'  # Fixed missing comma
+        'DROPBOX_files_dict'
     ]
 
     with open(log_dest, 'w') as f:
@@ -189,48 +213,67 @@ def print_log(log_dest, package, packages_dict):
     mcpo = packages_dict[package]["MAKECHECKSUMPACKAGE_okay"]
     dbto = packages_dict[package]["DROPBOX_transfer_okay"]
 
-    if ato is False or dto is False or mwo is False or mmo is False or mcpo is False or dbto is False:
-        atop = f"ARCHIVE_transfer_okay...{ato}"
-        dtop = f"DELIVERY_transfer_okay...{dto}"
-        mwop = f"MAKEWINDOW_okay...{mwo}"
-        mmop = f"MAKEMETADATA_okay...{mmo}"
-        mcpop = f"MAKECHECKSUMPACKAGE_okay...{mcpo}"
-        dbtop = f"DROPBOX_transfer_okay...{dbto}"
-
+    if not all([ato, dto, mwo, mmo, mcpo, dbto]):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
-        notification.recipients(["library@tv.cuny.edu"])
+        #notification.recipients(["library@tv.cuny.edu"])
+        notification.recipients(["aida.garrido@tv.cuny.edu"])
         notification.subject(f"Ingest error: {package}")
 
-        # Write text content with HTML formatting
-        html_content = f"""
-                        <html>
-                          <body>
-                            <p>Hello, </p>
-                            <p></p>
-                            <p>An error occuring during ingest: </p>
-                            <br>
-                            {atop}<br>
-                            {dtop}<br>
-                            {mwop}<br>
-                            {mmop}<br>
-                            {mcpop}<br>
-                            {dbtop}<br>
-                            <br>
-                            <p>Check attachment for more information or navigate to {os.path.join(server, package, "metadata", "ingestlog.txt")}</p>
-                            <p>Best, </p>
-                            <p>Library Bot</p>
-                          </body>
-                        </html>
-                        """
+        # Exclude the last three keys
+        keys_to_print = keys_order[3:7]
+        keys_to_print2 = keys_order[7:-3]
 
+        # Initialize an HTML formatted string for key-value pairs
+        html_output = "<div>\n<p>"
+
+        for key in keys_to_print:
+            if key in packages_dict[package]:
+                value = packages_dict[package].get(key) # Use package-specific dictionary
+                keyf = key.lower()
+                valuef = str(value).upper()
+                html_output += f"  {keyf}: {valuef}<br>\n"
+
+        html_output += "</p>\n<p>"
+
+        for key in keys_to_print2:
+            if key in packages_dict[package]:
+                value = packages_dict[package].get(key)  # Use package-specific dictionary
+                keyf = key.lower()
+                valuef = str(value).upper()
+                if value == False or "error" in keyf:
+                    html_output += f"  <u><strong>{keyf}: {valuef}</strong></u><br>\n"
+                else:
+                    html_output += f"  {keyf}: {valuef}<br>\n"
+
+        html_output += "</p>\n</div>"
+
+        # Create the main HTML content
+        html_content = f"""
+                <html>
+                  <body>
+                    <p>Hello, </p>
+                    <p>An error occurred during ingest:</p>
+                    <br>
+                    {html_output}
+                    <br>
+                    <p>Check attachment for more information or navigate to {os.path.join(server, package, "metadata", "ingestlog.txt")}</p>
+                    <p>Best, </p>
+                    <p>Library Bot</p>
+                  </body>
+                </html>
+                """
+
+        # Set notification content
         notification.content(html_content)
+
         # Specify the attachment path
         attachment_path = os.path.join(server, package, "metadata", "ingestlog.txt")
 
         # Add the attachment
         notification.attachment(attachment_path)
 
+        # Send the notification
         notification.send()
 
 # Ingests files
@@ -250,6 +293,8 @@ def ingest():
         # Save archive transfer results and checksums
         packages_dict[package]["ARCHIVE_files_dict"] = package_obj.ARCHIVE_FILES_DICT
         packages_dict[package]["ARCHIVE_transfer_okay"] = package_obj.ARCHIVE_TRANSFER_OKAY
+        if package_obj.ARCHIVE_TRANSFER_ERROR:
+            packages_dict[package]["ARCHIVE_transfer_error"] = package_obj.ARCHIVE_TRANSFER_ERROR
 
         # Transfer files to XSAN
         package_obj.delivery_restructure_folder(os.path.join(server, package, "objects"), os.path.join(server2, get_showcode(package)), package, packages_dict[package]["do_fixity"], packages_dict[package]["ARCHIVE_files_dict"])
@@ -257,6 +302,8 @@ def ingest():
         # Save delivery transfer results and checksums
         packages_dict[package]["DELIVERY_files_dict"] = package_obj.DELIVERY_FILES_DICT
         packages_dict[package]["DELIVERY_transfer_okay"] = package_obj.DELIVERY_TRANSFER_OKAY
+        if package_obj.DELIVERY_TRANSFER_ERROR:
+            packages_dict[package]["DELIVERY_transfer_error"] = package_obj.DELIVERY_TRANSFER_ERROR
 
         #print
         #print(packages_dict[package])
@@ -307,7 +354,7 @@ def ingest():
         do_dropbox = packages_dict[package]["emails"] and packages_dict[package]["ARCHIVE_transfer_okay"] and (
                     packages_dict[package]["MAKEWINDOW_okay"] or packages_dict[package]["MAKEWINDOW_okay"] is None)
 
-        server_object_directory = os.path.join(server, package) + "/objects"
+        server_object_directory = os.path.join(server2, get_showcode(package), package)
         dropbox_directory = dropbox_prefix(package) + f'/{package}'
         emails = packages_dict[package]["emails"]
 
@@ -401,13 +448,13 @@ if __name__ == "__main__":
     packages_dict = {}
 
     # Check if connected to servers
-    server = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
-    server_check(server)
-    #server = "/Users/aidagarrido/Desktop"
+    #server = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
+    #server_check(server)
+    server = "/Users/aidagarrido/Desktop"
 
-    #server2 = "/Users/aidagarrido/Desktop/Camera Card Delivery"
-    server2 = "/Volumes/XsanVideo/Camera Card Delivery"
-    server_check(server2)
+    server2 = "/Users/aidagarrido/Desktop/Camera Card Delivery"
+    #server2 = "/Volumes/XsanVideo/Camera Card Delivery"
+    #server_check(server2)
 
     # Detect recently inserted drives and cards
     countdown(5)
@@ -442,8 +489,8 @@ if __name__ == "__main__":
                 if do_dropbox:
                     emails = validateuserinput.emails(
                         input("\tList email(s) delimited by space or press enter to continue: "))
-                    emails.extend(["library@tv.cuny.edu"])
-                    #emails.extend(["agarrkoch@gmail.com"])
+                    #emails.extend(["library@tv.cuny.edu"])
+                    emails.extend(["agarrkoch@gmail.com"])
                     # email_input = input("\tList email(s) delimited by space or press enter to continue: ")
                     # emails = validateuserinput.emails(email_input)
 
@@ -454,6 +501,7 @@ if __name__ == "__main__":
                     "do_fixity": do_fixity,
                     "do_delete": do_delete,
                     "do_commands": do_commands,
+                    "do_dropbox": do_dropbox,
                     "emails": emails
                 }
 
