@@ -213,7 +213,10 @@ def print_log(log_dest, package, packages_dict):
     mcpo = packages_dict[package]["MAKECHECKSUMPACKAGE_okay"]
     dbto = packages_dict[package]["DROPBOX_transfer_okay"]
 
-    if not all([ato, dto, mwo, mmo, mcpo, dbto]):
+    # Treat None as True
+    variables = [v if v is not None else True for v in [ato, dto, mwo, mmo, mcpo, dbto]]
+
+    if not all(variables):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
         notification.recipients(["library@tv.cuny.edu"])
