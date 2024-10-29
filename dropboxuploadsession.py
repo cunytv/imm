@@ -177,7 +177,7 @@ class DropboxUploadSession:
                     cs1 = self.calculate_sha256_checksum(file_path)
                 elif do_fixity and files_dict:
                     for key, value in files_dict.items():
-                        if key[0] == file_path:  # Check the destination path
+                        if key[1] == file_path:  # Check the destination path
                             cs1 = value[1]  # The first element is the checksum
                             break
 
