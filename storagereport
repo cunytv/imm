@@ -109,7 +109,7 @@ NYCMG_MEDIAID_CSV="${HOME}/Desktop/REPORTS/NYCLIFE01011980.csv"
 # files to not remove
 EVERGREEN_LIST="${HOME}/Desktop/REPORTS/EVERGREEN.txt"
 # directory where cunytv protrack database reports to
-CUNY_PROTRACK_REPORT_DIR="/Volumes/XsanFileserver2/CUNY TV files/From library/schedules/"
+CUNY_PROTRACK_REPORT_DIR="/Volumes/CUNY TV files/From library/schedules/"
 # files from the filemaker protracker report database
 CUNYTV_TOAIRALL="${CUNY_PROTRACK_REPORT_DIR}/cunytvto_air_all.txt"
 CUNYTV_TOAIR="${CUNY_PROTRACK_REPORT_DIR}/cunytvto_air.txt"
