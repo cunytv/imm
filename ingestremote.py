@@ -456,7 +456,7 @@ if __name__ == "__main__":
     #server = "/Users/aidagarrido/Desktop"
 
     #server2 = "/Users/aidagarrido/Desktop/Camera Card Delivery"
-    server2 = "/Volumes/XsanVideo/Camera Card Delivery"
+    server2 = "/Volumes/TigerVideo/Camera Card Delivery"
     server_check(server2)
 
     # Detect recently inserted drives and cards
