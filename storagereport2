@@ -33,7 +33,7 @@ REPORT_DIR="/tmp"
 
 EVERGREEN_LIST="${HOME}/Desktop/REPORTS/EVERGREEN.txt"
 
-CUNY_PROTRACK_REPORT_DIR="/Volumes/XsanFileserver2/CUNY TV files/From library/schedules/"
+CUNY_PROTRACK_REPORT_DIR="/Volumes/CUNY TV files/From library/schedules/"
 #CUNY_PROTRACK_REPORT_DIR="/Volumes/CUNY TV files/From library/schedules/"
 
 # files from the filemaker protracker report database
