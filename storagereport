@@ -233,7 +233,7 @@ done
 echo
 
 cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" >> "${CUNYTV4AIR_TMP}"
-cat "${CUNYTV4AIR_TMP}" "${CUNYTV4AIR_TMP}" | sort -u > "${CUNYTV4AIR}"
+cat "${CUNYTV4AIR_TMP}" | sort -u > "${CUNYTV4AIR}"
 
 NYCMG4AIR_TMP=$(_maketemp)
 _report -d "Checking on NYCMG schedules..."
