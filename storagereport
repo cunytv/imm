@@ -90,13 +90,13 @@ _maketemp(){
 ## connect to Autosaved folder if not already
 if [ "$(mount | grep -c /tmp/Autosaved)" = 0 ] ; then
     _mkdir2 /tmp/Autosaved
-    mount -t smbfs "smb://archivesx@10.25.102.136/Autosaved" /tmp/Autosaved
+    mount -t smbfs "smb://Administrator@10.25.102.136/Autosaved" /tmp/Autosaved
 fi
 
 ## connect to MarinaLogs folder if not already
 if [ "$(mount | grep -c /tmp/MarinaLogs)" = 0 ] ; then
     _mkdir2 /tmp/MarinaLogs
-    mount -t smbfs "smb://archivesx@10.25.102.136/MarinaLogs" /tmp/MarinaLogs
+    mount -t smbfs "smb://Administrator@10.25.102.136/MarinaLogs" /tmp/MarinaLogs
 fi
 
 # shortcuts
