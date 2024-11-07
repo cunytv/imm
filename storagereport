@@ -124,6 +124,7 @@ CUNYTV_DIGACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
 CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/nearline"
 # array of about-to-runs
 abouttoruns=(/tmp/Autosaved/CH_25.1_NYC_Life_Main.xml /tmp/Autosaved/CH_25.2_74_NYC_Gov_Main.xml /tmp/Autosaved/CH_73_-_NYCM_Main.xml)
+abouttoruns_cuny=(/tmp/Autosaved/CH_25.3_CUNY_Main.xml)
 
 ## connect to nearline volumes
 _check4mount "${CUNYTV_DIGACQ_PATH}" "${CUNYTV_NEARLINE_PATH}" "${NYCMG_ROOT}" "${OMNEON_ROOT}"
@@ -135,6 +136,7 @@ CUNY_SNAPSHOTDIR="${REPORTDIR}/cuny_snapshots"
 NYCM_SNAPSHOTDIR="${REPORTDIR}/nycm_snapshots"
 REPORTDIRNYC="${NYCMG_ROOT}/reports"
 NYCMG_ABOUT_TO_RUN_DIR="${INTERNALDIR}/nycm_about_to_runs"
+CUNY_ABOUT_TO_RUN_DIR="${INTERNALDIR}/cuny_about_to_runs"
 IDS_NYCMG="${INTERNALDIR}/nycm_ids_all.txt"
 IDS_CUNYTV="${INTERNALDIR}/cuny_ids_all.txt"
 OMNEON_TREE="${INTERNALDIR}/omneon_tree.xml"
@@ -200,10 +202,39 @@ _report -d "Storage reports have been written to: ${REPORTDIR}"
 echo
 
 # set up reporting directories
-_mkdir2 "${REPORTDIR}" "${INTERNALDIR}" "${CUNY_SNAPSHOTDIR}" "${NYCM_SNAPSHOTDIR}" "${REPORTDIR}/omneon" "${REPORTDIRNYC}" "${NYCMG_ABOUT_TO_RUN_DIR}"
+_mkdir2 "${REPORTDIR}" "${INTERNALDIR}" "${CUNY_SNAPSHOTDIR}" "${NYCM_SNAPSHOTDIR}" "${REPORTDIR}/omneon" "${REPORTDIRNYC}" "${NYCMG_ABOUT_TO_RUN_DIR}" "${CUNY_ABOUT_TO_RUN_DIR}"
 
 # report on station identifiers
-cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" > "${CUNYTV4AIR}"
+
+CUNYTV4AIR_TMP=$(_maketemp)
+_report -d "Checking on CUNY schedules..."
+for schedule in "${abouttoruns_cuny[@]}" ; do
+    SCHEDULE_NAME="$(basename "${schedule}")"
+    TMP_SCHEDULE="/tmp/schedule_${SCHEDULE_NAME}"
+    if [[ "$(find "${schedule}" -mtime +1d -print)" ]] ; then
+        _report -w "WARNING ${SCHEDULE_NAME} is suspiciously over a day old."
+    fi
+    if [[ -f "${schedule}" ]] ; then
+        cp "${schedule}" "${CUNY_ABOUT_TO_RUN_DIR}/"
+        SCHEDULE_MOVED="${CUNY_ABOUT_TO_RUN_DIR}/${SCHEDULE_NAME}"
+        xml sel -t -v "//media/@mediaName" "${SCHEDULE_MOVED}" | grep -v "^$" | sort -u > "${TMP_SCHEDULE}"
+        LINE_COUNT="$(wc -l "${TMP_SCHEDULE}" | awk '{print $1}')"
+        printf "%-32s %12d %20s \n" "${SCHEDULE_NAME}" "${LINE_COUNT}" "$(xml sel -t -v //properties/history/modified/@time "${SCHEDULE_MOVED}")"
+        if [[ "${LINE_COUNT}" -lt "1" ]] ; then
+            _report -w "ERROR: ${SCHEDULE_NAME} only lists ${LINE_COUNT} files which is suspicious. Try again later."
+            exit
+        fi
+        cat "${TMP_SCHEDULE}" >> "${CUNYTV4AIR_TMP}"
+    else
+        _report -w "WARNING ${schedule} is expected but is not found."
+        exit
+    fi
+done
+echo
+
+cat "${CUNYTV_TOAIRALL}" "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | grep -v "^$" >> "${CUNYTV4AIR_TMP}"
+cat "${CUNYTV4AIR_TMP}" "${CUNYTV4AIR_TMP}" | sort -u > "${CUNYTV4AIR}"
+
 NYCMG4AIR_TMP=$(_maketemp)
 _report -d "Checking on NYCMG schedules..."
 for schedule in "${abouttoruns[@]}" ; do
