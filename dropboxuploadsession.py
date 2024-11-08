@@ -168,6 +168,7 @@ class DropboxUploadSession:
                 }
                 response = requests.post(session_finish_url, headers=headers, timeout=30)
 
+                # Step 4 (optional): Fixity check
                 # Create checksum variables and retrieve post-transfer checksum from dropbox API
                 cs1 = None
                 cs2 = self.get_file_hash(dropbox_path)
@@ -177,27 +178,29 @@ class DropboxUploadSession:
                     cs1 = self.calculate_sha256_checksum(file_path)
                 elif do_fixity and files_dict:
                     for key, value in files_dict.items():
-                        if key[1] == file_path:  # Check the destination path
-                            cs1 = value[1]  # The first element is the checksum
+                        if key[0] == file_path or key[1] == file_path:  # Check the destination path
+                            cs1 = value[0]  # The first element is the checksum
                             break
-
-                # Update files dictionary
-                if do_fixity:
-                    if cs1 == cs2:
-                        print(f'File {file} transferred and passed fixity check')
-                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, True]
-                    else:
-                        print(f'File {file} transferred but did not pass fixity check')
-                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, False]
-                        self.DROPBOX_TRANSFER_OKAY = False
-                else:
-                    self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, None]
 
                 if response.status_code != 200:
                     print("Failed to complete upload session:", response.text)
                     self.DROPBOX_TRANSFER_OKAY = False
                     return
-                return  # Exit the function after successful upload
+
+                # Update files dictionary
+                if do_fixity:
+                    if cs1 == cs2:
+                        print(f'File {file_path} transferred and passed fixity check')
+                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, True]
+                        return True
+                    else:
+                        print(f'File {file_path} transferred but did not pass fixity check')
+                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, False]
+                        self.DROPBOX_TRANSFER_OKAY = False
+                        return False
+                else:
+                    self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, None]
+                    return None
 
             except ConnectionError as e:
                 if attempt < max_retries - 1:
