@@ -3,7 +3,7 @@ VERSION="1.0"
 SCRIPTDIR=$(dirname $(which "${0}"))
 . "${SCRIPTDIR}/mmfunctions" || { echo "Missing '${SCRIPTDIR}/mmfunctions'. Exiting." ; exit 1 ;};
 
-DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media"
+DELIVERY_DIRECTORY="/Volumes/CUNY TV files/To web and social media"
 SCC_DIRECTORY="/Volumes/fs0/cunytv.dir/subtitle.dir"
 
 _checkdir "${DELIVERY_DIRECTORY}"
@@ -11,7 +11,7 @@ _checkdir "${SCC_DIRECTORY}"
 
 find "${DELIVERY_DIRECTORY}" -name "*.mp4" ! -name "*_opensub.mp4" ! -name "*_subtitled.mp4" -maxdepth 1 | sort | while read file ; do
     unset MIDDLE_OPTIONS FILESECONDS
-    DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media"
+    DELIVERY_DIRECTORY="/Volumes/CUNY TV files/To web and social media"
     if [[ ! -d "${DELIVERY_DIRECTORY}" ]] ; then
         mkdir "${DELIVERY_DIRECTORY}"
     fi
@@ -90,7 +90,7 @@ done
 
 # now make podcast outputs
 find "${DELIVERY_DIRECTORY}" -name "*_podcast.mov" -maxdepth 1 | sort | while read file ; do
-    DELIVERY_DIRECTORY="/Volumes/XsanFileserver2/CUNY TV files/To web and social media/test4"
+    DELIVERY_DIRECTORY="/Volumes/CUNY TV files/To web and social media/test4"
     
     BASENAME="$(basename "${file}")"
     HOPEFUL_SRT="${DELIVERY_DIRECTORY}/${BASENAME%_podcast.mov}.en_US.srt"

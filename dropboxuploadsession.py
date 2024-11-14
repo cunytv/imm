@@ -30,7 +30,8 @@ class DropboxUploadSession:
         self.refresh_access_token()
 
         # Dropbox errors
-        #self.dropbox_okay = True
+        self.DROPBOX_FILES_DICT = {}
+        self.DROPBOX_TRANSFER_OKAY = True
 
         # Share link
         self.share_link = ''
@@ -93,7 +94,7 @@ class DropboxUploadSession:
         return file_paths, dropbox_paths
 
     # Uploads file to dropbox
-    def upload_file_to_dropbox(self, file_path, dropbox_path, max_retries=5):
+    def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5):
         for attempt in range(max_retries):
             try:
                 #Step 0: Check if ACCESS_TOKEN is still valid
@@ -166,15 +167,46 @@ class DropboxUploadSession:
                     'Dropbox-API-Arg': '{"cursor": {"session_id": "' + session_id + '", "offset": ' + str(offset) + '}, "commit": {"path": "' + dropbox_path + '", "mode": "add", "autorename": true, "mute": false}}'
                 }
                 response = requests.post(session_finish_url, headers=headers, timeout=30)
+
+                # Step 4 (optional): Fixity check
+                # Create checksum variables and retrieve post-transfer checksum from dropbox API
+                cs1 = None
+                cs2 = self.get_file_hash(dropbox_path)
+
+                # Create pre-transfer checksum or retrieve existing checksum from files_dict
+                if do_fixity and files_dict is None:
+                    cs1 = self.calculate_sha256_checksum(file_path)
+                elif do_fixity and files_dict:
+                    for key, value in files_dict.items():
+                        if key[0] == file_path or key[1] == file_path:  # Check the destination path
+                            cs1 = value[0]  # The first element is the checksum
+                            break
+
                 if response.status_code != 200:
                     print("Failed to complete upload session:", response.text)
+                    self.DROPBOX_TRANSFER_OKAY = False
                     return
-                return  # Exit the function after successful upload
+
+                # Update files dictionary
+                if do_fixity:
+                    if cs1 == cs2:
+                        print(f'File {file_path} transferred and passed fixity check')
+                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, True]
+                        return True
+                    else:
+                        print(f'File {file_path} transferred but did not pass fixity check')
+                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, False]
+                        self.DROPBOX_TRANSFER_OKAY = False
+                        return False
+                else:
+                    self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, None]
+                    return None
 
             except ConnectionError as e:
                 if attempt < max_retries - 1:
                     print(f"ConnectionError: Retry attempt {attempt + 1}")
                 else:
+                    self.DROPBOX_TRANSFER_OKAY = False
                     raise e
 
     # Get shared link
@@ -259,6 +291,36 @@ class DropboxUploadSession:
         notification.content(html_content)
         notification.send()
 
+    # Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
+    def get_file_hash(self, file_path):
+        # Define the endpoint URL
+        url = "https://api.dropboxapi.com/2/files/get_metadata"
+
+        # Replace '<get access token>' with your actual access token
+        access_token = self.ACCESS_TOKEN
+
+        # Define the headers
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+        # Define the data payload
+        data = {
+            "include_deleted": True,
+            "include_has_explicit_shared_members": True,
+            "include_media_info": True,
+            "path": file_path  # Removed curly braces
+        }
+
+        # Make the POST request
+        response = requests.post(url, headers=headers, json=data)
+
+        # Check the response
+        if response.status_code == 200:
+            return response.json()["content_hash"]
+        else:
+            return None
 
     # Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
     def get_shared_folder_id(self, path):
@@ -293,7 +355,6 @@ class DropboxUploadSession:
                 return self.create_shared_folder_id(path)
         else:
             return self.create_shared_folder_id(path)
-
 
     def create_shared_folder_id(self, path):
         url = 'https://api.dropboxapi.com/2/sharing/share_folder'
@@ -392,7 +453,7 @@ class DropboxUploadSession:
 
         # Upload to dropbox
         for f, d in zip(file_paths, dropbox_file_paths):
-            self.upload_file_to_dropbox(f, d)
+            self.upload_file_to_dropbox(f, d, True, None)
 
         if emails:
             cuny_emails = []
@@ -428,7 +489,7 @@ class DropboxUploadSession:
             ROOT_PATH = dropbox_path_prefix + ROOT_PATH
 
         # Upload file
-        self.upload_file_to_dropbox(file_path, ROOT_PATH)
+        self.upload_file_to_dropbox(file_path, ROOT_PATH, True, None)
 
         if emails:
             for email in emails:
