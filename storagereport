@@ -120,8 +120,8 @@ CUNY_SEGMENTS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_segments.txt"
 NYCMG_ROOT="/Volumes/NYCM_Media"
 NYCMG_NEARLINE_PATH="${NYCMG_ROOT}/media"
 # nearline folder of CUNYTV files
-CUNYTV_DIGACQ_PATH="/Volumes/CUNYTV_Media/acquisitions"
-CUNYTV_NEARLINE_PATH="/Volumes/CUNYTV_Media/nearline"
+CUNYTV_DIGACQ_PATH="/Volumes/CUNYTVMEDIA/acquisitions"
+CUNYTV_NEARLINE_PATH="/Volumes/CUNYTVMEDIA/nearline"
 # array of about-to-runs
 abouttoruns=(/tmp/Autosaved/CH_25.1_NYC_Life_Main.xml /tmp/Autosaved/CH_25.2_74_NYC_Gov_Main.xml /tmp/Autosaved/CH_73_-_NYCM_Main.xml)
 abouttoruns_cuny=(/tmp/Autosaved/CH_25.3_CUNY_Main.xml)
@@ -269,9 +269,9 @@ cat "${CUNY_FILLERS}" | tr "\r" "\n" | awk '{print $1}' | sort -u | grep -v "^$"
 
 _report -d "Media ID counts"
 printf "%-32s %12s %20s \n" "Schedule" "Media Count" "Last Update"
-printf "%-32s %12d %20s \n" "CUNYTV (final)" "$(cat "${CUNYTV_TOAIRALL}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIRALL}" | awk '{print $6}')"
-printf "%-32s %12d %20s \n" "CUNYTV (future)" "$(cat "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIR}" | awk '{print $6}')"
-printf "%-32s %12d %20s \n" "CUNYTV (all)" "$(cat "${CUNYTV4AIR}" | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV4AIR}" | awk '{print $6}')"
+printf "%-32s %12d %20s \n" "CUNYTV (final)" "$(cat "${CUNYTV_TOAIRALL}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIRALL}" | sed 's|Domain Users|Domain_Users|g' | awk '{print $6}')"
+printf "%-32s %12d %20s \n" "CUNYTV (future)" "$(cat "${CUNYTV_TOAIR}" | tr "\r" "\n" | grep "^[a-zA-Z0-9]" | awk '{print $1}' | sort -u | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV_TOAIR}" | sed 's|Domain Users|Domain_Users|g' | awk '{print $6}')"
+printf "%-32s %12d %20s \n" "CUNYTV (all)" "$(cat "${CUNYTV4AIR}" | wc -l)" "$(stat -F -l -t '%FT%T' "${CUNYTV4AIR}" | sed 's|Domain Users|Domain_Users|g' | awk '{print $6}')"
 printf "%-32s %12d %20s \n" "NYCMG (all)" "$(cat "${NYCMG4AIR}" | wc -l )" ""
 ### REPORT ON PROTRACK REGISTERED MEDIAIDS
 # list all NYCMG ProTrack IDs (Programs and Filler)
