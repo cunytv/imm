@@ -16,15 +16,12 @@ WHEN_RUN="$(date +%Y%m%d-%H%M%S)"
 
 # omneon path
 OMNEON_CUNY="cunytv.dir"
-OMNEON_NYCM="nycm.dir"
 OMNEON_ROOT="/Volumes/fs0"
 OMNEON_PATH_CUNY="${OMNEON_ROOT}/${OMNEON_CUNY}"
-OMNEON_PATH_NYCM="${OMNEON_ROOT}/${OMNEON_NYCM}"
 
 TODAY="$(date +%Y%m%d)"
 # output inventory xml paths
 INVENTORY_XML_CUNY="${HOME}/Desktop/omneon_cuny_${TODAY}.xml"
-INVENTORY_XML_NYCM="${HOME}/Desktop/omneon_nycm_${TODAY}.xml"
 REPORT_DIR="/tmp"
 
 EVERGREEN_LIST="${HOME}/Desktop/REPORTS/EVERGREEN.txt"
@@ -185,14 +182,12 @@ _update_inventory(){
 
 if [[ "${REFRESH_INVENTORY}" == "Y" ]] ; then
     _make_inventory "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
-    ### _make_inventory "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}"
 else
     if [[ -s "${INVENTORY_XML_CUNY}" ]] ; then
         _update_inventory "${INVENTORY_XML_CUNY}"  "${OMNEON_PATH_CUNY}"
     else
         _make_inventory "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
     fi
-    ### _update_inventory "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}"
 fi
 
 _label_content_type(){
@@ -223,17 +218,7 @@ _label_content_type(){
     fi
 }
 
-NYCM_PROTRACK_CSV="/Users/archivesx/Desktop/REPORTS/NYCLIFE01011980.csv"
-if [[ ! -f "${NYCM_PROTRACK_CSV}" ]] ; then
-    _report -wt "WARNING: Missing the NYCMG inventory expected at ${NYCM_PROTRACK_CSV}."
-    _report -wt "WARNING: Take no action with NYCMG files."
-else
-    cat "${NYCM_PROTRACK_CSV}" | tr "\r" "\n" | grep "F,$"    | cut -d, -f1 | sort -u | grep -v "^$" > "${REPORT_DIR}/nycm_filler.txt"
-    cat "${NYCM_PROTRACK_CSV}" | tr "\r" "\n" | grep -v "F,$" | cut -d, -f1 | sed 's/T-//' | sed 's|/1||' | grep -v "^$" | sort -u > "${REPORT_DIR}/nycm_programs.txt"
-fi
-
 _label_content_type "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}" "${CUNY_FILLERS}" "${CUNY_PROGRAMS}" "${CUNY_SEGMENTS}"
-###_label_content_type "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}" "${REPORT_DIR}/nycm_filler.txt" "${REPORT_DIR}/nycm_programs.txt"
 
 _add_protrack_metadata(){
     INVENTORY_XML="${1}"
@@ -314,7 +299,6 @@ _add_omneon_data(){
     done < <(xmlstarlet sel -t -m "/tree/directory[@name='${INVENTORY_PATH}']/file[substring(@name,string-length(@name)-2)='mov'][not(@content_type)][not(@recport)]" -v @name -n "${INVENTORY_XML}")
     _report -dt "Done adding Omneon Data for ${C} unregistered QuickTime files to ${INVENTORY_XML}."
 }
-###_add_omneon_data "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}"
 _add_omneon_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
 
 _add_caption_data(){
@@ -368,12 +352,6 @@ _add_caption_data(){
 # not that for some of this next function the broadcast times need to already be there.
 _add_caption_data "${INVENTORY_XML_CUNY}" "${OMNEON_PATH_CUNY}"
 
-
-# add protrack metadata
-###cat "${NYCM_PROTRACK_CSV}"  | tr "\r" "\n" | grep -v "^$" | sed 's|^T-||g;s|/1,|,|g' > "${REPORT_DIR}/nycm_protrack_cleaned.csv"
-###_add_protrack_metadata "${INVENTORY_XML_NYCM}" "${OMNEON_PATH_NYCM}" "${REPORT_DIR}/nycm_protrack_cleaned.csv"
-
-
 _label_evergreen(){
     INVENTORY_XML="${1}"
     _report -dt "Marking evergreen files within ${INVENTORY_XML}."
@@ -392,7 +370,6 @@ _label_evergreen(){
 }
 
 _label_evergreen "${INVENTORY_XML_CUNY}"
-###_label_evergreen "${INVENTORY_XML_NYCM}"
 
 _add_storage(){
     INVENTORY_XML="${1}"
@@ -472,10 +449,6 @@ _add_broadcast_schedule(){
     fi
 }
 
-###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /tmp/Autosaved/CH_25.1_NYC_Life_Main.xml
-###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /tmp/Autosaved/CH_25.2_74_NYC_Gov_Main.xml
-###_add_broadcast_schedule -m "${INVENTORY_XML_NYCM}" /tmp/Autosaved/CH_73_-_NYCM_Main.xml
-
 xml ed --inplace --delete "//broadcast_time" "${INVENTORY_XML_CUNY}"
 xml ed --inplace --delete "//broadcast_date" "${INVENTORY_XML_CUNY}"
 _add_broadcast_schedule -m "${INVENTORY_XML_CUNY}" /tmp/Autosaved/CH_25.3_CUNY_Main.xml
@@ -505,19 +478,6 @@ xml sel -t -m ".//file[substring(name,string-length(name)-2)='mov' or substring(
 _add_storage "${INVENTORY_XML_CUNY}" "nearline" "${CUNYTV_NEARLINE_STAT}" "${CUNYTV_ACQ_STAT}"
 _add_storage "${INVENTORY_XML_CUNY}" "offline" "${REPORT_DIR}/cuny_lto.txt"
 
-# add nycm storage
-NYCM_NEARLINE_PATH="/Volumes/NYCM_Media/media"
-NYCM_NEARLINE_STAT="${REPORT_DIR}/nycm_on_nearline_stat.txt"
-###find "${NYCM_NEARLINE_PATH}" -name "*.mov" -exec stat -F -l -t '%FT%T' "{}" \; > "${NYCM_NEARLINE_STAT}"
-###xml sel -t -m ".//file" -o "- - - - " -v length -o " " -v "substring(modifytime,1,19)"  -o " "  -m "ancestor-or-self::directory" -v "name" -o "/" -b -v name -n ~/Documents/lto_indexes/C00*.schema | grep -E ".mov$|.mxf$" > "${REPORT_DIR}/nycm_lto.txt"
-###_add_storage "${INVENTORY_XML_NYCM}" "nearline" "${NYCM_NEARLINE_STAT}"
-###_add_storage "${INVENTORY_XML_NYCM}" "offline" "${REPORT_DIR}/nycm_lto.txt"
-
-# list of files we don't have
-#xmlstarlet select -t -m "/tree/directory[@name='pull_list']/file[not(storage)]" -v @id -o "," -v "(broadcast_date|broadcast_time)[1]" -o "," -v "storage[1]" -n ~/Desktop/omneon_cuny_20200313.xml | grep 2020-0[34] | sort -k2 > media_ids_we_dont_have.csv
-
-# list of files to pull
-# xmlstarlet select -t -m "/tree/directory[@name='pull_list']/file[storage]" -v @id -o "," -v "(broadcast_date|broadcast_time)[1]" -o "," -v "storage[1]" -n ~/Desktop/omneon_cuny_20200313.xml | grep 2020-0[34] | sort -k2 > media_ids_we_do_have.csv
 
 # expired interstitial
 EP_INT_REPORT="${CUNY_PROTRACK_REPORT_DIR}/expired_interstitials.csv"
