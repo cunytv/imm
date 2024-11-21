@@ -2,7 +2,7 @@
 version="0.4"
 #indexdir=/Volumes/data/archive_projects/storage_indexes
 indexdir="${HOME}/Documents"
-updateindexevery=900
+updateindexevery=9000
 cleanup(){
     echo -n $(tput sgr0)
     echo Fine then.
