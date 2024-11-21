@@ -1,0 +1,93 @@
+#!/bin/bash
+version="0.4"
+#indexdir=/Volumes/data/archive_projects/storage_indexes
+indexdir="${HOME}/Documents"
+updateindexevery=900
+cleanup(){
+    echo -n $(tput sgr0)
+    echo Fine then.
+    exit 1
+}
+
+trap cleanup SIGHUP SIGINT SIGTERM
+
+update_indexes(){
+    echo -n $(tput setaf 4)
+    echo "Updating index of omneon, acquisitions and nearline"
+    echo -n $(tput sgr0)
+    # Get package names and top level names
+    cat "${indexdir}/lto_indexes"/[AEG][0-9][0-9][0-9][0-9][0-9]_index.txt | cut -d"/" -f 1-2 | uniq > /tmp/index_lto_cuny.txt
+    # get all mov and mxf files
+    cat "${indexdir}/lto_indexes"/[AEG][0-9][0-9][0-9][0-9][0-9]_index.txt | grep -i ".mov\|.mxf\|.mkv" >> /tmp/index_lto_cuny.txt
+    mv /tmp/index_lto_cuny.txt "${indexdir}/"
+
+    cat "${indexdir}/lto_indexes"/[C][0-9][0-9][0-9][0-9][0-9]_index.txt > /tmp/index_lto_nycmg.txt
+    mv /tmp/index_lto_nycmg.txt "${indexdir}/"
+
+    find /Volumes/fs0/cunytv.dir -type f -maxdepth 1 ! -name ".*" > /tmp/index_om.txt 
+    mv /tmp/index_om.txt "${indexdir}/"
+
+    find /Volumes/CUNYTV_Media/acquisitions -maxdepth 4 -path "*service*" -type f > /tmp/index_acq.txt
+    mv /tmp/index_acq.txt "${indexdir}/"
+
+    find /Volumes/CUNYTV_Media/nearline -type f ! -path "*backup*" ! -path "*fingerprints*" ! -path "*dbreports*" -type f ! -name ".*" -maxdepth 2 > /tmp/index_nl.txt
+    mv /tmp/index_nl.txt "${indexdir}/"
+}
+
+usage(){
+    echo
+    echo "$(basename $0) ${version}"
+    echo "This application will search indexes for packages and files with specified identifiers on LTO tapes and certain defined directories (currently: ${searchdirs[*]})."
+    echo "Dependencies: ${dependencies[@]}"
+    echo "Usage: $(basename $0) [ -u ] MEDIAID1 [ MEDIAID2 ...]"
+    echo "  -u ( for update of the indexes for search directories. Otherwise this will happen automatically every $updateindexevery seconds )"
+    echo "  -h ( display this help )"
+    echo
+    exit
+}
+
+# command-line options to set mediaid and original variables
+OPTIND=1
+while getopts ":uh:" opt; do
+    case "$opt" in
+        h) usage ;;
+        u) update_indexes ;;
+        *) echo "bad option -$OPTARG" ; usage ;;
+        :) echo "Option -$OPTARG requires an argument" ; exit 1 ;;
+    esac
+done
+shift $(( ${OPTIND} - 1 ))
+
+search="$*"
+if [ ! "$search" ] ; then
+    printf "Enter the mediaid(s) or lto tape number(s) to search (or 'q' to quit): "
+    read search
+fi
+[ "$search" == "q" ] && exit 0
+for word in $(echo "$search") ; do
+    echo ===== CHECKING CUNYTV LTO TAPES =====
+    echo -n $(tput setaf 1)
+    grep "$word" "${indexdir}/index_lto_cuny.txt"
+    echo -n $(tput sgr0)
+    echo ===== CHECKING NYCMG LTO TAPES =====
+    echo -n $(tput setaf 1)
+    grep "$word" "${indexdir}/index_lto_nycmg.txt"
+    echo -n $(tput sgr0)
+done
+if [ $(echo `date +%s` - `stat -f '%m' "${indexdir}/index_om.txt"` | bc) -gt $updateindexevery ] ; then
+    update_indexes
+fi
+for word in $(echo "$search") ; do
+    echo ===== CHECKING OMNEON =====
+    echo -n $(tput setaf 1)
+    grep "$word" "${indexdir}/index_om.txt"
+    echo -n $(tput sgr0)
+    echo ===== CHECKING ACQUISITIONS =====
+    echo -n $(tput setaf 1)
+    grep "$word" "${indexdir}/index_acq.txt"
+    echo -n $(tput sgr0)
+    echo ===== CHECKING NEARLINE =====
+    echo -n $(tput setaf 1)
+    grep "$word" "${indexdir}/index_nl.txt"
+    echo -n $(tput sgr0)
+done
