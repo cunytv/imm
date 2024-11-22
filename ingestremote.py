@@ -690,10 +690,10 @@ if __name__ == "__main__":
 
             if package_name not in packages_dict:
                 multibatch = input(
-                    "\tIs this a multi-batch process? (I.e. does the number of cards/drives exceed the number of readers? (y/n)): ").lower() == 'y'
+                    "\tIs this a multi-batch process? (i.e. does the number of cards/drives exceed the number of readers?) y/n: ").lower() == 'y'
                 if multibatch:
                     last_batch = input(
-                        "\tIs this the last batch? (y/n): ").lower() == 'y'
+                        "\tIs this the last batch? y/n: ").lower() == 'y'
                 if multibatch and not last_batch:
                     # Additional file processing options
                     do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
@@ -716,9 +716,9 @@ if __name__ == "__main__":
                     # do_drive_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
                     do_drive_delete = False
                     do_commands = (input(
-                        "\tRun makewindow, makemetdata, checksumpackage? If ingesting multiple cards, run this command when ingesting the last card. y/n?: ")).lower() == 'y'
+                        "\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
                     do_dropbox = (input(
-                        "\tUpload to dropbox? If ingesting multiple cards, run this command when ingesting the last card. y/n: ")).lower() == 'y'
+                        "\tUpload to dropbox? y/n: ")).lower() == 'y'
                     emails = []
                     if do_dropbox:
                         emails = validateuserinput.emails(
