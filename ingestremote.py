@@ -14,8 +14,36 @@ import os
 import subprocess
 import time
 import shutil
+from datetime import datetime
 import json
 
+# Specify the order for printing
+keys_order = [
+    'cards',
+    'input_paths',
+    'do_drive_delete',
+    'do_fixity',
+    'do_commands',
+    'do_dropbox',
+    'emails',
+    'ARCHIVE_transfer_okay',
+    'ARCHIVE_transfer_error',
+    'ONE2ONECOPY_transfer_okay',
+    'ONE2ONECOPY_transfer_error',
+    'DELIVERY_transfer_okay',
+    'DELIVERY_transfer_error',
+    'MAKEWINDOW_okay',
+    'MAKEWINDOW_error',
+    'MAKEMETADATA_okay',
+    'MAKEMETADATA_error',
+    'MAKECHECKSUMPACKAGE_okay',
+    'MAKECHECKSUMPACKAGE_error',
+    'DROPBOX_transfer_okay',
+    'ARCHIVE_files_dict',
+    'ONE2ONECOPY_files_dict',
+    'DELIVERY_files_dict',
+    'DROPBOX_files_dict'
+]
 
 # Checks if user is connected to server
 def server_check(s):
@@ -89,124 +117,261 @@ def dropbox_prefix(s):
     showcode = get_showcode(s)
     return f'/_CUNY TV CAMERA CARD DELIVERY/{showcode}'
 
+def append_after_text(log_path, key, package, packages_dict):
 
-def XSAN_access_transfer(package_obj, package, access_input_path, access_output_path):
-    for foldername, subfolders, filenames in os.walk(access_input_path, topdown=False):
-        for file in filenames:
-            # Construct file path names
-            input_path = os.path.join(foldername, file)
-            output_path = os.path.join(access_output_path, file)
+    # Step 1: Open the file and read all lines
+    with open(log_path, 'r') as file:
+        lines = file.readlines()
 
-            # Checksum variables
-            cs1 = None
-            cs2 = None
+    # Step 2: Find the line containing 'cards'
+    target_index = -1
+    for i, line in enumerate(lines):
+        if key + ":" in line:  # Case sensitive search, use `.lower()` for case-insensitive
+            target_index = i
+            break
 
-            # Create pre-transfer checksum
-            if do_fixity:
-                cs1 = package_obj.calculate_sha256_checksum(input_path)
+    if target_index == -1:
+        print(f"Error: '{key}:' not found in the file.")
+        return
 
+    # Step 3: Find the closest blank line after the target line
+    insert_index = target_index + 1
+    while insert_index < len(lines) and lines[insert_index].strip() != '':
+        insert_index += 1
 
-            # Transfer file using file_transfer method, which returns boolean upon succesful or unsuccesful transfer
-            error, packages_dict[package]['DELIVERY_transfer_okay'] = package_obj.file_transfer(input_path,
-                                                                                           output_path)
+    # Step 4: Insert the new content after the blank line
+    value = packages_dict[package][key]
+    if isinstance(value, list):
+        for item in value:
+            lines.insert(insert_index, f"  - {item}\n")
+            insert_index += 1
+    elif isinstance(value, dict):
+        for sub_key, sub_value in value.items():
+            lines.insert(insert_index, f"{sub_key}:\n")
+            insert_index += 1
+            if isinstance(sub_value, list):
+                for item in sub_value:
+                    lines.insert(insert_index, f"  - {item}\n")
+                    insert_index += 1
+            elif isinstance(sub_value, dict):
+                for inner_key, inner_value in sub_value.items():
+                    lines.insert(insert_index, f"  {inner_key}:\n")
+                    insert_index += 1
+                    for val_item in inner_value:
+                        lines.insert(insert_index, f"    - {val_item}\n")
+                        insert_index += 1
+            else:
+                lines.insert(insert_index, f"  {sub_value}\n")
+                insert_index += 1
+    else:
+        lines.insert(insert_index, f"  {value}\n")
+        insert_index += 1
 
-            if not packages_dict[package]['DELIVERY_transfer_okay']:
-                packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, False]
-                packages_dict[package]['DELIVERY_transfer_error'] = error
-                continue  # Continue to next file on unsuccessful transfer
-
-            # If checksum validation unsuccessful, retry file_transfer method up to 3 times
-            max_retries = 3
-            retries = 0
-            while retries < max_retries:
-                if do_fixity:
-                    cs2 = package_obj.calculate_sha256_checksum(output_path)
-                    if cs1 == cs2:
-                        print(f'File {file} transferred and passed fixity check')
-                        packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, True]
-                        break  # Exit on succesful transfer
-                    else:
-                        if retries >= max_retries:
-                            print(
-                                f"Failed to transfer {input_path} after {max_retries} attempts. Moving to the next file.")
-                            packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, False]
-                            packages_dict[package]['DELIVERY_transfer_okay'] = False
-                            packages_dict[package]['DELIVERY_transfer_error'] = 'Fixity check'
-                            break  # Exit on max retries
-
-                        print(f'File {file} transferred but did not pass fixity check. Retrying file transfer.')
-                        retries += 1
-                        os.remove(output_path)
-                        error, packages_dict[package]['DELIVERY_transfer_okay'] = package_obj.file_transfer(input_path,
-                                                                                                       output_path)
-
-                        if not packages_dict[package]['DELIVERY_transfer_okay']:
-                            packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, None, False]
-                            packages_dict[package]['DELIVERY_transfer_error'] = error
-                            break  # Exit on file transfer failure
-                else:
-                    packages_dict[package]['DELIVERY_files_dict'][(input_path, output_path)] = [cs1, cs2, None]
-                    break  # No fixity check, exit loop
+    # Step 5: Write the updated content back to the file
+    with open(log_path, 'w') as file:
+        file.writelines(lines)
 
 
 def print_log(log_dest, package, packages_dict):
-    # Specify the order for printing
-    keys_order = [
-        'cards',
-        'input_paths',
-        'do_delete',
-        'do_fixity',
-        'do_commands',
-        'do_dropbox',
-        'emails',
-        'ARCHIVE_transfer_okay',
-        'ARCHIVE_transfer_error',
-        'DELIVERY_transfer_okay',
-        'DELIVERY_transfer_error',
-        'MAKEWINDOW_okay',
-        'MAKEWINDOW_error',
-        'MAKEMETADATA_okay',
-        'MAKEMETADATA_error',
-        'MAKECHECKSUMPACKAGE_okay',
-        'MAKECHECKSUMPACKAGE_error',
-        'DROPBOX_transfer_okay',
-        'ARCHIVE_files_dict',
-        'DELIVERY_files_dict',
-        'DROPBOX_files_dict'
-    ]
+    log_exists = False
+    log_path = ''
+    for filename in os.listdir(log_dest):
+        # Check if the filename starts with "ingestlog"
+        if filename.startswith("ingestlog"):
+            log_exists = True
+            log_path = os.path.join(log_dest, filename)
+            break
 
-    with open(log_dest, 'w') as f:
-        f.write(f"Contents of '{package}':\n")
-        f.write("=" * 30 + "\n")  # Separator line
-        for key in keys_order:
+    # If part of multi-batch process and not yet last batch
+    if log_exists and not packages_dict[package]['do_desktop_delete']:
+
+        # Move existing log to desktop to append values (doesn't work when trying to write directly to server)
+        home_dir = os.path.expanduser('~')
+        desktop_path = os.path.join(home_dir, 'Desktop')
+        desktop_log = os.path.join(desktop_path, f"ingestlog{package}.txt")
+        shutil.move(log_path, desktop_log)
+
+        # Update these values
+        append_after_text(desktop_log, 'cards', package, packages_dict)
+        append_after_text(desktop_log, 'input_paths', package, packages_dict)
+        append_after_text(desktop_log, 'ARCHIVE_files_dict', package, packages_dict)
+
+        # Move log back to server; append time to avoid cache issues
+        now = datetime.now()
+        time_str = now.strftime("%H%M%S")
+
+        shutil.move(desktop_log, os.path.join(server, package, "metadata", f"ingestlog{package}_{time_str}.txt"))
+
+    # If part of multi-batch process and last batch
+    elif log_exists and packages_dict[package]['do_desktop_delete']:
+        # Move existing log to desktop to append values (doesn't work when trying to write directly to server)
+        home_dir = os.path.expanduser('~')
+        desktop_path = os.path.join(home_dir, 'Desktop')
+        desktop_log = os.path.join(desktop_path, f"ingestlog{package}.txt")
+        shutil.move(log_path, desktop_log)
+
+        # Update these values
+        append_after_text(desktop_log, 'cards', package, packages_dict)
+        append_after_text(desktop_log, 'input_paths', package, packages_dict)
+        append_after_text(desktop_log, 'ARCHIVE_files_dict', package, packages_dict)
+
+        # Delete the values between 'do_fixity' and 'ARCHIVE_files_dict'
+        with open(desktop_log, 'r') as file:
+            lines = file.readlines()
+
+        deleting = False
+        filtered_lines = []
+
+        for line in lines:
+            # Start deleting from the line containing 'do_fixity'
+            if 'do_drive_delete' in line:
+                deleting = True
+
+            # If we are deleting, skip the line
+            if deleting:
+                # If we encounter 'ARCHIVE_files_dict', stop deleting
+                if 'ARCHIVE_files_dict' in line:
+                    filtered_lines.append(line)  # Include this line to keep it
+                    deleting = False
+                continue
+
+            # If not deleting, keep the line
+            filtered_lines.append(line)
+
+        # Insert the new values after the deletion
+        with open(desktop_log, 'w') as file:
+            file.writelines(filtered_lines)
+
+        # Now, insert the new values
+        with open(desktop_log, 'r') as file:
+            lines = file.readlines()
+
+        # Find the target index for insertion
+        target_index = -1
+        for i, line in enumerate(lines):
+            if 'input_paths' + ":" in line:  # Case sensitive search
+                target_index = i
+                break
+
+        # Calculate the insertion index (next blank line)
+        insert_index = target_index + 1
+        while insert_index < len(lines) and lines[insert_index].strip() != '':
+            insert_index += 1
+
+        # Insert the keys from the dictionary into the file
+        for key in keys_order[2:20]:
             if key in packages_dict[package]:
                 value = packages_dict[package][key]
-                f.write(f"{key}:\n")
-
+                lines.insert(insert_index, f"\n{key}:\n")
+                insert_index += 1
+                # Step 4: Insert the new content after the blank line
                 if isinstance(value, list):
                     for item in value:
-                        f.write(f"  - {item}\n")
+                        lines.insert(insert_index, f"  - {item}\n")
+                        insert_index += 1
                 elif isinstance(value, dict):
-                    f.write(f"Contents of '{key}':\n")
-                    f.write("-" * 30 + "\n")  # Separator line
                     for sub_key, sub_value in value.items():
-                        f.write(f"{sub_key}:\n")
+                        lines.insert(insert_index, f"{sub_key}:\n")
+                        insert_index += 1
                         if isinstance(sub_value, list):
                             for item in sub_value:
-                                f.write(f"  - {item}\n")
+                                lines.insert(insert_index, f"  - {item}\n")
+                                insert_index += 1
                         elif isinstance(sub_value, dict):
                             for inner_key, inner_value in sub_value.items():
-                                f.write(f"  {inner_key}:\n")
+                                lines.insert(insert_index, f"  {inner_key}:\n")
+                                insert_index += 1
                                 for val_item in inner_value:
-                                    f.write(f"    - {val_item}\n")
+                                    lines.insert(insert_index, f"    - {val_item}\n")
+                                    insert_index += 1
                         else:
-                            f.write(f"  {sub_value}\n")
+                            lines.insert(insert_index, f"  {sub_value}\n")
+                            insert_index += 1
                 else:
-                    f.write(f"  {value}\n")
+                    lines.insert(insert_index, f"  {value}\n")
+                    insert_index += 1
 
-                f.write("\n")  # Extra newline for spacing
+        # Write the modified lines (with inserted values) back to the file
+        with open(desktop_log, 'w') as file:
+            file.writelines(lines)
 
+        # Add these values
+        with open(desktop_log, 'a') as f:
+            for key in keys_order[-3:]:
+                if key in packages_dict[package]:
+                    value = packages_dict[package][key]
+                    f.write(f"{key}:\n")
+
+                    if isinstance(value, list):
+                        for item in value:
+                            f.write(f"  - {item}\n")
+                    elif isinstance(value, dict):
+                        f.write(f"Contents of '{key}':\n")
+                        f.write("-" * 30 + "\n")  # Separator line
+                        for sub_key, sub_value in value.items():
+                            f.write(f"{sub_key}:\n")
+                            if isinstance(sub_value, list):
+                                for item in sub_value:
+                                    f.write(f"  - {item}\n")
+                            elif isinstance(sub_value, dict):
+                                for inner_key, inner_value in sub_value.items():
+                                    f.write(f"  {inner_key}:\n")
+                                    for val_item in inner_value:
+                                        f.write(f"    - {val_item}\n")
+                            else:
+                                f.write(f"  {sub_value}\n")
+                    else:
+                        f.write(f"  {value}\n")
+
+                    f.write("\n")  # Extra newline for spacing
+        # Move log back to server; append time to avoid cache issues
+        now = datetime.now()
+        time_str = now.strftime("%H%M%S")
+
+        shutil.move(desktop_log, os.path.join(server, package, "metadata", f"ingestlog{package}_{time_str}.txt"))
+
+    # If only batch or first batch
+    else:
+        # Move log back to server; append time to avoid cache issues
+        now = datetime.now()
+        time_str = now.strftime("%H%M%S")
+
+        log_path = os.path.join(server, package, "metadata", f"ingestlog{package}_{time_str}.txt")
+
+        with open(log_path, 'w') as f:
+            f.write(f"Contents of '{package}':\n")
+            f.write("=" * 30 + "\n")  # Separator line
+            for key in keys_order:
+                if key in packages_dict[package]:
+                    value = packages_dict[package][key]
+                    f.write(f"{key}:\n")
+
+                    if isinstance(value, list):
+                        for item in value:
+                            f.write(f"  - {item}\n")
+                    elif isinstance(value, dict):
+                        f.write(f"Contents of '{key}':\n")
+                        f.write("-" * 30 + "\n")  # Separator line
+                        for sub_key, sub_value in value.items():
+                            f.write(f"{sub_key}:\n")
+                            if isinstance(sub_value, list):
+                                for item in sub_value:
+                                    f.write(f"  - {item}\n")
+                            elif isinstance(sub_value, dict):
+                                for inner_key, inner_value in sub_value.items():
+                                    f.write(f"  {inner_key}:\n")
+                                    for val_item in inner_value:
+                                        f.write(f"    - {val_item}\n")
+                            else:
+                                f.write(f"  {sub_value}\n")
+                    else:
+                        f.write(f"  {value}\n")
+
+                    f.write("\n")  # Extra newline for spacing
+
+def error_report(log_dest, package, packages_dict):
     ato = packages_dict[package]["ARCHIVE_transfer_okay"]
+    oto = packages_dict[package]["ONE2ONECOPY_transfer_okay"]
     dto = packages_dict[package]["DELIVERY_transfer_okay"]
     mwo = packages_dict[package]["MAKEWINDOW_okay"]
     mmo = packages_dict[package]["MAKEMETADATA_okay"]
@@ -214,7 +379,7 @@ def print_log(log_dest, package, packages_dict):
     dbto = packages_dict[package]["DROPBOX_transfer_okay"]
 
     # Treat None as True
-    variables = [v if v is not None else True for v in [ato, dto, mwo, mmo, mcpo, dbto]]
+    variables = [v if v is not None else True for v in [ato, oto, dto, mwo, mmo, mcpo, dbto]]
 
     if not all(variables):
         notification = sendnetworkmail.SendNetworkEmail()
@@ -223,9 +388,9 @@ def print_log(log_dest, package, packages_dict):
         #notification.recipients(["aida.garrido@tv.cuny.edu"])
         notification.subject(f"Ingest error: {package}")
 
-        # Exclude the last three keys
+        # Exclude the last four keys
         keys_to_print = keys_order[3:7]
-        keys_to_print2 = keys_order[7:-3]
+        keys_to_print2 = keys_order[7:-4]
 
         # Initialize an HTML formatted string for key-value pairs
         html_output = "<div>\n<p>"
@@ -249,6 +414,13 @@ def print_log(log_dest, package, packages_dict):
                 else:
                     html_output += f"  {keyf}: {valuef}<br>\n"
 
+        log_path = ''
+        for filename in os.listdir(log_dest):
+            # Check if the filename starts with "ingestlog"
+            if filename.startswith("ingestlog"):
+                log_path = os.path.join(log_dest, filename)
+                break
+
         html_output += "</p>\n</div>"
 
         # Create the main HTML content
@@ -260,7 +432,7 @@ def print_log(log_dest, package, packages_dict):
                     <br>
                     {html_output}
                     <br>
-                    <p>Check attachment for more information or navigate to {os.path.join(server, package, "metadata", "ingestlog.txt")}</p>
+                    <p>Check attachment for more information or navigate to {log_path}</p>
                     <p>Best, </p>
                     <p>Library Bot</p>
                   </body>
@@ -270,108 +442,136 @@ def print_log(log_dest, package, packages_dict):
         # Set notification content
         notification.content(html_content)
 
-        # Specify the attachment path
-        attachment_path = os.path.join(server, package, "metadata", "ingestlog.txt")
-
         # Add the attachment
-        notification.attachment(attachment_path)
+        notification.attachment(log_path)
 
         # Send the notification
         notification.send()
 
+
+def runcommands(filepath, package):
+    if packages_dict[package]["ARCHIVE_transfer_okay"] and packages_dict[package]["do_commands"]:
+        makewindow_okay, makewindow_error = ingestcommands.makewindow(filepath)
+    else:
+        packages_dict[package]["MAKEWINDOW_okay"] = None
+        packages_dict[package]["MAKEMETADATA_okay"] = None
+        packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
+        return
+
+    # Run makemetadata on package if makewindow was successfully run
+    packages_dict[package]["MAKEWINDOW_okay"] = makewindow_okay
+    if makewindow_okay:
+        makemetadata_okay, makemetadata_error = ingestcommands.makemetadata(filepath)
+
+    else:
+        packages_dict[package]["MAKEWINDOW_error"] = makewindow_error
+        packages_dict[package]["MAKEMETADATA_okay"] = None
+        packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
+        return
+
+    # Run makechecksum on package if makemetadata was successfully run
+    packages_dict[package]["MAKEMETADATA_okay"] = makemetadata_okay
+    if makemetadata_okay:
+        makechecksumpackage_okay, makechecksumpackage_error = ingestcommands.makechecksumpackage(filepath)
+    else:
+        packages_dict[package]["MAKEMETADATA_error"] = makemetadata_error
+        packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
+        return
+
+    packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = makechecksumpackage_okay
+    if not makechecksumpackage_okay:
+        packages_dict[package]["MAKECHECKSUMPACKAGE_error"] = makechecksumpackage_error
+
+
 # Ingests files
 def ingest():
-    # 1. Transfer files to server
+    # 1. Transfer files and run commands
+
+    # Create desktop file path
+    # Get the path to the user's home directory
+    home_dir = os.path.expanduser('~')
+    # Path to the Desktop folder (typically under the user's home directory)
+    desktop_path = os.path.join(home_dir, 'Desktop')
+
     for package in packages_dict:
         # Create package object from RestructurePackage class
-        package_obj = restructurepackage.RestructurePackage(server, package)
+        package_obj = restructurepackage.RestructurePackage(desktop_path, package)
         for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
-            package_obj.create_output_directory(server, package, card)
-            # Transfer files to CUNYTV_Media
-            package_obj.archive_restructure_folder(input_path, server, package, card, packages_dict[package]["do_fixity"],
-                                           packages_dict[package]["do_delete"])
+            package_obj.create_output_directory(desktop_path, package, card)
+            # Transfer files to Desktop
+            package_obj.archive_restructure_folder(input_path, desktop_path, package, card, packages_dict[package]["do_fixity"],
+                                           packages_dict[package]["do_drive_delete"])
             eject(input_path)
 
-
-        # Save archive transfer results and checksums
+        # Save desktop transfer results and checksums
         packages_dict[package]["ARCHIVE_files_dict"] = package_obj.ARCHIVE_FILES_DICT
         packages_dict[package]["ARCHIVE_transfer_okay"] = package_obj.ARCHIVE_TRANSFER_OKAY
         if package_obj.ARCHIVE_TRANSFER_ERROR:
             packages_dict[package]["ARCHIVE_transfer_error"] = package_obj.ARCHIVE_TRANSFER_ERROR
 
-        # Transfer files to XSAN
-        package_obj.delivery_restructure_folder(os.path.join(server, package, "objects"), os.path.join(server2, get_showcode(package)), package, packages_dict[package]["do_fixity"], packages_dict[package]["ARCHIVE_files_dict"])
-
-        # Save delivery transfer results and checksums
-        packages_dict[package]["DELIVERY_files_dict"] = package_obj.DELIVERY_FILES_DICT
-        packages_dict[package]["DELIVERY_transfer_okay"] = package_obj.DELIVERY_TRANSFER_OKAY
-        if package_obj.DELIVERY_TRANSFER_ERROR:
-            packages_dict[package]["DELIVERY_transfer_error"] = package_obj.DELIVERY_TRANSFER_ERROR
-
-        #print
-        #print(packages_dict[package])
-
-    # 2. Perform ingest scripts on successfully transferred packages
-    for package in packages_dict:
-        # Run makewindow on succesfully transferred packages
-        if packages_dict[package]["ARCHIVE_transfer_okay"] and packages_dict[package]["do_commands"]:
-            makewindow_okay, makewindow_error = ingestcommands.makewindow(os.path.join(server, package_name))
+        # Run commands
+        if packages_dict[package]["do_commands"]:
+            runcommands(os.path.join(desktop_path, package), package)
         else:
             packages_dict[package]["MAKEWINDOW_okay"] = None
             packages_dict[package]["MAKEMETADATA_okay"] = None
             packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
-            continue
 
-        # Run makemetadata on package if makewindow was successfully run
-        packages_dict[package]["MAKEWINDOW_okay"] = makewindow_okay
-        if makewindow_okay:
-            makemetadata_okay, makemetadata_error = ingestcommands.makemetadata(os.path.join(server, package_name))
+        # Transfer to server if last batch or only batch in process
+        if packages_dict[package]["do_desktop_delete"]:
+            # Transfer files to XSAN
+            package_obj.delivery_restructure_folder(os.path.join(desktop_path, package, "objects"),
+                                                    os.path.join(server2, get_showcode(package)),
+                                                    package, packages_dict[package]["do_fixity"],
+                                                    False,
+                                                    packages_dict[package]["ARCHIVE_files_dict"])
 
-            # Transfer access copies to XSAN
-            access_input_path = os.path.join(server, package, "objects", "access")
-            access_output_path = os.path.join(server2, get_showcode(package), package)
-            XSAN_access_transfer(package_obj, package, access_input_path, access_output_path)
+            # Transfer files to CUNY TV Media
+            package_obj.one2one_copy_folder(os.path.join(desktop_path, package), os.path.join(server, package),
+                                            packages_dict[package]["do_fixity"],
+                                            False,
+                                            packages_dict[package]["ARCHIVE_files_dict"])
 
+            # Save delivery transfer results and checksums
+            packages_dict[package]["DELIVERY_files_dict"] = package_obj.DELIVERY_FILES_DICT
+            packages_dict[package]["DELIVERY_transfer_okay"] = package_obj.DELIVERY_TRANSFER_OKAY
+            if package_obj.DELIVERY_TRANSFER_ERROR:
+                packages_dict[package]["DELIVERY_transfer_error"] = package_obj.DELIVERY_TRANSFER_ERROR
+
+            # Save delivery transfer results and checksums
+            packages_dict[package]["ONE2ONECOPY_files_dict"] = package_obj.ONE2ONECOPY_FILES_DICT
+            packages_dict[package]["ONE2ONECOPY_transfer_okay"] = package_obj.ONE2ONECOPY_TRANSFER_OKAY
+            if package_obj.DELIVERY_TRANSFER_ERROR:
+                packages_dict[package]["ONE2ONECOPY_transfer_error"] = package_obj.ONE2ONECOPY_TRANSFER_ERROR
         else:
-            packages_dict[package]["MAKEWINDOW_error"] = makewindow_error
-            packages_dict[package]["MAKEMETADATA_okay"] = None
-            packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
-            continue
+            packages_dict[package]["DELIVERY_transfer_okay"] = None
+            packages_dict[package]["ONE2ONECOPY_transfer_okay"] = None
 
-        # Run makechecksum on package if makemetadata was successfully run
-        packages_dict[package]["MAKEMETADATA_okay"] = makemetadata_okay
-        if makemetadata_okay:
-            makechecksumpackage_okay, makechecksumpackage_error = ingestcommands.makechecksumpackage(
-                os.path.join(server, package_name))
-        else:
-            packages_dict[package]["MAKEMETADATA_error"] = makemetadata_error
-            packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
-            continue
+        #print
+        #print(packages_dict[package])
 
-        packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = makechecksumpackage_okay
-        if not makechecksumpackage_okay:
-            packages_dict[package]["MAKECHECKSUMPACKAGE_error"] = makechecksumpackage_error
-
-    # 3. Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
+    # 2. Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
     for package in packages_dict:
-        do_dropbox = packages_dict[package]["emails"] and packages_dict[package]["ARCHIVE_transfer_okay"] and (
+        no_error = packages_dict[package]["ARCHIVE_transfer_okay"] and (
                     packages_dict[package]["MAKEWINDOW_okay"] or packages_dict[package]["MAKEWINDOW_okay"] is None)
+        do_dropbox = packages_dict[package]["emails"]
 
-        server_object_directory = os.path.join(server2, get_showcode(package), package)
+        server_object_directory = os.path.join(desktop_path, package, "objects")
         dropbox_directory = dropbox_prefix(package) + f'/{package}'
         emails = packages_dict[package]["emails"]
 
-        if do_dropbox:
+        if no_error and do_dropbox:
             uploadsession = dropboxuploadsession.DropboxUploadSession(server_object_directory)
 
-            for root, _, files in os.walk(server_object_directory):
+            for root, _, files in os.walk(server_object_directory, topdown=False):
                 for filename in files:
                     if not mac_system_metadata(filename):
                         filepath = os.path.join(root, filename)
                         dropboxpath = os.path.join(dropbox_directory, filename)
 
                         try:
-                            uploadsession.upload_file_to_dropbox(filepath, dropboxpath, packages_dict[package]["do_fixity"], packages_dict[package]["DELIVERY_files_dict"])
+                            fixity_pass = uploadsession.upload_file_to_dropbox(filepath, dropboxpath, packages_dict[package]["do_fixity"], packages_dict[package]["DELIVERY_files_dict"])
+
                         except ConnectionError:
                             print("Connection error.")
 
@@ -421,15 +621,24 @@ def ingest():
                     uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
                                                     False, msg)
         else:
-            packages_dict[package]["DROPBOX_files_dict"] = None
+            #packages_dict[package]["DROPBOX_files_dict"] = None
             packages_dict[package]["DROPBOX_transfer_okay"] = None
 
 
-    # 4. Print logs and send email to library in case of errror
+    # 3. Print logs and send email to library in case of error
     for package in packages_dict:
         # Write dictionary to a text file
-        log_dest = os.path.join(server, package, "metadata", "ingestlog.txt" )
+        log_dest = os.path.join(server, package, "metadata")
+
+        # Check if the directory exists, if not, create it
+        if not os.path.exists(log_dest):
+            os.makedirs(log_dest)
+
         print_log(log_dest, package, packages_dict)
+        error_report(log_dest, package, packages_dict)
+
+        if packages_dict[package]['do_desktop_delete']:
+            shutil.rmtree(os.path.join(desktop_path, package))
 
 # Ejects mounted drive
 def eject(path):
@@ -447,7 +656,7 @@ def notification(message):
 
 if __name__ == "__main__":
     # Create dictionary of packages
-    # Follows the format of Package Name {[cards], [input paths], do_fixity boolean, do_delete boolean, do_commands boolean, {file dictionary}, transfer_okay boolean}
+    # Follows the format of Package Name {[cards], [input paths], do_fixity boolean, do_drive_delete boolean, do_commands boolean, {file dictionary}, transfer_okay boolean}
     packages_dict = {}
 
     # Check if connected to servers
@@ -480,33 +689,54 @@ if __name__ == "__main__":
                 input(f"\tEnter the corresponding card number or name on sticker (serialize from 1 if none): "))
 
             if package_name not in packages_dict:
-                # Additional file processing options
-                do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
-                # do_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
-                do_delete = False
-                do_commands = (input(
-                    "\tRun makewindow, makemetdata, checksumpackage? If ingesting multiple cards, run this command when ingesting the last card. y/n?: ")).lower() == 'y'
-                do_dropbox = (input(
-                    "\tUpload to dropbox? If ingesting multiple cards, run this command when ingesting the last card. y/n: ")).lower() == 'y'
-                emails = []
-                if do_dropbox:
-                    emails = validateuserinput.emails(
-                        input("\tList email(s) delimited by space or press enter to continue: "))
-                    emails.extend(["library@tv.cuny.edu"])
-                    #emails.extend(["agarrkoch@gmail.com"])
-                    # email_input = input("\tList email(s) delimited by space or press enter to continue: ")
-                    # emails = validateuserinput.emails(email_input)
+                multibatch = input(
+                    "\tIs this a multi-batch process? (I.e. does the number of cards/drives exceed the number of readers? (y/n)): ").lower() == 'y'
+                if multibatch:
+                    last_batch = input(
+                        "\tIs this the last batch? (y/n): ").lower() == 'y'
+                if multibatch and not last_batch:
+                    # Additional file processing options
+                    do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
 
-                # Create key-value pair
-                packages_dict[package_name] = {
-                    "cards": [camera_card_number],
-                    "input_paths": [input_path],
-                    "do_fixity": do_fixity,
-                    "do_delete": do_delete,
-                    "do_commands": do_commands,
-                    "do_dropbox": do_dropbox,
-                    "emails": emails
-                }
+                    # Create key-value pair
+                    packages_dict[package_name] = {
+                        "cards": [camera_card_number],
+                        "input_paths": [input_path],
+                        "do_fixity": do_fixity,
+                        "do_drive_delete": False,
+                        "do_desktop_delete": False,
+                        "do_commands": False,
+                        "do_dropbox": False,
+                        "emails": False
+                    }
+
+                else:
+                    # Additional file processing options
+                    do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
+                    # do_drive_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
+                    do_drive_delete = False
+                    do_commands = (input(
+                        "\tRun makewindow, makemetdata, checksumpackage? If ingesting multiple cards, run this command when ingesting the last card. y/n?: ")).lower() == 'y'
+                    do_dropbox = (input(
+                        "\tUpload to dropbox? If ingesting multiple cards, run this command when ingesting the last card. y/n: ")).lower() == 'y'
+                    emails = []
+                    if do_dropbox:
+                        emails = validateuserinput.emails(
+                            input("\tList email(s) delimited by space or press enter to continue: "))
+                        emails.extend(["library@tv.cuny.edu"])
+                        #emails.extend(["aida.garrido@tv.cuny.edu"])
+
+                    # Create key-value pair
+                    packages_dict[package_name] = {
+                        "cards": [camera_card_number],
+                        "input_paths": [input_path],
+                        "do_fixity": do_fixity,
+                        "do_drive_delete": do_drive_delete,
+                        "do_desktop_delete": True,
+                        "do_commands": do_commands,
+                        "do_dropbox": do_dropbox,
+                        "emails": emails
+                    }
 
             else:
                 # Edit existing key-value pair
