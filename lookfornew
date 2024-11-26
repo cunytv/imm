@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script sends an email when a new file is dropped off in the To Library folder. A cron job is set up to read the folder every 10 minutes. To edit the cron job, type crontab -e in the Terminal. 
 searchdirectory="${1}"
-timefile="$HOME/.timefile_$(basename "${searchdirectory}")"
+timefile="$HOME/.timefile2_$(basename "${searchdirectory}")"
 
 _maketemp(){
     mktemp -q -t "$(basename "${0}")"
@@ -37,12 +37,13 @@ _get_chapterlist(){
     CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep='|'" | sed 's/|/\t/g')"
 }
 
-if [ ! -f "${timefile}" ] ; then 
-    filelist="$(find "${searchdirectory}" -type f ! -name .DS_Store)"
+filelist="$(find "${searchdirectory}" -type f ! -name ".*" | sort)"
+if [[ ! -f "${timefile}" ]] ; then 
+    difflist="${filelist}"
 else
-    filelist="$(find "${searchdirectory}" -cnewer "${timefile}" ! -newermt '-20 seconds' -type f ! -name .DS_Store)"
+    difflist="$(diff "${timefile}" <(find "${searchdirectory}" -type f ! -name ".*" | sort) | grep "^> " | cut -c 3-)"
 fi
-touch -t "$(date -v -20S "+%Y%m%d%H%M.%S")" "${timefile}"
+echo "${filelist}" > "${timefile}"
 
 message="These new video files showed up in $(basename "${searchdirectory}"):\n\n"
 
@@ -123,7 +124,7 @@ if [[ -n "${difflist}" ]] ; then
             message+="\n\n"
             SUBJECT_LIST+=": $(basename "${file}") "
         fi
-    done < <(echo "${filelist}")
+    done < <(echo "${difflist}")
 
     cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu; catriona.schlosser@tv.cuny.edu; amy.monte@tv.cuny.edu; anne.murphy@tv.cuny.edu; oksana.israilova@tv.cuny.edu"
 MIME-Version: 1.0
