@@ -96,6 +96,7 @@ if [ -n "${filelist}" ] ; then
                 fi
             fi
             message+="\n"
+            SUBJECT_LIST+=": $(basename "${file}") "
         fi
     done < <(echo "${filelist}")
 
@@ -103,7 +104,7 @@ if [ -n "${filelist}" ] ; then
 MIME-Version: 1.0
 From: "Library Bot" <library@tv.cuny.edu>
 To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
-Subject: [New Files on $(basename "${searchdirectory}")]
+Subject: [New Files on $(basename "${searchdirectory}")]${SUBJECT_LIST[*]}
 Content-Type: multipart/mixed; boundary="$BOUNDARY"
 
 --$BOUNDARY
