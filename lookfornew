@@ -46,7 +46,7 @@ touch -t "$(date -v -20S "+%Y%m%d%H%M.%S")" "${timefile}"
 
 message="These new video files showed up in $(basename "${searchdirectory}"):\n\n"
 
-if [ -n "${filelist}" ] ; then
+if [[ -n "${difflist}" ]] ; then
      BOUNDARY="unique-boundary-$RANDOM"
      while read file ; do
         _get_broadcastduration "${file}"
@@ -85,7 +85,7 @@ if [ -n "${filelist}" ] ; then
             if [ -n "${BROADCASTDURATION}" ] ; then
                 gifpath="$(_maketemp).gif"
                 makegifsummary -o "${gifpath}" "${file}"
-                if [ -f "${gifpath}" ] ; then
+                if [[ -s "${gifpath}" ]] ; then
                     ATT_MIMETYPE="$(file -Ib "${gifpath}" | cut -d";" -f1)"
                     ATT_ENCODED="$(base64 < "${gifpath}")"
                     message+="--$BOUNDARY\n"
