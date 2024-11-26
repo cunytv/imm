@@ -84,7 +84,11 @@ if [[ -n "${difflist}" ]] ; then
             fi
             if [ -n "${BROADCASTDURATION}" ] ; then
                 gifpath="$(_maketemp).gif"
+                waveformpath="$(_maketemp).png"
+                waveformdir="$(dirname "${waveformpath}")"
+                waveformname="$(basename "${waveformpath}")"
                 makegifsummary -o "${gifpath}" "${file}"
+                makewaveform -o "${waveformdir}" -N "${waveformname}" "${file}"
                 if [[ -s "${gifpath}" ]] ; then
                     ATT_MIMETYPE="$(file -Ib "${gifpath}" | cut -d";" -f1)"
                     ATT_ENCODED="$(base64 < "${gifpath}")"
@@ -99,6 +103,21 @@ if [[ -n "${difflist}" ]] ; then
                     message+="\n\n\n"
                     echo "cleaning up gif"
                     rm -v "${gifpath}"
+                fi
+                if [[ -s "${waveformpath}" ]] ; then
+                    ATT_MIMETYPE="$(file -Ib "${waveformpath}" | cut -d";" -f1)"
+                    ATT_ENCODED="$(base64 < "${waveformpath}")"
+                    message+="--$BOUNDARY\n"
+                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${waveformpath}")"\n"
+                    message+="Content-Transfer-Encoding: base64\n"
+                    message+="Content-Disposition: attachment; filename="$(basename "${waveformpath}")"\n"
+                    message+="\n"
+                    message+="$ATT_ENCODED"
+                    message+="\n\n"
+                    message+="--$BOUNDARY"
+                    message+="\n\n\n"
+                    echo "cleaning up waveform png"
+                    rm -v "${waveformpath}"
                 fi
             fi
             message+="\n"
