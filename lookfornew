@@ -55,23 +55,23 @@ if [ -n "${filelist}" ] ; then
         _get_user "${file}"
         _get_chapterlist "${file}"
         message+="*********\n"
-        message+="Filename: ${file}\n"
+        message+="Filename:\t${file}\n"
         if [ -n "${BROADCASTDURATION}" ] ; then
-            message+="Duration: $BROADCASTDURATION\n"
+            message+="Duration:\t\t${BROADCASTDURATION}\n"
             if [ -n "${FILESIZE}" ] ; then
-                message+="Size: $FILESIZE\n"
+                message+="Size:\t\t${FILESIZE}\n"
             fi
             if [ -n "${CODEC}" ] ; then
-                message+="Codec: $CODEC\n"
+                message+="Encoding:\t${CODEC}\n"
             fi
             if [ -n "${FRAMERATE}" ] ; then
-                message+="Framerate: $FRAMERATE fps\n"
+                message+="Framerate:\t${FRAMERATE} fps\n"
             fi
             if [ -n "${WIDTH}" ] ; then
-                message+="Frame size: $WIDTH x $HEIGHT pixels\n"
+                message+="Frame size:\t${WIDTH} x ${HEIGHT} pixels\n"
             fi
             if [ -n "${USER}" ] ; then
-                message+="User: $USER\n\n\n"
+                message+="User:\t\t${USER}\n\n\n"
             fi
             if [ -n "${CHAPTER_LIST}" ] ; then
                 message+="\nChapters:\n${CHAPTER_LIST}\n\n\n"
