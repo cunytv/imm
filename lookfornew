@@ -120,7 +120,7 @@ if [[ -n "${difflist}" ]] ; then
                     rm -v "${waveformpath}"
                 fi
             fi
-            message+="\n"
+            message+="\n\n"
             SUBJECT_LIST+=": $(basename "${file}") "
         fi
     done < <(echo "${filelist}")
