@@ -50,6 +50,7 @@ message="These new video files showed up in $(basename "${searchdirectory}"):\n\
 if [[ -n "${difflist}" ]] ; then
      BOUNDARY="unique-boundary-$RANDOM"
      while read file ; do
+         echo "Working on ${file}"
         _get_broadcastduration "${file}"
         _get_filesize "${file}"
         _get_codec "${file}"
