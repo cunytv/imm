@@ -41,7 +41,7 @@ filelist="$(find "${searchdirectory}" -type f ! -name ".*" | sort)"
 if [[ ! -f "${timefile}" ]] ; then 
     difflist="${filelist}"
 else
-    difflist="$(diff "${timefile}" <(find "${searchdirectory}" -type f ! -name ".*" | sort) | grep "^> " | cut -c 3-)"
+    difflist="$(diff "${timefile}" <(find "${searchdirectory}" -type f ! -name ".*" | sort) | grep "^> " | cut -c 3- | sort)"
 fi
 echo "${filelist}" > "${timefile}"
 
