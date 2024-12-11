@@ -47,7 +47,12 @@ echo "${filelist}" > "${timefile}"
 
 message="These new video files showed up in $(basename "${searchdirectory}"):\n\n"
 
+DIFFLIST_COUNT="$(wc -l testnew | awk '{print $1}')"
+DIFFLIST_C="0"
+MAX_FILE_PER_MSG="5"
+
 if [[ -n "${difflist}" ]] ; then
+    C=0
      BOUNDARY="unique-boundary-$RANDOM"
      while read file ; do
          echo "Working on ${file}"
@@ -122,12 +127,12 @@ if [[ -n "${difflist}" ]] ; then
                     rm -v "${waveformpath}"
                 fi
             fi
-            message+="\n\n"
-            SUBJECT_LIST+=": $(basename "${file}") "
+            ((C++))
         fi
-    done < <(echo "${difflist}")
-
-    cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu; catriona.schlosser@tv.cuny.edu; amy.monte@tv.cuny.edu; anne.murphy@tv.cuny.edu; oksana.israilova@tv.cuny.edu"
+        message+="\n\n"
+        SUBJECT_LIST+=": $(basename "${file}") "
+        if [[ "$C" -ge "${MAX_FILE_PER_MSG}" ]] ; then
+            cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu; catriona.schlosser@tv.cuny.edu; amy.monte@tv.cuny.edu; anne.murphy@tv.cuny.edu; oksana.israilova@tv.cuny.edu"
 MIME-Version: 1.0
 From: "Library Bot" <library@tv.cuny.edu>
 To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
@@ -148,4 +153,31 @@ Enjoy!
 --$BOUNDARY--
 
 EOF
+            unset message SUBJECT_LIST
+            C=0
+        fi
+    done < <(echo "${difflist}")
+    if [[ -n "${message}" ]] ; then
+            cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu; catriona.schlosser@tv.cuny.edu; amy.monte@tv.cuny.edu; anne.murphy@tv.cuny.edu; oksana.israilova@tv.cuny.edu"
+MIME-Version: 1.0
+From: "Library Bot" <library@tv.cuny.edu>
+To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
+Subject: [New Files on $(basename "${searchdirectory}")]${SUBJECT_LIST[*]}
+Content-Type: multipart/mixed; boundary="$BOUNDARY"
+
+--$BOUNDARY
+Content-Type: text/plain
+Content-Disposition: inline
+
+$(echo -e "${message}")
+
+
+Enjoy!
+
+
+
+--$BOUNDARY--
+
+EOF
+    fi
 fi
