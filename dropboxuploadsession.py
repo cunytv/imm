@@ -1,542 +1,747 @@
 #!/usr/bin/env python3
 
-import os
-import requests
-import sys
-from requests.exceptions import ConnectionError
-import datetime
-import time
-
+import detectrecentlyinserteddrives
+import restructurepackage
+import ingestcommands
 import validateuserinput
+import dropboxuploadsession
+import cunymediaids
+from dropboxuploadsession import DropboxUploadSession
 import sendnetworkmail
+import re
+import sys
+import os
+import subprocess
+import time
+import shutil
+from datetime import datetime
+import json
 
-class DropboxUploadSession:
-    def __init__(self, path):
-        # Credentials for creating access token
-        self.client_id = 'wjmmemxgpuxh911'
-        self.client_secret = 'mynnf0nelu4xahk'
-        self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
-        self.ACCESS_TOKEN = ''
+# Specify the order for printing
+keys_order = [
+    'cards',
+    'input_paths',
+    'do_drive_delete',
+    'do_fixity',
+    'do_commands',
+    'do_dropbox',
+    'emails',
+    'ARCHIVE_transfer_okay',
+    'ARCHIVE_transfer_error',
+    'ONE2ONECOPY_transfer_okay',
+    'ONE2ONECOPY_transfer_error',
+    'DELIVERY_transfer_okay',
+    'DELIVERY_transfer_error',
+    'MAKEWINDOW_okay',
+    'MAKEWINDOW_error',
+    'MAKEMETADATA_okay',
+    'MAKEMETADATA_error',
+    'MAKECHECKSUMPACKAGE_okay',
+    'MAKECHECKSUMPACKAGE_error',
+    'DROPBOX_transfer_okay',
+    'ARCHIVE_files_dict',
+    'ONE2ONECOPY_files_dict',
+    'DELIVERY_files_dict',
+    'DROPBOX_files_dict'
+]
 
-        # Keeping track of access token's expiration
-        self.time_now = ''
-        self.time_expire = ''
+# Checks if user is connected to server
+def server_check(s):
+    if not os.path.exists(s):
+        print(f'{s} not found. You might not be connected to the server. Reconnect and try again')
+        sys.exit(1)
 
-        # File progress
-        self.total_size = self.get_size(path)
-        self.bytes_read = 0
 
-        # Dropbox access token and expiration
-        self.refresh_access_token()
+# Timer, used as buffer between mounting of hard drive and start of program
+def countdown(seconds):
+    for i in range(seconds, 0, -1):
+        print(i, end='...', flush=True)
+        time.sleep(1)
+    print()
 
-        # Dropbox errors
-        self.DROPBOX_FILES_DICT = {}
-        self.DROPBOX_TRANSFER_OKAY = True
 
-        # Share link
-        self.share_link = ''
+# Prints first ten filenames in a directory
+def print_first_ten_filenames(src_dir):
+    file_count = 0  # Counter for files found
+    filenames = []  # List to store the filenames
 
-    def get_size(self, path):
-        total_size = 0
-        if os.path.isfile(path):
-            return os.path.getsize(path)
-        elif os.path.isdir(path):
-            for dirpath, _, filenames in os.walk(path):
-                for filename in filenames:
-                    file_path = os.path.join(dirpath, filename)
-                    total_size += os.path.getsize(file_path)
-            return total_size
+    # Traverse the source directory
+    for root, dirs, files in os.walk(src_dir):
+        for file in files:
+            filenames.append(file)  # Add the filename to the list
+            file_count += 1
 
-    # Generates access tokens to make API calls
-    def refresh_access_token(self):
-        url = 'https://api.dropboxapi.com/oauth2/token'
-        data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'refresh_token': self.refresh_token,
-            'grant_type': 'refresh_token'
-        }
+            if file_count >= 10:  # Stop after collecting 5 files
+                break
+        if file_count >= 10:  # Break the outer loop as well
+            break
 
-        response = requests.post(url, data=data)
-        self.ACCESS_TOKEN = response.json()['access_token']
-        expires_in = response.json()['expires_in']
+    if filenames:
+        print("...".join(filenames))  # Print the filenames joined by semicolons
+    else:
+        print("No files found in the directory.")
 
-        time_now = datetime.datetime.now()
-        self.time_expire = time_now + datetime.timedelta(seconds=expires_in - 1000)
 
-    # Checks if access token has expired
-    def token_expired(self):
-        time_now = datetime.datetime.now()
+# Checks if file is mac system metadata
+def mac_system_metadata(file):
+    if '.' not in file or file.startswith('.'):
+        return True
 
-        if time_now >= self.time_expire:
-            return True
-        else:
-            return False
 
-    def mac_system_metadata(self, file):
-        if '.' not in file or file.startswith('.'):
-            return True
+# Extracts showcode from package name string
+def get_showcode(input_string):
+    # Split at first underescore
+    input_string = input_string.split('_', 1)[0]  # Max split of 1
 
-    # Creates dropbox output paths for each file in a folder and calculates total size
-    def list_files(self, directory, split_s, prefix):
-        file_paths = []
-        dropbox_paths = []
+    # Search for the first digit in the string
+    match = re.search(r'(\d)', input_string)
 
-        # Walk through all files and directories recursively
-        for root, directories, files in os.walk(directory):
-            # Append file paths to the list
-            for filename in files:
-                if not self.mac_system_metadata(filename):
-                    file_paths.append(os.path.join(root, filename))
-                    dropbox_path = os.path.join(prefix + os.path.join(root.rsplit(split_s, 1)[1], filename))
-                    dropbox_path = dropbox_path.replace("//", "/")
-                    dropbox_paths.append(dropbox_path)
-        return file_paths, dropbox_paths
+    if not match:
+        # No numbers found, return the whole string
+        return input_string.strip()
 
-    # Uploads file to dropbox
-    def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5):
-        for attempt in range(max_retries):
-            try:
-                #Step 0: Check if ACCESS_TOKEN is still valid
-                if self.token_expired():
-                    self.refresh_access_token()
+    # If a number is found, get the position of the first digit
+    first_number_index = match.start()
 
-                # Step 1: Initiate an upload session
-                session_start_url = 'https://content.dropboxapi.com/2/files/upload_session/start'
-                headers = {
-                    'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
-                    'Content-Type': 'application/octet-stream'
-                }
-                response = requests.post(session_start_url, headers=headers)
-                if response.status_code != 200:
-                    print("Failed to initiate upload session:", response.text)
-                    return
+    # Extract the substring before the first number
+    substring = input_string[:first_number_index].strip()
 
-                session_id = response.json()['session_id']
-                offset = 0
+    if substring:  # If there's something before the number
+        return substring
+    else:  # If there's nothing before the first number
+        return "NOSHOW"
 
-                # Step 2: Upload the file in chunks
-                chunk_size = 4 * 1024 * 1024  # 4MB chunk size
-                with open(file_path, 'rb') as file:
-                    while True:
-                        if self.token_expired():
-                            self.refresh_access_token()
 
-                        chunk = file.read(chunk_size)
-                        if not chunk:
-                            break
-                        upload_url = 'https://content.dropboxapi.com/2/files/upload_session/append_v2'
-                        headers = {
-                            'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
-                            'Content-Type': 'application/octet-stream',
-                            'Dropbox-API-Arg': '{"cursor": {"session_id": "' + session_id + '", "offset": ' + str(offset) + '}}'
-                        }
-                        response = requests.post(upload_url, headers=headers, data=chunk)
+# Creates dropbox upload prefix by concatenating scoped folder with show code
+def dropbox_prefix(s):
+    showcode = get_showcode(s)
+    return f'/_CUNY TV CAMERA CARD DELIVERY/{showcode}'
 
-                        if response.status_code == 429:
-                            seconds = response.json()["error"]["retry_after"]
-                            for i in range(seconds, 0, -1):
-                                sys.stdout.write("\rToo many requests. Retrying chunk upload in {:2d} seconds.".format(i))
-                                sys.stdout.flush()
-                                time.sleep(1)
-                            continue
-                        # eventually edit this statement for exponential back off
-                        # for some reason dropbox outputs this response as HTML, instead of JSON
-                        elif 'Error: 503' in response.text:
-                            seconds = 10
-                            for i in range(seconds, 0, -1):
-                                sys.stdout.write("\rDropbox service availability issue. Retrying chunk upload in {:2d} seconds.".format(i))
-                                sys.stdout.flush()
-                                time.sleep(1)
-                            continue
-                        elif response.status_code != 200:
-                            print("Failed to upload chunk:", response.text)
-                            return
+def append_after_text(log_path, key, package, packages_dict):
 
-                        offset += len(chunk)
-                        self.bytes_read += len(chunk)
-                        progress = min(self.bytes_read / self.total_size, 1.0) * 100
-                        sys.stdout.write(f"\rUpload progress: {progress:.2f}% ({self.bytes_read}/{self.total_size} bytes)")
-                        sys.stdout.flush()
+    # Step 1: Open the file and read all lines
+    with open(log_path, 'r') as file:
+        lines = file.readlines()
 
-                # Step 3: Complete the upload session
-                session_finish_url = 'https://content.dropboxapi.com/2/files/upload_session/finish'
-                headers = {
-                    'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
-                    'Content-Type': 'application/octet-stream',
-                    'Dropbox-API-Arg': '{"cursor": {"session_id": "' + session_id + '", "offset": ' + str(offset) + '}, "commit": {"path": "' + dropbox_path + '", "mode": "add", "autorename": true, "mute": false}}'
-                }
-                response = requests.post(session_finish_url, headers=headers, timeout=30)
+    # Step 2: Find the line containing 'cards'
+    target_index = -1
+    for i, line in enumerate(lines):
+        if key + ":" in line:  # Case sensitive search, use `.lower()` for case-insensitive
+            target_index = i
+            break
 
-                # Step 4 (optional): Fixity check
-                # Create checksum variables and retrieve post-transfer checksum from dropbox API
-                cs1 = None
-                cs2 = self.get_file_hash(dropbox_path)
+    if target_index == -1:
+        print(f"Error: '{key}:' not found in the file.")
+        return
 
-                # Create pre-transfer checksum or retrieve existing checksum from files_dict
-                if do_fixity and files_dict is None:
-                    cs1 = self.calculate_sha256_checksum(file_path)
-                elif do_fixity and files_dict:
-                    for key, value in files_dict.items():
-                        if key[0] == file_path or key[1] == file_path:  # Check the destination path
-                            cs1 = value[0]  # The first element is the checksum
-                            break
+    # Step 3: Find the closest blank line after the target line
+    insert_index = target_index + 1
+    while insert_index < len(lines) and lines[insert_index].strip() != '':
+        insert_index += 1
 
-                if response.status_code != 200:
-                    print("Failed to complete upload session:", response.text)
-                    self.DROPBOX_TRANSFER_OKAY = False
-                    return
-
-                # Update files dictionary
-                if do_fixity:
-                    if cs1 == cs2:
-                        print(f'File {file_path} transferred and passed fixity check')
-                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, True]
-                        return True
-                    else:
-                        print(f'File {file_path} transferred but did not pass fixity check')
-                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, False]
-                        self.DROPBOX_TRANSFER_OKAY = False
-                        return False
-                else:
-                    self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, None]
-                    return None
-
-            except ConnectionError as e:
-                if attempt < max_retries - 1:
-                    print(f"ConnectionError: Retry attempt {attempt + 1}")
-                else:
-                    self.DROPBOX_TRANSFER_OKAY = False
-                    raise e
-
-    # Get shared link
-    def get_shared_link(self, path):
-        # Define the endpoint URL
-        url = "https://api.dropboxapi.com/2/sharing/list_shared_links"
-
-        # Define request headers
-        headers = {
-            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
-            "Content-Type": "application/json"
-        }
-
-        # Define request body data
-        data = {
-            "direct_only": True,
-            "path": path
-        }
-
-        # Send the POST request
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
-            if response.json()['links']:
-                return response.json()['links'][0]['url'], response.json()['links'][0]['id']
+    # Step 4: Insert the new content after the blank line
+    value = packages_dict[package][key]
+    if isinstance(value, list):
+        for item in value:
+            lines.insert(insert_index, f"  - {item}\n")
+            insert_index += 1
+    elif isinstance(value, dict):
+        for sub_key, sub_value in value.items():
+            lines.insert(insert_index, f"{sub_key}:\n")
+            insert_index += 1
+            if isinstance(sub_value, list):
+                for item in sub_value:
+                    lines.insert(insert_index, f"  - {item}\n")
+                    insert_index += 1
+            elif isinstance(sub_value, dict):
+                for inner_key, inner_value in sub_value.items():
+                    lines.insert(insert_index, f"  {inner_key}:\n")
+                    insert_index += 1
+                    for val_item in inner_value:
+                        lines.insert(insert_index, f"    - {val_item}\n")
+                        insert_index += 1
             else:
-                return self.create_shared_link_with_settings(path)
-        else:
-            return self.create_shared_link_with_settings(path)
+                lines.insert(insert_index, f"  {sub_value}\n")
+                insert_index += 1
+    else:
+        lines.insert(insert_index, f"  {value}\n")
+        insert_index += 1
 
-    # Creates share link that anyone can use to access
-    def create_shared_link_with_settings(self, path):
-        url = 'https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings'
-        headers = {
-            'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
-            'Content-Type': 'application/json',
-        }
+    # Step 5: Write the updated content back to the file
+    with open(log_path, 'w') as file:
+        file.writelines(lines)
 
-        settings = {
-            'access': "viewer",
-            'allow_download': True,
-            'audience': "public",
-            'requested_visibility': 'public'
-        }
 
-        data = {
-            'path': path,
-            'settings': settings
-        }
-        response = requests.post(url, headers=headers, json=data)
-        print("CREATE SHARED LINK")
-        print(response)
+def print_log(log_dest, package, packages_dict):
+    log_exists = False
+    log_path = ''
+    for filename in os.listdir(log_dest):
+        # Check if the filename starts with "ingestlog"
+        if filename.startswith("ingestlog"):
+            log_exists = True
+            log_path = os.path.join(log_dest, filename)
+            break
 
-        # Check Response
-        try:
-            response.raise_for_status()
-            return response.json()['url'], response.json()['id']
-        except requests.exceptions.HTTPError as e:
-            print(f"HTTP error occurred: {e}")
-            print(f"Response content: {response.content}")
-            return None
+    # If part of multi-batch process and not yet last batch
+    if log_exists and not packages_dict[package]['do_desktop_delete']:
 
-    def email(self, emails, filename, link):
+        # Move existing log to desktop to append values (doesn't work when trying to write directly to server)
+        home_dir = os.path.expanduser('~')
+        desktop_path = os.path.join(home_dir, 'Desktop')
+        desktop_log = os.path.join(desktop_path, f"ingestlog{package}.txt")
+        shutil.move(log_path, desktop_log)
+
+        # Update these values
+        append_after_text(desktop_log, 'cards', package, packages_dict)
+        append_after_text(desktop_log, 'input_paths', package, packages_dict)
+        append_after_text(desktop_log, 'ARCHIVE_files_dict', package, packages_dict)
+
+        # Move log back to server; append time to avoid cache issues
+        now = datetime.now()
+        time_str = now.strftime("%H%M%S")
+
+        shutil.move(desktop_log, os.path.join(server, package, "metadata", f"ingestlog{package}_{time_str}.txt"))
+
+    # If part of multi-batch process and last batch
+    elif log_exists and packages_dict[package]['do_desktop_delete']:
+        # Move existing log to desktop to append values (doesn't work when trying to write directly to server)
+        home_dir = os.path.expanduser('~')
+        desktop_path = os.path.join(home_dir, 'Desktop')
+        desktop_log = os.path.join(desktop_path, f"ingestlog{package}.txt")
+        shutil.move(log_path, desktop_log)
+
+        # Update these values
+        append_after_text(desktop_log, 'cards', package, packages_dict)
+        append_after_text(desktop_log, 'input_paths', package, packages_dict)
+        append_after_text(desktop_log, 'ARCHIVE_files_dict', package, packages_dict)
+
+        # Delete the values between 'do_fixity' and 'ARCHIVE_files_dict'
+        with open(desktop_log, 'r') as file:
+            lines = file.readlines()
+
+        deleting = False
+        filtered_lines = []
+
+        for line in lines:
+            # Start deleting from the line containing 'do_fixity'
+            if 'do_drive_delete' in line:
+                deleting = True
+
+            # If we are deleting, skip the line
+            if deleting:
+                # If we encounter 'ARCHIVE_files_dict', stop deleting
+                if 'ARCHIVE_files_dict' in line:
+                    filtered_lines.append(line)  # Include this line to keep it
+                    deleting = False
+                continue
+
+            # If not deleting, keep the line
+            filtered_lines.append(line)
+
+        # Insert the new values after the deletion
+        with open(desktop_log, 'w') as file:
+            file.writelines(filtered_lines)
+
+        # Now, insert the new values
+        with open(desktop_log, 'r') as file:
+            lines = file.readlines()
+
+        # Find the target index for insertion
+        target_index = -1
+        for i, line in enumerate(lines):
+            if 'input_paths' + ":" in line:  # Case sensitive search
+                target_index = i
+                break
+
+        # Calculate the insertion index (next blank line)
+        insert_index = target_index + 1
+        while insert_index < len(lines) and lines[insert_index].strip() != '':
+            insert_index += 1
+
+        # Insert the keys from the dictionary into the file
+        for key in keys_order[2:20]:
+            if key in packages_dict[package]:
+                value = packages_dict[package][key]
+                lines.insert(insert_index, f"\n{key}:\n")
+                insert_index += 1
+                # Step 4: Insert the new content after the blank line
+                if isinstance(value, list):
+                    for item in value:
+                        lines.insert(insert_index, f"  - {item}\n")
+                        insert_index += 1
+                elif isinstance(value, dict):
+                    for sub_key, sub_value in value.items():
+                        lines.insert(insert_index, f"{sub_key}:\n")
+                        insert_index += 1
+                        if isinstance(sub_value, list):
+                            for item in sub_value:
+                                lines.insert(insert_index, f"  - {item}\n")
+                                insert_index += 1
+                        elif isinstance(sub_value, dict):
+                            for inner_key, inner_value in sub_value.items():
+                                lines.insert(insert_index, f"  {inner_key}:\n")
+                                insert_index += 1
+                                for val_item in inner_value:
+                                    lines.insert(insert_index, f"    - {val_item}\n")
+                                    insert_index += 1
+                        else:
+                            lines.insert(insert_index, f"  {sub_value}\n")
+                            insert_index += 1
+                else:
+                    lines.insert(insert_index, f"  {value}\n")
+                    insert_index += 1
+
+        # Write the modified lines (with inserted values) back to the file
+        with open(desktop_log, 'w') as file:
+            file.writelines(lines)
+
+        # Add these values
+        with open(desktop_log, 'a') as f:
+            for key in keys_order[-3:]:
+                if key in packages_dict[package]:
+                    value = packages_dict[package][key]
+                    f.write(f"{key}:\n")
+
+                    if isinstance(value, list):
+                        for item in value:
+                            f.write(f"  - {item}\n")
+                    elif isinstance(value, dict):
+                        f.write(f"Contents of '{key}':\n")
+                        f.write("-" * 30 + "\n")  # Separator line
+                        for sub_key, sub_value in value.items():
+                            f.write(f"{sub_key}:\n")
+                            if isinstance(sub_value, list):
+                                for item in sub_value:
+                                    f.write(f"  - {item}\n")
+                            elif isinstance(sub_value, dict):
+                                for inner_key, inner_value in sub_value.items():
+                                    f.write(f"  {inner_key}:\n")
+                                    for val_item in inner_value:
+                                        f.write(f"    - {val_item}\n")
+                            else:
+                                f.write(f"  {sub_value}\n")
+                    else:
+                        f.write(f"  {value}\n")
+
+                    f.write("\n")  # Extra newline for spacing
+        # Move log back to server; append time to avoid cache issues
+        now = datetime.now()
+        time_str = now.strftime("%H%M%S")
+
+        shutil.move(desktop_log, os.path.join(server, package, "metadata", f"ingestlog{package}_{time_str}.txt"))
+
+    # If only batch or first batch
+    else:
+        # Move log back to server; append time to avoid cache issues
+        now = datetime.now()
+        time_str = now.strftime("%H%M%S")
+
+        log_path = os.path.join(server, package, "metadata", f"ingestlog{package}_{time_str}.txt")
+
+        with open(log_path, 'w') as f:
+            f.write(f"Contents of '{package}':\n")
+            f.write("=" * 30 + "\n")  # Separator line
+            for key in keys_order:
+                if key in packages_dict[package]:
+                    value = packages_dict[package][key]
+                    f.write(f"{key}:\n")
+
+                    if isinstance(value, list):
+                        for item in value:
+                            f.write(f"  - {item}\n")
+                    elif isinstance(value, dict):
+                        f.write(f"Contents of '{key}':\n")
+                        f.write("-" * 30 + "\n")  # Separator line
+                        for sub_key, sub_value in value.items():
+                            f.write(f"{sub_key}:\n")
+                            if isinstance(sub_value, list):
+                                for item in sub_value:
+                                    f.write(f"  - {item}\n")
+                            elif isinstance(sub_value, dict):
+                                for inner_key, inner_value in sub_value.items():
+                                    f.write(f"  {inner_key}:\n")
+                                    for val_item in inner_value:
+                                        f.write(f"    - {val_item}\n")
+                            else:
+                                f.write(f"  {sub_value}\n")
+                    else:
+                        f.write(f"  {value}\n")
+
+                    f.write("\n")  # Extra newline for spacing
+
+def error_report(log_dest, package, packages_dict):
+    ato = packages_dict[package]["ARCHIVE_transfer_okay"]
+    oto = packages_dict[package]["ONE2ONECOPY_transfer_okay"]
+    dto = packages_dict[package]["DELIVERY_transfer_okay"]
+    mwo = packages_dict[package]["MAKEWINDOW_okay"]
+    mmo = packages_dict[package]["MAKEMETADATA_okay"]
+    mcpo = packages_dict[package]["MAKECHECKSUMPACKAGE_okay"]
+    dbto = packages_dict[package]["DROPBOX_transfer_okay"]
+
+    # Treat None as True
+    variables = [v if v is not None else True for v in [ato, oto, dto, mwo, mmo, mcpo, dbto]]
+
+    if not all(variables):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
-        notification.recipients(emails)
-        notification.subject(f"Dropbox Upload: {filename}")
+        notification.recipients(["library@tv.cuny.edu"])
+        #notification.recipients(["aida.garrido@tv.cuny.edu"])
+        notification.subject(f"Ingest error: {package}")
 
-        # Write text content with HTML formatting
+        # Exclude the last four keys
+        keys_to_print = keys_order[3:7]
+        keys_to_print2 = keys_order[7:-4]
+
+        # Initialize an HTML formatted string for key-value pairs
+        html_output = "<div>\n<p>"
+
+        for key in keys_to_print:
+            if key in packages_dict[package]:
+                value = packages_dict[package].get(key) # Use package-specific dictionary
+                keyf = key.lower()
+                valuef = str(value).upper()
+                html_output += f"  {keyf}: {valuef}<br>\n"
+
+        html_output += "</p>\n<p>"
+
+        for key in keys_to_print2:
+            if key in packages_dict[package]:
+                value = packages_dict[package].get(key)  # Use package-specific dictionary
+                keyf = key.lower()
+                valuef = str(value).upper()
+                if value == False or "error" in keyf:
+                    html_output += f"  <u><strong>{keyf}: {valuef}</strong></u><br>\n"
+                else:
+                    html_output += f"  {keyf}: {valuef}<br>\n"
+
+        log_path = ''
+        for filename in os.listdir(log_dest):
+            # Check if the filename starts with "ingestlog"
+            if filename.startswith("ingestlog"):
+                log_path = os.path.join(log_dest, filename)
+                break
+
+        html_output += "</p>\n</div>"
+
+        # Create the main HTML content
         html_content = f"""
-        <html>
-          <body>
-            <p>Hello, </p>
-            <p></p>
-            <p>See the link below: </p>
-            <p><a href="{link}">{link}</a>.</p>
-            <p>Best, </p>
-            <p>Library Bot</p>
-          </body>
-        </html>
-        """
+                <html>
+                  <body>
+                    <p>Hello, </p>
+                    <p>An error occurred during ingest:</p>
+                    <br>
+                    {html_output}
+                    <br>
+                    <p>Check attachment for more information or navigate to {log_path}</p>
+                    <p>Best, </p>
+                    <p>Library Bot</p>
+                  </body>
+                </html>
+                """
 
+        # Set notification content
         notification.content(html_content)
+
+        # Add the attachment
+        notification.attachment(log_path)
+
+        # Send the notification
         notification.send()
 
-    # Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
-    def get_file_hash(self, file_path):
-        # Define the endpoint URL
-        url = "https://api.dropboxapi.com/2/files/get_metadata"
 
-        # Replace '<get access token>' with your actual access token
-        access_token = self.ACCESS_TOKEN
+def runcommands(filepath, package):
+    if packages_dict[package]["ARCHIVE_transfer_okay"] and packages_dict[package]["do_commands"]:
+        makewindow_okay, makewindow_error = ingestcommands.makewindow(filepath)
+    else:
+        packages_dict[package]["MAKEWINDOW_okay"] = None
+        packages_dict[package]["MAKEMETADATA_okay"] = None
+        packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
+        return
 
-        # Define the headers
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
+    # Run makemetadata on package if makewindow was successfully run
+    packages_dict[package]["MAKEWINDOW_okay"] = makewindow_okay
+    if makewindow_okay:
+        makemetadata_okay, makemetadata_error = ingestcommands.makemetadata(filepath)
 
-        # Define the data payload
-        data = {
-            "include_deleted": True,
-            "include_has_explicit_shared_members": True,
-            "include_media_info": True,
-            "path": file_path  # Removed curly braces
-        }
+    else:
+        packages_dict[package]["MAKEWINDOW_error"] = makewindow_error
+        packages_dict[package]["MAKEMETADATA_okay"] = None
+        packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
+        return
 
-        # Make the POST request
-        response = requests.post(url, headers=headers, json=data)
+    # Run makechecksum on package if makemetadata was successfully run
+    packages_dict[package]["MAKEMETADATA_okay"] = makemetadata_okay
+    if makemetadata_okay:
+        makechecksumpackage_okay, makechecksumpackage_error = ingestcommands.makechecksumpackage(filepath)
+    else:
+        packages_dict[package]["MAKEMETADATA_error"] = makemetadata_error
+        packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
+        return
 
-        # Check the response
-        if response.status_code == 200:
-            return response.json()["content_hash"]
+    packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = makechecksumpackage_okay
+    if not makechecksumpackage_okay:
+        packages_dict[package]["MAKECHECKSUMPACKAGE_error"] = makechecksumpackage_error
+
+
+# Ingests files
+def ingest():
+    # 1. Transfer files and run commands
+
+    # Create desktop file path
+    # Get the path to the user's home directory
+    home_dir = os.path.expanduser('~')
+    # Path to the Desktop folder (typically under the user's home directory)
+    desktop_path = os.path.join(home_dir, 'Desktop')
+
+    for package in packages_dict:
+        # Create package object from RestructurePackage class
+        package_obj = restructurepackage.RestructurePackage(desktop_path, package)
+        for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
+            package_obj.create_output_directory(desktop_path, package, card)
+            # Transfer files to Desktop
+            package_obj.archive_restructure_folder(input_path, desktop_path, package, card, packages_dict[package]["do_fixity"],
+                                           packages_dict[package]["do_drive_delete"])
+            eject(input_path)
+
+        # Save desktop transfer results and checksums
+        packages_dict[package]["ARCHIVE_files_dict"] = package_obj.ARCHIVE_FILES_DICT
+        packages_dict[package]["ARCHIVE_transfer_okay"] = package_obj.ARCHIVE_TRANSFER_OKAY
+        if package_obj.ARCHIVE_TRANSFER_ERROR:
+            packages_dict[package]["ARCHIVE_transfer_error"] = package_obj.ARCHIVE_TRANSFER_ERROR
+
+        # Run commands
+        if packages_dict[package]["do_commands"]:
+            runcommands(os.path.join(desktop_path, package), package)
         else:
-            return None
+            packages_dict[package]["MAKEWINDOW_okay"] = None
+            packages_dict[package]["MAKEMETADATA_okay"] = None
+            packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = None
 
-    # Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
-    def get_shared_folder_id(self, path):
-        # Define the endpoint URL
-        url = "https://api.dropboxapi.com/2/files/get_metadata"
+        # Transfer to server if last batch or only batch in process
+        if packages_dict[package]["do_desktop_delete"]:
+            # Transfer files to XSAN
+            package_obj.delivery_restructure_folder(os.path.join(desktop_path, package, "objects"),
+                                                    os.path.join(server2, get_showcode(package)),
+                                                    package, packages_dict[package]["do_fixity"],
+                                                    False,
+                                                    packages_dict[package]["ARCHIVE_files_dict"])
 
-        # Replace '<get access token>' with your actual access token
-        access_token = self.ACCESS_TOKEN
+            # Transfer files to CUNY TV Media
+            package_obj.one2one_copy_folder(os.path.join(desktop_path, package), os.path.join(server, package),
+                                            packages_dict[package]["do_fixity"],
+                                            False,
+                                            packages_dict[package]["ARCHIVE_files_dict"])
 
-        # Define the headers
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
+            # Save delivery transfer results and checksums
+            packages_dict[package]["DELIVERY_files_dict"] = package_obj.DELIVERY_FILES_DICT
+            packages_dict[package]["DELIVERY_transfer_okay"] = package_obj.DELIVERY_TRANSFER_OKAY
+            if package_obj.DELIVERY_TRANSFER_ERROR:
+                packages_dict[package]["DELIVERY_transfer_error"] = package_obj.DELIVERY_TRANSFER_ERROR
 
-        # Define the data payload
-        data = {
-            "include_deleted": True,
-            "include_has_explicit_shared_members": True,
-            "include_media_info": True,
-            "path": path  # Removed curly braces
-        }
-
-        # Make the POST request
-        response = requests.post(url, headers=headers, json=data)
-
-        # Check the response
-        if response.status_code == 200:
-            if 'sharing_info' in response.json():
-                return response.json()["sharing_info"]["parent_shared_folder_id"]
-            else:
-                return self.create_shared_folder_id(path)
+            # Save delivery transfer results and checksums
+            packages_dict[package]["ONE2ONECOPY_files_dict"] = package_obj.ONE2ONECOPY_FILES_DICT
+            packages_dict[package]["ONE2ONECOPY_transfer_okay"] = package_obj.ONE2ONECOPY_TRANSFER_OKAY
+            if package_obj.DELIVERY_TRANSFER_ERROR:
+                packages_dict[package]["ONE2ONECOPY_transfer_error"] = package_obj.ONE2ONECOPY_TRANSFER_ERROR
         else:
-            return self.create_shared_folder_id(path)
+            packages_dict[package]["DELIVERY_transfer_okay"] = None
+            packages_dict[package]["ONE2ONECOPY_transfer_okay"] = None
 
-    def create_shared_folder_id(self, path):
-        url = 'https://api.dropboxapi.com/2/sharing/share_folder'
+        #print
+        #print(packages_dict[package])
 
-        headers = {
-            'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
-            'Content-Type': 'application/json',
-        }
-        data = {
-            'access_inheritance': 'inherit',
-            'acl_update_policy': 'editors',
-            'force_async': False,
-            'member_policy': 'anyone',
-            'path': path,
-            'shared_link_policy': 'anyone'
-        }
+    # 2. Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
+    for package in packages_dict:
+        no_error = packages_dict[package]["ARCHIVE_transfer_okay"] and (
+                    packages_dict[package]["MAKEWINDOW_okay"] or packages_dict[package]["MAKEWINDOW_okay"] is None)
+        do_dropbox = packages_dict[package]["emails"]
 
-        response = requests.post(url, headers=headers, json=data)
+        server_object_directory = os.path.join(desktop_path, package, "objects")
+        dropbox_directory = dropbox_prefix(package) + f'/{package}'
+        emails = packages_dict[package]["emails"]
 
-        # Check the response
-        if response.status_code == 200:
-            return response.json()["shared_folder_id"]
-        else:
-            print("Error sharing folder:", response.text)
+        if no_error and do_dropbox:
+            uploadsession = dropboxuploadsession.DropboxUploadSession(server_object_directory)
+
+            for root, _, files in os.walk(server_object_directory, topdown=False):
+                for filename in files:
+                    if not mac_system_metadata(filename):
+                        filepath = os.path.join(root, filename)
+                        dropboxpath = os.path.join(dropbox_directory, filename)
+
+                        try:
+                            fixity_pass = uploadsession.upload_file_to_dropbox(filepath, dropboxpath, packages_dict[package]["do_fixity"], packages_dict[package]["DELIVERY_files_dict"])
+
+                        except ConnectionError:
+                            print("Connection error.")
+
+            packages_dict[package]["DROPBOX_files_dict"] = uploadsession.DROPBOX_FILES_DICT
+            packages_dict[package]["DROPBOX_transfer_okay"] = uploadsession.DROPBOX_TRANSFER_OKAY
 
 
-    #Adds member(s) to folder and sends email notification
-    def add_folder_member(self, emails, id, quiet_bool, msg):
-        url = 'https://api.dropboxapi.com/2/sharing/add_folder_member'
-        headers = {
-            'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
-            'Content-Type': 'application/json'
-        }
-
-        members = []
-        for email in emails:
-            members.append({"access_level": "viewer", "member": {".tag": "email", "email": email}})
-
-        data = {
-            "custom_message": msg,
-            "members": members,
-            "quiet": quiet_bool,
-            "shared_folder_id": id
-        }
-
-        response = requests.post(url, headers=headers, json=data)
-
-        # Check the response
-        if response.status_code == 200:
-            print(f"\nFolder succesfully shared with {emails}")
-        else:
-            print("Error sharing folder:", response.text)
-
-    # Adds member(s) to file and sends email notification
-    def add_file_member(self, emails, id, quiet_bool):
-         url = "https://api.dropboxapi.com/2/sharing/add_file_member"
-         headers = {
-             "Authorization": "Bearer " + self.ACCESS_TOKEN,
-             "Content-Type": "application/json"
-         }
-
-         members = []
-         for email in emails:
-             members.append({".tag": "email","email": email})
-
-         data = {
-             "access_level": "viewer",
-             "add_message_as_comment": False,
-             "custom_message": None,
-             "file": id,
-             "members": members,
-             "quiet": quiet_bool
-         }
-
-         response = requests.post(url, headers=headers, json=data)
-
-         # Check the response
-         if response.status_code == 200:
-             print(f"\nFile succesfully shared with {email}")
-         else:
-             print("Error sharing file:", response.text)
-
-    # Handles folder uploads
-    def folder (self, folder_path, emails, dropbox_path_prefix):
-        # Dropbox root folder where you want to upload files
-        # /Users/archivesx/Desktop/Test => /Test
-        ROOT_PATH = '/' + folder_path.rsplit('/', 1)[1]
-        # Append root to prefix, /Test -> prefix/Test
-        if dropbox_path_prefix:
-            ROOT_PATH = dropbox_path_prefix + ROOT_PATH
-
-        # Split all files paths in directory at the following string to create dropbox paths
-        # /Users/archivesx/Desktop/Test => /Users/archivesx/Desktop
-        split_string = folder_path.rsplit('/', 1)[0]
-        file_paths, dropbox_file_paths = self.list_files(folder_path, split_string, dropbox_path_prefix)
-
-        # Upload to dropbox
-        for f, d in zip(file_paths, dropbox_file_paths):
-            self.upload_file_to_dropbox(f, d, True, None)
-
-        if emails:
-            cuny_emails = []
-            other_emails = []
-
-            for email in emails:
-                if "@tv.cuny.edu" in email:
-                    cuny_emails.append(email)
-                else:
-                    other_emails.append(email)
-
-            # Get or create shared link
-            self.share_link = self.get_shared_link(ROOT_PATH)[0]
-
-            # Email notification
-            if cuny_emails:
-                self.email(cuny_emails, folder_path.rsplit('/', 1)[1], self.share_link)
-
-            # Get or create share folder
-            id = self.get_shared_folder_id(ROOT_PATH)
-
-            # Dropbox notification
-            if other_emails:
-                self.add_folder_member(other_emails, id, False, None)
-
-    # Handles file uploads
-    def file (self, file_path, emails, dropbox_path_prefix):
-        # Dropbox file path where you want to upload the file
-        # /Users/archivesx/Desktop/test.png => /test.png
-        ROOT_PATH = '/' + file_path.rsplit('/', 1)[1]
-        # Append root to prefix, /test.png -> prefix/test.png
-        if dropbox_path_prefix:
-            ROOT_PATH = dropbox_path_prefix + ROOT_PATH
-
-        # Upload file
-        self.upload_file_to_dropbox(file_path, ROOT_PATH, True, None)
-
-        if emails:
-            for email in emails:
+            # Send email notification if Dropbox transfer goes well.
+            if packages_dict[package]["DROPBOX_transfer_okay"]:
+                # Bifurcate email type
                 cuny_emails = []
                 other_emails = []
+                if emails:
+                    for email in emails:
+                        if "@tv.cuny.edu" in email:
+                            cuny_emails.append(email)
+                        else:
+                            other_emails.append(email)
 
-                if "@tv.cuny.edu" in email:
-                    cuny_emails.append(email)
-                else:
-                    other_emails.append(email)
+                # Send network email to CUNY recipients
+                uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
+                notification = sendnetworkmail.SendNetworkEmail()
+                notification.sender("library@tv.cuny.edu")
+                notification.recipients(cuny_emails)
+                notification.subject(f"Dropbox Upload: {package}")
 
-            # Create shared link (do you want to create shared link for the file or for the folder??, test and figure out
-            self.share_link, id = self.get_shared_link(ROOT_PATH)
+                # Write text content with HTML formatting
+                html_content = f"""
+                <html>
+                  <body>
+                    <p>Hello, </p>
+                    <p></p>
+                    <p>See the link below: </p>
+                    <p><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.</p>
+                    <p>Best, </p>
+                    <p>Library Bot</p>
+                  </body>
+                </html>
+                """
 
-            # Email notification
-            if cuny_emails:
-                self.email(cuny_emails, file_path.rsplit('/', 1)[1], self.share_link)
+                notification.content(html_content)
+                notification.send()
 
-            # Dropbox notification
-            if other_emails:
-                self.add_file_member(other_emails, id, False)
+                # Send dropbox notification to non-CUNY recipients
+                if other_emails is not None:
+                    msg = f"{dropbox_directory} has finished uploading."
+                    uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
+                                                    False, msg)
+        else:
+            #packages_dict[package]["DROPBOX_files_dict"] = None
+            packages_dict[package]["DROPBOX_transfer_okay"] = None
+
+
+    # 3. Print logs and send email to library in case of error
+    for package in packages_dict:
+        # Write dictionary to a text file
+        log_dest = os.path.join(server, package, "metadata")
+
+        # Check if the directory exists, if not, create it
+        if not os.path.exists(log_dest):
+            os.makedirs(log_dest)
+
+        print_log(log_dest, package, packages_dict)
+        error_report(log_dest, package, packages_dict)
+
+        if packages_dict[package]['do_desktop_delete']:
+            shutil.rmtree(os.path.join(desktop_path, package))
+
+# Ejects mounted drive
+def eject(path):
+    subprocess.run(["diskutil", "eject", path])
+    notification(f"{path} ejected. Safe to remove.")
+
+
+# Sends onscreen notification
+def notification(message):
+    applescript = f'''
+            display notification "{message}" with title "Ingest Notification"
+        '''
+    subprocess.run(["osascript", "-e", applescript])
 
 
 if __name__ == "__main__":
+    # Create dictionary of packages
+    # Follows the format of Package Name {[cards], [input paths], do_fixity boolean, do_drive_delete boolean, do_commands boolean, {file dictionary}, transfer_okay boolean}
+    packages_dict = {}
 
-    # (Input, Emails, Output), ...
-    input_emails_output_tuple = []
+    # Check if connected to servers
+    server = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
+    server_check(server)
+    #server = "/Users/aidagarrido/Desktop"
 
-    cont = True
-    while cont:
-        input_path = validateuserinput.path(input("Input folder or file path: "))
-        emails = validateuserinput.emails(input("List email(s) delimited by space or press enter to continue: "))
-        emails.extend(["library@tv.cuny.edu"])
+    server2 = "/Users/aidagarrido/Desktop/Camera Card Delivery"
+    #server2 = "/Volumes/TigerVideo/Camera Card Delivery"
+    server_check(server2)
 
-        # Custom dropbox parent folder path, otherwise defaults to root dropbox folder in the case of a file
-        # and show code workflow in the case of a folder
-        custom_prefix = input('Specify dropbox path (/Example/Example) or press enter for default /_AD_HOC_REQUESTS: ') or "/_AD_HOC_REQUESTS"
+    # Detect recently inserted drives and cards
+    countdown(5)
+    volume_paths = detectrecentlyinserteddrives.volume_paths()
 
-        input_emails_output_tuple.append([input_path, emails, custom_prefix])
-        cont = (input("\tQueue more dropbox uploads? y/n: ")).lower() == 'y'
+    # Organizes user inputs into dictionary
+    if not volume_paths:
+        print("No cards detected")
+    else:
+        cunymediaids.print_media_dict()
+        print()
+        print(f"{len(volume_paths)} card(s) detected")
 
-    for tuple in input_emails_output_tuple:
-        # Create class instance
-        session = DropboxUploadSession(tuple[0])
+        for input_path in volume_paths:
+            print(f"- {input_path}")
+            print_first_ten_filenames(input_path)
 
-        if os.path.isfile(tuple[0]):
-            session.file (tuple[0], tuple[1], tuple[2])
+            package_name = validateuserinput.card_package_name(input(f"\tEnter a package name: "))
+            camera_card_number = validateuserinput.card_subfolder_name(
+                input(f"\tEnter the corresponding card number or name on sticker (serialize from 1 if none): "))
 
-        elif os.path.isdir(input_path):
-            session.folder(tuple[0], tuple[1], tuple[2])
+            if package_name not in packages_dict:
+                multibatch = input(
+                    "\tIs this a multi-batch process? (i.e. does the number of cards/drives exceed the number of readers?) y/n: ").lower() == 'y'
+                if multibatch:
+                    last_batch = input(
+                        "\tIs this the last batch? y/n: ").lower() == 'y'
+                if multibatch and not last_batch:
+                    # Additional file processing options
+                    do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
+
+                    # Create key-value pair
+                    packages_dict[package_name] = {
+                        "cards": [camera_card_number],
+                        "input_paths": [input_path],
+                        "do_fixity": do_fixity,
+                        "do_drive_delete": False,
+                        "do_desktop_delete": False,
+                        "do_commands": False,
+                        "do_dropbox": False,
+                        "emails": False
+                    }
+
+                else:
+                    # Additional file processing options
+                    do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
+                    # do_drive_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
+                    do_drive_delete = False
+                    do_commands = (input(
+                        "\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
+                    do_dropbox = (input(
+                        "\tUpload to dropbox? y/n: ")).lower() == 'y'
+                    emails = []
+                    if do_dropbox:
+                        emails = validateuserinput.emails(
+                            input("\tList email(s) delimited by space or press enter to continue: "))
+                        emails.extend(["library@tv.cuny.edu"])
+                        #emails.extend(["aida.garrido@tv.cuny.edu"])
+
+                    # Create key-value pair
+                    packages_dict[package_name] = {
+                        "cards": [camera_card_number],
+                        "input_paths": [input_path],
+                        "do_fixity": do_fixity,
+                        "do_drive_delete": do_drive_delete,
+                        "do_desktop_delete": True,
+                        "do_commands": do_commands,
+                        "do_dropbox": do_dropbox,
+                        "emails": emails
+                    }
+
+            else:
+                # Edit existing key-value pair
+                packages_dict[package_name]["cards"].append(camera_card_number)
+                packages_dict[package_name]["input_paths"].append(input_path)
+
+        # Begin ingest
+        ingest()
