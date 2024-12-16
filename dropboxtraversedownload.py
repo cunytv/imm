@@ -157,6 +157,66 @@ class DropboxTraverseDownload:
             print(f"Failed to download file. Status code: {response.status_code}")
             print(response.text)
 
+
+    # Get shared link
+    def get_shared_link(self, path):
+        # Define the endpoint URL
+        url = "https://api.dropboxapi.com/2/sharing/list_shared_links"
+
+        # Define request headers
+        headers = {
+            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+
+        # Define request body data
+        data = {
+            "direct_only": True,
+            "path": path
+        }
+
+        # Send the POST request
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            if response.json()['links']:
+                return response.json()['links'][0]['url'], response.json()['links'][0]['id']
+            else:
+                return self.create_shared_link_with_settings(path)
+        else:
+            return self.create_shared_link_with_settings(path)
+
+    # Creates share link that anyone can use to access
+    def create_shared_link_with_settings(self, path):
+        url = 'https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings'
+        headers = {
+            'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
+            'Content-Type': 'application/json',
+        }
+
+        settings = {
+            'access': "viewer",
+            'allow_download': True,
+            'audience': "public",
+            'requested_visibility': 'public'
+        }
+
+        data = {
+            'path': path,
+            'settings': settings
+        }
+        response = requests.post(url, headers=headers, json=data)
+        print("CREATE SHARED LINK")
+        print(response)
+
+        # Check Response
+        try:
+            response.raise_for_status()
+            return response.json()['url'], response.json()['id']
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP error occurred: {e}")
+            print(f"Response content: {response.content}")
+            return None
+
 if __name__ == "__main__":
     # Create class instance
     session = DropboxTraverseDownload()
@@ -190,14 +250,18 @@ if __name__ == "__main__":
     # Step 2, download files
     i = 1
     # Open the text file in read mode ('r')
-    with open(os.path.join(desktop_path, "dropbox_image_filepaths_test.txt"), 'r') as file:
-        # Iterate through each line in the file
-        for line in file:
-            # Strip the newline character from each line
-            dropbox_path = line.strip()
-            session.download(dropbox_path, local_directory)
-            print(f"- Downloaded file {i} of {session.counter}: {dropbox_path}")
-            i += 1
+    with open(os.path.join(local_directory, "DROPBOX_LINK_FILE_PATH_LOG.txt"), "w") as file_write:
+        with open(os.path.join(desktop_path, "dropbox_image_filepaths_test.txt"), 'r') as file_read:
+            # Iterate through each line in the file
+            for line in file_read:
+                # Strip the newline character from each line
+                dropbox_path = line.strip()
+                session.download(dropbox_path, local_directory)
+                link = session.get_shared_link(dropbox_path)[0]
+                file_write.write(f"{link} ==> {os.path.join(local_directory, dropbox_path.lstrip('/'))}" + '\n')
+                file_write.flush()
+                print(f"- Downloaded file {i} of {session.counter}: {dropbox_path}")
+                i += 1
 
     # Step 3, delete txt file
     os.remove(os.path.join(desktop_path, "dropbox_image_filepaths_test.txt"))
