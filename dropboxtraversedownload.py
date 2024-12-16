@@ -182,7 +182,7 @@ if __name__ == "__main__":
     # Step 1, traverse dropbox and gather file names into txt file
     # Open the file for writing
     with open(os.path.join(desktop_path, "dropbox_image_filepaths_test.txt"), "w") as file:
-        while session.folder_paths and session.counter < 10:
+        while session.folder_paths:
             path = session.folder_paths.pop()
             session.listcontents(path, file)
             file.flush()
