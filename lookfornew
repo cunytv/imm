@@ -47,7 +47,7 @@ echo "${filelist}" > "${timefile}"
 
 message="These new video files showed up in $(basename "${searchdirectory}"):\n\n"
 
-DIFFLIST_COUNT="$(wc -l testnew | awk '{print $1}')"
+DIFFLIST_COUNT="$(echo "${difflist}" | wc -l | awk '{print $1}')"
 DIFFLIST_C="0"
 MAX_FILE_PER_MSG="5"
 
