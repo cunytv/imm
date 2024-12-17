@@ -696,7 +696,8 @@ if __name__ == "__main__":
                         "\tIs this the last batch? y/n: ").lower() == 'y'
                 if multibatch and not last_batch:
                     # Additional file processing options
-                    do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
+                    #do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
+                    do_fixity = True
 
                     # Create key-value pair
                     packages_dict[package_name] = {
@@ -712,11 +713,14 @@ if __name__ == "__main__":
 
                 else:
                     # Additional file processing options
-                    do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
+                    #do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
                     # do_drive_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
+                    #do_commands = (input("\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
+
                     do_drive_delete = False
-                    do_commands = (input(
-                        "\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
+                    do_fixity = True
+                    do_commands = True
+                    
                     do_dropbox = (input(
                         "\tUpload to dropbox? y/n: ")).lower() == 'y'
                     emails = []
