@@ -136,7 +136,7 @@ if [[ -n "${difflist}" ]] ; then
 MIME-Version: 1.0
 From: "Library Bot" <library@tv.cuny.edu>
 To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
-Subject: [New Files on $(basename "${searchdirectory}")]${SUBJECT_LIST[*]}
+Subject: [New Files on $(basename "${searchdirectory}")] $(echo "${SUBJECT_LIST[*]}" | iconv -f utf-8 -t us-ascii//TRANSLIT)
 Content-Type: multipart/mixed; boundary="$BOUNDARY"
 
 --$BOUNDARY
@@ -162,7 +162,7 @@ EOF
 MIME-Version: 1.0
 From: "Library Bot" <library@tv.cuny.edu>
 To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
-Subject: [New Files on $(basename "${searchdirectory}")]${SUBJECT_LIST[*]}
+Subject: [New Files on $(basename "${searchdirectory}")] $(echo "${SUBJECT_LIST[*]}" | iconv -f utf-8 -t us-ascii//TRANSLIT)
 Content-Type: multipart/mixed; boundary="$BOUNDARY"
 
 --$BOUNDARY
