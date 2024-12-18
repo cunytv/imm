@@ -151,6 +151,7 @@ class LongPoll:
                     extension = entry['path_display'].rsplit('.', 1)[1]
                     if extension in self.image_extensions:
                         print(f"- Detected new image upload: {entry['path_display']}")
+                        #self.download({entry['path_display']})
 
 
     def download(self, dropbox_path):
@@ -187,7 +188,7 @@ class LongPoll:
             with open(download_path, "wb") as file:
                 file.write(binary_data)
 
-            #print(f"File downloaded successfully to: {download_path}")
+            print(f"File downloaded successfully to: {download_path}")
         else:
             print(f"Failed to download file. Status code: {response.status_code}")
             print(response.text)
@@ -233,9 +234,9 @@ if __name__ == "__main__":
 
     # Specify local directory for downloads
     lp.local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
-    #local_directory = input("Local directory for download: ")
+    #lp.local_directory = input("Local directory for download: ")
     #while not os.path.isdir(local_directory):
-    #    local_directory = input("Directory does not exist. Try again: ")
+    #    lp.local_directory = input("Directory does not exist. Try again: ")
 
     while True:
         if lp.token_expired():
@@ -248,3 +249,10 @@ if __name__ == "__main__":
             cursor = lp.get_cursor(path)
         else:
             print('no changes')
+
+
+    ## Next, checksum verification
+    ## Send email if new downloads
+    ## Send email if application quits
+    ## Schedule
+    ## Create icon?
