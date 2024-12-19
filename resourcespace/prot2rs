@@ -107,7 +107,7 @@ _query_protrack_push_to_resourcespace(){
         echo ", found in resourcespace (ref=$REF)"
         TEMPXML=$(_maketemp)
         # get PBCore XML for that mediaid
-        "${SCRIPTDIR}/pbprotracktor" "${MEDIAID}" | _remove_empty_xml_nodes 2> /dev/null > "${TEMPXML}"
+        pbprotracktor "${MEDIAID}" | _remove_empty_xml_nodes 2> /dev/null > "${TEMPXML}"
         if [[ -f "${SCRIPTDIR}/fmpbcore" && -f "${TEMPXML}" && ! -s "${TEMPXML}" ]] ; then
             echo "No data retrived from protrack. Now trying to grab pbcore for ${MEDIAID} using fmpbcore."
             "${SCRIPTDIR}/fmpbcore" "${MEDIAID}" | _remove_empty_xml_nodes 2> /dev/null > "${TEMPXML}"
