@@ -43,6 +43,10 @@ _uploadfile(){
 while [ "${*}" != "" ] ; do
     # get context about the input
     INPUT="${1}"
+	if [[ ! -s "$INPUT" ]] ; then
+		echo "$INPUT is not a file. Error."
+		exit
+	fi
     shift
     RS_ID=$("${SCRIPTDIR}/rs_search" $(basename "${INPUT%.*}"))
     if [[ -z "${RS_ID}" ]] ; then
