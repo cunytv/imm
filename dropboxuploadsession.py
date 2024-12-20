@@ -93,6 +93,24 @@ class DropboxUploadSession:
                     dropbox_paths.append(dropbox_path)
         return file_paths, dropbox_paths
 
+
+    # Deletes file from dropbox
+    def delete_file(self, path):
+        url = "https://api.dropboxapi.com/2/files/delete_v2"
+        headers = {
+            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "path": path
+        }
+
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+
+        # Print the response from Dropbox API
+        print(response.status_code)
+        print(response.json())
+
     # Uploads file to dropbox
     def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5):
         for attempt in range(max_retries):
@@ -114,7 +132,7 @@ class DropboxUploadSession:
 
                 session_id = response.json()['session_id']
                 offset = 0
-
+                
                 # Step 2: Upload the file in chunks
                 chunk_size = 4 * 1024 * 1024  # 4MB chunk size
                 with open(file_path, 'rb') as file:
@@ -168,6 +186,11 @@ class DropboxUploadSession:
                 }
                 response = requests.post(session_finish_url, headers=headers, timeout=30)
 
+                if response.status_code != 200:
+                    print("Failed to complete upload session:", response.text)
+                    self.DROPBOX_TRANSFER_OKAY = False
+                    return
+
                 # Step 4 (optional): Fixity check
                 # Create checksum variables and retrieve post-transfer checksum from dropbox API
                 cs1 = None
@@ -182,11 +205,6 @@ class DropboxUploadSession:
                             cs1 = value[0]  # The first element is the checksum
                             break
 
-                if response.status_code != 200:
-                    print("Failed to complete upload session:", response.text)
-                    self.DROPBOX_TRANSFER_OKAY = False
-                    return
-
                 # Update files dictionary
                 if do_fixity:
                     if cs1 == cs2:
@@ -194,26 +212,27 @@ class DropboxUploadSession:
                         self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, True]
                         return True
                     else:
-                        # Retry upload one more time if fixity fails and we're not at max retries
+                        # Retry upload if we're not at max retries
                         if attempt < max_retries - 1:
-                            print(f"Fixity check failed. Retrying upload, attempt {attempt + 1}...")
-                            return self.upload_file_to_dropbox(file_path, dropbox_path, do_fixity, files_dict,
-                                                               max_retries)
+                            self.delete_file(dropbox_path)
+                            self.bytes_read = self.bytes_read - offset
+                            raise ConnectionError(f'File {file_path} transferred but did not pass fixity check')
+
                         else:
-                            print(f'File {file_path} transferred but did not pass fixity check')
                             self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, False]
-                            self.DROPBOX_TRANSFER_OKAY = False
-                            return False
+                            raise ConnectionError(f'File {file_path} transferred but did not pass fixity check')
                 else:
                     self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, None]
                     return None
 
             except ConnectionError as e:
+                print(f"Attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
-                    print(f"ConnectionError: Retry attempt {attempt + 1}")
+                    print("Retrying upload.")
                 else:
+                    print(f"Max retries reached. Operation failed: {e}")
                     self.DROPBOX_TRANSFER_OKAY = False
-                    raise e
+                    return False
 
     # Get shared link
     def get_shared_link(self, path):
