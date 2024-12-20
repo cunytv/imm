@@ -6,6 +6,7 @@ import sys
 from requests.exceptions import ConnectionError
 import datetime
 import time
+import hashlib
 
 import validateuserinput
 import sendnetworkmail
@@ -93,6 +94,42 @@ class DropboxUploadSession:
                     dropbox_paths.append(dropbox_path)
         return file_paths, dropbox_paths
 
+    # Creates checksum
+    def calculate_sha256_checksum(self, file_path, block_size=4 * 1024 * 1024):
+        # Get the total size of the file
+        total_size = os.path.getsize(file_path)
+        hash_object = hashlib.sha256()
+        bytes_read = 0
+        block_hashes = []
+
+        # Open the file for reading in binary mode
+        with open(file_path, 'rb') as f:
+            while True:
+                # Read a block of data
+                block = f.read(block_size)
+                if not block:
+                    break  # End of file
+
+                # Compute the hash of the block and store it
+                block_hash = hashlib.sha256(block).digest()
+                block_hashes.append(block_hash)
+
+                # Update the total bytes read
+                bytes_read += len(block)
+
+                # Update the main hash with the current block hash
+                hash_object.update(block_hash)
+
+                # Calculate and display progress
+                progress = min(int((bytes_read / total_size) * 100), 100)
+                sys.stdout.write("\rChecksum progress: [{:<50}] {:d}% ".format('=' * (progress // 2), progress))
+                sys.stdout.flush()
+
+        # Compute the final hash of the concatenated block hashes
+        final_hash = hash_object.hexdigest()
+
+        print()  # Move to the next line after progress
+        return final_hash
 
     # Deletes file from dropbox
     def delete_file(self, path):
@@ -132,7 +169,7 @@ class DropboxUploadSession:
 
                 session_id = response.json()['session_id']
                 offset = 0
-                
+
                 # Step 2: Upload the file in chunks
                 chunk_size = 4 * 1024 * 1024  # 4MB chunk size
                 with open(file_path, 'rb') as file:
@@ -517,10 +554,9 @@ class DropboxUploadSession:
         self.upload_file_to_dropbox(file_path, ROOT_PATH, True, None)
 
         if emails:
+            cuny_emails = []
+            other_emails = []
             for email in emails:
-                cuny_emails = []
-                other_emails = []
-
                 if "@tv.cuny.edu" in email:
                     cuny_emails.append(email)
                 else:
