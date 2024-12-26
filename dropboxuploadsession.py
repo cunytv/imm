@@ -142,7 +142,7 @@ class DropboxUploadSession:
             "path": path
         }
 
-        response = requests.post(url, headers=headers, data=json.dumps(data))
+        response = requests.post(url, headers=headers, json=data)
 
         # Print the response from Dropbox API
         print(response.status_code)
