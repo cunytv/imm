@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-
-
+from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
 import subprocess
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
 from email import encoders
+import os
+import re
+import validateuserinput
+
 
 class SendNetworkEmail:
     def __init__(self):
@@ -14,41 +16,88 @@ class SendNetworkEmail:
         self.EMAIL_TO = ''
         self.SUBJECT = ''
         self.CONTENT = ''
+        self.content_array = []
 
-        # Create a multipart message
-        self.MSG = MIMEMultipart()
+        # Create a multipart message of 'related' type to embed images
+        self.MSG = MIMEMultipart('mixed')  # 'mixed' type can be more appropriate for both text and images
+        self.MSG.preamble = 'This is a multi-part message in MIME format.'
+
+        # Embed img counter
+        self.img_counter = 0
 
     def sender(self, sender):
         self.EMAIL_FROM = sender
         self.MSG['From'] = self.EMAIL_FROM
 
-    # Recieves emails argument as array and converts to string
     def recipients(self, emails):
-        i = 0
-        l = len(emails)
-
-        emails_string = ''
-
-        while i < l:
-            if i + 1 == l:
-                emails_string = emails_string + emails[i]
-                break
-            emails_string = emails_string + emails[i] + ', '
-            i = i + 1
-
-        self.EMAIL_TO = emails_string
+        """ Receives emails argument as a list and converts to a comma-separated string """
+        self.EMAIL_TO = ', '.join(emails)
         self.MSG['To'] = self.EMAIL_TO
 
     def subject(self, line):
         self.SUBJECT = line
         self.MSG['Subject'] = self.SUBJECT
 
-    def content(self, content):
-        # Add text content
-        text = MIMEText(content, 'html')
+    def html_content(self, content):
+        """ Add HTML content to the email """
+        content = self.strip_html_and_body(content)
+        print(content)
+        self.splice_content(content)
+
+    def strip_html_and_body(self, content):
+        """ Remove <html> and <body> tags if present """
+        content = re.sub(r'</?html.*?>', '', content)
+        content = re.sub(r'</?body.*?>', '', content)
+        return content
+
+    def splice_content(self, content):
+        """ Split the content into tags and text """
+        pattern = r'<.*?>'
+        content_array = re.findall(pattern, content)
+
+        i = 0
+        while i < len(content_array):
+            content = content.split(content_array[i], 1)[1]
+            if i + 1 < len(content_array):
+                tagged_text = content.split(content_array[i + 1], 1)[0]
+            else:
+                tagged_text = content
+
+            tagged_text = tagged_text.strip()
+            if tagged_text and "\n" not in tagged_text:
+                content_array.insert(i + 1, tagged_text)
+                i = i + 2
+            else:
+                i = i + 1
+
+        self.content_array = self.content_array + content_array
+
+    def prepare_html(self):
+        """ Prepare the full HTML structure with content and body tags """
+        starttags = """
+        <html>
+          <body>
+        """
+
+        endtags = """
+          </body>
+        </html>
+        """
+
+        # Combine all the content and tags
+        html_body = starttags
+        for text in self.content_array:
+            html_body += text
+        html_body += endtags
+
+        self.CONTENT = html_body  # Final HTML body
+
+        # Attach the prepared HTML as MIMEText
+        text = MIMEText(self.CONTENT, 'html')
         self.MSG.attach(text)
 
     def attachment(self, file):
+        """ Attach file to the email """
         try:
             with open(file, 'rb') as attachment:
                 part = MIMEBase('application', 'octet-stream')
@@ -63,30 +112,67 @@ class SendNetworkEmail:
             print(f"Failed to attach the file: {e}")
             return
 
-    def send(self):
-        # Print the MIME message
-        print(self.MSG.as_string())
+    def embed_img(self, img_path):
+        """ Embed a GIF in the email body using CID reference """
+        self.img_counter += 1
+        img_cid = f"image{self.img_counter}"
 
-        # Send email using sendmail
-        sendmail_command = ["sendmail", "-f", self.EMAIL_FROM, "-t", self.EMAIL_TO]
-        sendmail_process = subprocess.Popen(sendmail_command, stdin=subprocess.PIPE)
-        sendmail_process.communicate(input=self.MSG.as_bytes())
+        # Append <img> tag with cid reference to HTML content
+        img_tag = f"""<img src="cid:{img_cid}">"""
+        self.html_content(img_tag)
+
+        try:
+            if not os.path.isfile(img_path):
+                print(f"Image file not found: {img_path}")
+                return
+
+            with open(img_path, 'rb') as img_file:
+                img = MIMEImage(img_file.read())
+                img.add_header('Content-ID', f'<{img_cid}>')  # This ID is used in HTML
+                self.MSG.attach(img)
+                print(f"Image embedded with CID: {img_cid}")
+        except Exception as e:
+            print(f"Failed to embed image: {e}")
+
+    def send(self):
+        """ Prepare and send the email using sendmail """
+        self.prepare_html()
+        try:
+            # Print the MIME message for debugging purposes
+            print(self.MSG.as_string())  # Check the full MIME structure
+
+            # Send the email using sendmail
+            sendmail_command = ["sendmail", "-f", self.EMAIL_FROM, "-t", self.EMAIL_TO]
+            sendmail_process = subprocess.Popen(sendmail_command, stdin=subprocess.PIPE)
+            sendmail_process.communicate(input=self.MSG.as_bytes())
+            print("Email sent successfully!")
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+
 
 if __name__ == "__main__":
-    # Create package object
+    # Create an instance of the email class
     email = SendNetworkEmail()
 
-    # Change to user input
-    sender =  "library@tv.cuny.edu"
-    recipients = ["library@tv.cuny.edu, david.rice@tv.cuny.edu"]
-    subject = "Test Python email."
-    content = "Test python email."
+    # Set the sender, recipients, and subject
+    sender = "library@tv.cuny.edu"
+    recipients = validateuserinput.emails(input("List recipient email(s) delimited by space: "))
+    subject = input("Subject: ")
+    html_content = input("Text content (HTML tags permitted, e.g. <br>, <p>, <h1>, <b>, etc)) or press enter to continue: ")
+    embed_image = input("Embed image at the end of email? Input file path or press enter to continue: ")
+    attachments = (input("List attachment(s) delimited by space: ")).split()
 
-    # Create email parameters
+    # Set email parameters
     email.sender(sender)
-    email.recipients(recipients)
+    email.recipients(recipients) # Accepts array
     email.subject(subject)
-    email.content(content)
+    email.html_content(html_content)
+    if embed_image:
+        email.embed_img(embed_image)
+    for attachment in attachments:
+        email.attachment(attachment)
 
-    # Send email
+    print(email.content_array)
+
+    # Send the email
     email.send()
