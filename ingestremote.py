@@ -6,7 +6,6 @@ import ingestcommands
 import validateuserinput
 import dropboxuploadsession
 import cunymediaids
-from dropboxuploadsession import DropboxUploadSession
 import sendnetworkmail
 import re
 import sys
@@ -15,7 +14,6 @@ import subprocess
 import time
 import shutil
 from datetime import datetime
-import json
 
 # Specify the order for printing
 keys_order = [
@@ -440,7 +438,7 @@ def error_report(log_dest, package, packages_dict):
                 """
 
         # Set notification content
-        notification.content(html_content)
+        notification.html_content(html_content)
 
         # Add the attachment
         notification.attachment(log_path)
@@ -481,6 +479,25 @@ def runcommands(filepath, package):
     packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = makechecksumpackage_okay
     if not makechecksumpackage_okay:
         packages_dict[package]["MAKECHECKSUMPACKAGE_error"] = makechecksumpackage_error
+
+def makegif(directory):
+    # Get the path to the user's home directory
+    home_dir = os.path.expanduser('~')
+    # Path to the Desktop folder (typically under the user's home directory)
+    desktop_path = os.path.join(home_dir, 'Desktop')
+    name = directory.rsplit('/', 1)[1] + '.gif'
+
+    gif_output_filepath = os.path.join(desktop_path, name)
+    command = f"makegifsummary -o {gif_output_filepath} {directory}"
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               text=True)
+    for line in process.stdout:
+        print(line, end='')
+    process.wait()
+    if process.returncode == 0:
+        return gif_output_filepath
+    else:
+        return process.returncode
 
 
 # Ingests files
@@ -604,16 +621,23 @@ def ingest():
                   <body>
                     <p>Hello, </p>
                     <p></p>
-                    <p>See the link below: </p>
-                    <p><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.</p>
-                    <p>Best, </p>
-                    <p>Library Bot</p>
+                    See the link below:
+                    <br><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.
+                    <p></p>
+                    Best
+                    <br>
+                    Library Bot
                   </body>
                 </html>
                 """
 
-                notification.content(html_content)
+                notification.html_content(html_content)
+
+                gif_path = makegif(os.path.join(server, package))
+                notification.embed_img(gif_path)
+
                 notification.send()
+                os.remove(gif_path)
 
                 # Send dropbox notification to non-CUNY recipients
                 if other_emails is not None:
@@ -696,8 +720,7 @@ if __name__ == "__main__":
                         "\tIs this the last batch? y/n: ").lower() == 'y'
                 if multibatch and not last_batch:
                     # Additional file processing options
-                    #do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
-                    do_fixity = True
+                    do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
 
                     # Create key-value pair
                     packages_dict[package_name] = {
@@ -715,12 +738,13 @@ if __name__ == "__main__":
                     # Additional file processing options
                     #do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
                     # do_drive_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
-                    #do_commands = (input("\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
+                    #do_commands = (input(
+                    #    "\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
 
                     do_drive_delete = False
                     do_fixity = True
                     do_commands = True
-                    
+
                     do_dropbox = (input(
                         "\tUpload to dropbox? y/n: ")).lower() == 'y'
                     emails = []
