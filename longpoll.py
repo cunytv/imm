@@ -9,7 +9,6 @@ import atexit
 
 
 class LongPoll:
-
     def __init__(self):
         # Library of image extensions
         self.image_extensions = [
@@ -22,16 +21,16 @@ class LongPoll:
 
         # Credentials for creating access token
         ## AG's personal dropbox
-        self.client_id = 'bsp8x2pbkklqbz8'
-        self.client_secret = 'c3po7io03u5zgtt'
-        self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
-        self.ACCESS_TOKEN = ''
+        #self.client_id = 'bsp8x2pbkklqbz8'
+        #self.client_secret = 'c3po7io03u5zgtt'
+        #self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
+        #self.ACCESS_TOKEN = ''
 
         ## CS's personal dropbox
-        #self.client_id = 'wjmmemxgpuxh911'
-        #self.client_secret = 'mynnf0nelu4xahk'
-        #self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
-        #self.ACCESS_TOKEN = ''
+        self.client_id = 'wjmmemxgpuxh911'
+        self.client_secret = 'mynnf0nelu4xahk'
+        self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
+        self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
         self.time_now = ''
@@ -49,8 +48,11 @@ class LongPoll:
         for remaining in range(timeout, 0, -1):
             time.sleep(1)
 
-    # Generates access tokens to make API calls
     def refresh_access_token(self):
+        # Maximum retry attempts
+        max_retries = 5
+        retries = 0
+
         url = 'https://api.dropboxapi.com/oauth2/token'
         data = {
             'client_id': self.client_id,
@@ -59,12 +61,40 @@ class LongPoll:
             'grant_type': 'refresh_token'
         }
 
-        response = requests.post(url, data=data)
-        self.ACCESS_TOKEN = response.json()['access_token']
-        expires_in = response.json()['expires_in']
+        while retries < max_retries:
+            try:
+                # Send the POST request
+                response = requests.post(url, data=data)
 
-        time_now = datetime.datetime.now()
-        self.time_expire = time_now + datetime.timedelta(seconds=expires_in - 1000)
+                # Check if the request was successful
+                if response.status_code == 200:
+                    # Parse the response JSON and update the access token and expiration time
+                    response_data = response.json()
+                    self.ACCESS_TOKEN = response_data['access_token']
+                    expires_in = response_data['expires_in']
+
+                    # Calculate the expiration time
+                    time_now = datetime.datetime.now()
+                    self.time_expire = time_now + datetime.timedelta(seconds=expires_in - 1000)  # Subtract a buffer (1000 seconds)
+                    return  # Exit method if successful
+                else:
+                    print(f"Failed to refresh access token. Status code: {response.status_code}")
+                    print(response.text)
+
+            except requests.RequestException as e:
+                # Handle network or request-related errors
+                print(f"Request failed: {e}")
+
+            # Increment the retry counter
+            retries += 1
+
+            # Wait before retrying
+            if retries < max_retries:
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+
+        print("Max retries reached. Failed to refresh access token.")
+        return None
 
     # Checks if access token has expired
     def token_expired(self):
@@ -76,6 +106,9 @@ class LongPoll:
             return False
 
     def latest_cursor(self, path):
+        # Maximum retry attempts
+        max_retries = 5
+        retries = 0
 
         # Define the URL and the access token
         url = "https://api.dropboxapi.com/2/files/list_folder/get_latest_cursor"
@@ -97,70 +130,106 @@ class LongPoll:
             "recursive": True
         }
 
-        # Send the POST request
-        response = requests.post(url, headers=headers, json=data)
+        while retries < max_retries:
+            try:
+                # Send the POST request
+                response = requests.post(url, headers=headers, json=data)
 
-        # Check the response status and print the result
-        if response.status_code == 200:
-            print("Success:", response.json())
-            return response.json()['cursor']
-        else:
-            print("Error:", response.status_code, response.text)
+                # Check if the request was successful
+                if response.status_code == 200:
+                    # Return the cursor from the response JSON
+                    return response.json()['cursor']
+                else:
+                    print(f"Failed to get cursor. Status code: {response.status_code}")
+                    print(response.text)
+
+            except requests.RequestException as e:
+                # Handle network or request-related errors
+                print(f"Request failed: {e}")
+
+            # Increment the retry counter
+            retries += 1
+
+            # Wait before retrying
+            if retries < max_retries:
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+
+        print("Max retries reached. Failed to get the cursor.")
+        return None
 
     def list_changes(self, cursor):
+        # Maximum retry attempts
+        max_retries = 5
+        retries = 0
 
+        # Define the Dropbox API endpoint
         url = "https://api.dropboxapi.com/2/files/list_folder/continue"
+
+        # Define the headers
         headers = {
             "Authorization": f"Bearer {self.ACCESS_TOKEN}",  # Replace with actual authorization header
             "Content-Type": "application/json"
         }
 
+        # Define the data for the request
         data = {
             "cursor": cursor  # Your cursor value
         }
 
-        response = requests.post(url, headers=headers, data=json.dumps(data))
+        while retries < max_retries:
+            try:
+                # Send the POST request
+                response = requests.post(url, headers=headers, data=json.dumps(data))
 
-        # If reponse contains entries, see which are image uploads
-        if response.json()['entries']:
-            self.image_detect(response.json())
-            print(response.json())
+                # Check if the request was successful
+                if response.status_code == 200:
+                    # If response contains entries, process them
+                    if response.json().get('entries'):
+                        self.image_detect(response.json())
+                    else:
+                        print("No entries found.")
+                    return  # Exit method if successful
+                else:
+                    print(f"Failed to retrieve data. Status code: {response.status_code}")
+                    print(response.text)
+
+            except requests.RequestException as e:
+                # Handle network or request-related errors
+                print(f"Request failed: {e}")
+
+            # Increment the retry counter
+            retries += 1
+
+            # Wait before retrying
+            if retries < max_retries:
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+
+        print("Max retries reached. Failed to process the request.")
+        return None
 
     def image_detect(self, response):
         # Check if token is expired
         if self.token_expired():
             self.refresh_access_token()
 
-        # Loop through the entries and select those where .tag is 'file'
-        file_entries = [entry['path_display'] for entry in response['entries'] if entry['.tag'] == 'file']
-
-        # Print the file entries
-        for entry in file_entries:
-            if '.' in entry:
-                extension = entry.rsplit('.', 1)[1]
+        # Loop through the entries and self_files
+        for entry in response['entries']:
+            if entry['.tag'] != 'file':
+                continue
+            elif '.' in entry['path_display']:
+                extension = entry['path_display'].rsplit('.', 1)[1]
                 if extension in self.image_extensions:
-                    print(f"- Detected new image upload: {entry}")
-                    print(entry)
-                    self.images_detected.append(entry)
-                    self.download(entry)
-
-    def get_unique_filename(self, directory, filename):
-        # Get the full path of the file
-        base_name, extension = os.path.splitext(filename)
-
-        # Start with the original filename
-        new_filename = filename
-        counter = 1
-
-        # Loop until the file does not exist in the directory
-        while os.path.exists(os.path.join(directory, new_filename)):
-            # If the file exists, append a counter to the base name
-            new_filename = f"{base_name}_{counter}{extension}"
-            counter += 1
-
-        return new_filename
+                    print(f"- Detected new image upload: {entry['path_display']}")
+                    self.images_detected.append(entry['path_display'])
+                    self.download(entry['path_display'])
 
     def download(self, dropbox_path):
+        # Maximum retry attempts
+        max_retries = 5
+        retries = 0
+
         # Check if token is expired
         if self.token_expired():
             self.refresh_access_token()
@@ -176,31 +245,45 @@ class LongPoll:
             })
         }
 
-        # Send the POST request
-        response = requests.post(url, headers=headers)
+        while retries < max_retries:
+            try:
+                # Send the POST request
+                response = requests.post(url, headers=headers)
 
-        # Check if the request was successful
-        if response.status_code == 200:
-            binary_data = response.content
+                # Check if the request was successful
+                if response.status_code == 200:
+                    binary_data = response.content
 
-            # Construct the local path (stripping leading '/' from dropbox_path for file name)
-            # Use os.path.join to ensure correct path formation across platforms
-            download_path = os.path.join(self.local_directory, dropbox_path.lstrip('/'))
+                    # Construct the local path (stripping leading '/' from dropbox_path for file name)
+                    download_path = os.path.join(self.local_directory, dropbox_path.lstrip('/'))
 
-            # Ensure the directory exists locally
-            os.makedirs(os.path.dirname(download_path), exist_ok=True)
+                    # Ensure the directory exists locally
+                    os.makedirs(os.path.dirname(download_path), exist_ok=True)
 
-            # Ensure unique file path
-            #download_path = self.get_unique_filename(download_path, dropbox_path)
+                    # Save the binary data to a file
+                    with open(download_path, "wb") as file:
+                        file.write(binary_data)
 
-            # Save the binary data to a file
-            with open(download_path, "wb") as file:
-                file.write(binary_data)
+                    print(f"File downloaded successfully to: {download_path}")
+                    return  # Exit the method if successful
+                else:
+                    print(f"Failed to download file. Status code: {response.status_code}")
+                    print(response.text)
 
-            print(f"File downloaded successfully to: {download_path}")
-        else:
-            print(f"Failed to download file. Status code: {response.status_code}")
-            print(response.text)
+            except requests.RequestException as e:
+                # Handle network or request-related errors
+                print(f"Request failed: {e}")
+
+            # Increment the retry counter
+            retries += 1
+
+            # Wait before retrying
+            if retries < max_retries:
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+
+        print("Max retries reached. Failed to download the file.")
+        return None
 
     def email_notification(self, unexpected_quit=False):
         time_stamp = datetime.datetime.now()
@@ -262,16 +345,34 @@ class LongPoll:
             "timeout": timeout
         }
 
-        # Make the POST request
-        response = requests.post(url, headers=headers, data=json.dumps(data))
+        # Maximum retry attempts
+        max_retries = 5
+        retries = 0
 
-        # Check the response
-        if response.status_code == 200:
-            print("Response received successfully:")
-            return response.json()['changes']
-        else:
-            print("Error:", response.status_code)
-            print(response.text)
+        while retries < max_retries:
+            try:
+                # Make the POST request
+                response = requests.post(url, headers=headers, data=json.dumps(data))
+
+                # Check the response status
+                if response.status_code == 200:
+                    return response.json()['changes']
+                else:
+                    print(f"Error: {response.status_code} - {response.text}")
+
+            except requests.RequestException as e:
+                print(f"Request failed: {e}")
+
+            # Increment the retry counter
+            retries += 1
+
+            # Wait before retrying
+            if retries < max_retries:
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+
+        print("Max retries reached. No successful response received.")
+        return None
 
 
 if __name__ == "__main__":
@@ -281,9 +382,21 @@ if __name__ == "__main__":
 
     # Specify dropbox path, if blank this means the entire dropbox
     db_path = ""
-    
+
+    # Specify default txt file, where cursor is stored
+    home_dir = os.path.expanduser('~')
+    desktop_path = os.path.join(home_dir, 'Desktop')
+    cursor_txt_path = os.path.join(desktop_path, "dropbox_longpoll_cursor.txt")
+
     # Get cursor
-    cursor = lp.latest_cursor(db_path)
+    cursor = ''
+    if os.path.exists(cursor_txt_path):
+        with open(cursor_txt_path, 'r') as file:
+            cursor = file.readline().strip()
+    else:
+        cursor = lp.latest_cursor(db_path)
+        with open(cursor_txt_path, 'w') as file:
+            file.write(cursor)
 
     # Specify timeout
     timeout = 30
@@ -294,25 +407,13 @@ if __name__ == "__main__":
     # while not os.path.isdir(local_directory):
     #    lp.local_directory = input("Directory does not exist. Try again: ")
 
-    while True:
-        if lp.token_expired():
-            lp.refresh_access_token()
-        changes = lp.longpoll(cursor, timeout)
-        if changes:
-            print("changes")
-            lp.timer(30)
-            new_cursor = lp.latest_cursor(db_path)
-            lp.list_changes(cursor)
 
-            if lp.images_detected:
-                lp.email_notification()
+    changes = lp.longpoll(cursor, timeout)
+    if changes:
+        new_cursor = lp.latest_cursor(db_path)
+        lp.list_changes(cursor)
 
-            cursor = new_cursor
-            lp.images_detected = []
-        else:
-            print('no changes')
-
-    ## Next, checksum verification
-    ## Send email if application quits
-    ## Schedule
-    ## Create icon?
+        with open(cursor_txt_path, 'w') as file:
+            file.write(new_cursor)
+    else:
+        print('No changes')
