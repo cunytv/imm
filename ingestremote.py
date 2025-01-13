@@ -595,6 +595,7 @@ def ingest():
             packages_dict[package]["DROPBOX_files_dict"] = uploadsession.DROPBOX_FILES_DICT
             packages_dict[package]["DROPBOX_transfer_okay"] = uploadsession.DROPBOX_TRANSFER_OKAY
 
+            window_dub_share_link = uploadsession.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")
 
             # Send email notification if Dropbox transfer goes well.
             if packages_dict[package]["DROPBOX_transfer_okay"]:
@@ -621,7 +622,10 @@ def ingest():
                   <body>
                     <p>Hello, </p>
                     <p></p>
-                    See the link below:
+                    Click the link below to stream the window dub:
+                    <br><a href="{window_dub_share_link}">{window_dub_share_link}</a>.
+                    <p></p>
+                    Click the link below to access all files, including the window dub:
                     <br><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.
                     <p></p>
                     Best
