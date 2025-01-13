@@ -634,7 +634,7 @@ def ingest():
 
                 notification.html_content(html_content)
 
-                gif_path = makegif(os.path.join(server, package))
+                gif_path = makegif(os.path.join(server, package, "objects", "access"))
                 notification.embed_img(gif_path)
 
                 notification.send()
