@@ -38,10 +38,10 @@ _get_chapterlist(){
 }
 
 filelist="$(find "${searchdirectory}" -type f ! -name ".*" | sort)"
-if [[ ! -f "${timefile}" ]] ; then 
-    difflist="${filelist}"
-else
+if [[ -s "${timefile}" ]] ; then
     difflist="$(diff "${timefile}" <(find "${searchdirectory}" -type f ! -name ".*" | sort) | grep "^> " | cut -c 3- | sort)"
+else
+    difflist="${filelist}"
 fi
 echo "${filelist}" > "${timefile}"
 
