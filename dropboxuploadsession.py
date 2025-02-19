@@ -208,6 +208,16 @@ class DropboxUploadSession:
 
             retry_attempt += 1
 
+    def upload_queue(self, file_path, chunk_size, offset):
+        print("Creating upload queue...")
+        with open(file_path, 'rb') as file:
+            while True:
+                chunk = file.read(chunk_size)
+                if not chunk:
+                    break
+                self.q.put((chunk, offset))
+                offset += len(chunk)
+
     def upload_chunks(self, session_id):
         while True:
             with self.lock:
@@ -328,17 +338,14 @@ class DropboxUploadSession:
                 offset = 0
                 chunk_size = 4194304  # required chunk size for concurrent uploads as per dbx api
 
-                print("Creating upload queue...")
-                with open(file_path, 'rb') as file:
-                    while True:
-                        chunk = file.read(chunk_size)
-                        if not chunk:
-                            break
-                        self.q.put((chunk, offset))
-                        offset += len(chunk)
 
                 # Create threads
                 threads = []
+                thread = threading.Thread(target=self.upload_queue, args=(file_path, chunk_size, offset,))
+                threads.append(thread)
+                thread.start()
+                time.sleep(5)
+
                 for _ in range(num_threads):
                     thread = threading.Thread(target=self.upload_chunks, args=(session_id,))
                     threads.append(thread)
@@ -371,8 +378,8 @@ class DropboxUploadSession:
                         cs1 = self.calculate_sha256_checksum(file_path)
                     else:
                         for key, value in files_dict.items():
-                            if key[0] == file_path or key[1] == file_path:
-                                cs1 = value[0]  # Pre-transfer checksum
+                            if key[1] == file_path:
+                                cs1 = value[0]
                                 break
 
                     # Update files dictionary and check fixity
