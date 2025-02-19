@@ -43,11 +43,22 @@ keys_order = [
     'DROPBOX_files_dict'
 ]
 
+tiger_down = False
+
 # Checks if user is connected to server
-def server_check(s):
+def server_check(s, tiger=None):
+    global tiger_down
     if not os.path.exists(s):
-        print(f'{s} not found. You might not be connected to the server. Reconnect and try again')
-        sys.exit(1)
+        print(f'{s} not found. You might not be connected to the server.')
+        if tiger:
+            cont = (input("Continue ingest anyway? y/n: ")).lower() == 'y'
+            if cont:
+                tiger_down = True
+                return
+            else:
+                sys.exit(1)
+        else:
+            sys.exit(1)
 
 
 # Timer, used as buffer between mounting of hard drive and start of program
@@ -115,8 +126,8 @@ def dropbox_prefix(s):
     showcode = get_showcode(s)
     return f'/_CUNY TV CAMERA CARD DELIVERY/{showcode}'
 
-def append_after_text(log_path, key, package, packages_dict):
 
+def append_after_text(log_path, key, package, packages_dict):
     # Step 1: Open the file and read all lines
     with open(log_path, 'r') as file:
         lines = file.readlines()
@@ -367,6 +378,7 @@ def print_log(log_dest, package, packages_dict):
 
                     f.write("\n")  # Extra newline for spacing
 
+
 def error_report(log_dest, package, packages_dict):
     ato = packages_dict[package]["ARCHIVE_transfer_okay"]
     oto = packages_dict[package]["ONE2ONECOPY_transfer_okay"]
@@ -382,8 +394,8 @@ def error_report(log_dest, package, packages_dict):
     if not all(variables):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
-        notification.recipients(["library@tv.cuny.edu"])
-        #notification.recipients(["aida.garrido@tv.cuny.edu"])
+        # notification.recipients(["library@tv.cuny.edu"])
+        notification.recipients(["aida.garrido@tv.cuny.edu"])
         notification.subject(f"Ingest error: {package}")
 
         # Exclude the last four keys
@@ -395,7 +407,7 @@ def error_report(log_dest, package, packages_dict):
 
         for key in keys_to_print:
             if key in packages_dict[package]:
-                value = packages_dict[package].get(key) # Use package-specific dictionary
+                value = packages_dict[package].get(key)  # Use package-specific dictionary
                 keyf = key.lower()
                 valuef = str(value).upper()
                 html_output += f"  {keyf}: {valuef}<br>\n"
@@ -480,6 +492,7 @@ def runcommands(filepath, package):
     if not makechecksumpackage_okay:
         packages_dict[package]["MAKECHECKSUMPACKAGE_error"] = makechecksumpackage_error
 
+
 def makegif(directory):
     # Get the path to the user's home directory
     home_dir = os.path.expanduser('~')
@@ -516,8 +529,9 @@ def ingest():
         for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
             package_obj.create_output_directory(desktop_path, package, card)
             # Transfer files to Desktop
-            package_obj.archive_restructure_folder(input_path, desktop_path, package, card, packages_dict[package]["do_fixity"],
-                                           packages_dict[package]["do_drive_delete"])
+            package_obj.archive_restructure_folder(input_path, desktop_path, package, card,
+                                                   packages_dict[package]["do_fixity"],
+                                                   packages_dict[package]["do_drive_delete"])
             eject(input_path)
 
         # Save desktop transfer results and checksums
@@ -536,12 +550,14 @@ def ingest():
 
         # Transfer to server if last batch or only batch in process
         if packages_dict[package]["do_desktop_delete"]:
-            # Transfer files to XSAN
-            package_obj.delivery_restructure_folder(os.path.join(desktop_path, package, "objects"),
-                                                    os.path.join(server2, get_showcode(package)),
-                                                    package, packages_dict[package]["do_fixity"],
-                                                    False,
-                                                    packages_dict[package]["ARCHIVE_files_dict"])
+            # Transfer files to tiger
+            global tiger_down
+            if not tiger_down:
+                package_obj.delivery_restructure_folder(os.path.join(desktop_path, package, "objects"),
+                                                        os.path.join(server2, get_showcode(package)),
+                                                        package, packages_dict[package]["do_fixity"],
+                                                        False,
+                                                        packages_dict[package]["ARCHIVE_files_dict"])
 
             # Transfer files to CUNY TV Media
             package_obj.one2one_copy_folder(os.path.join(desktop_path, package), os.path.join(server, package),
@@ -564,13 +580,13 @@ def ingest():
             packages_dict[package]["DELIVERY_transfer_okay"] = None
             packages_dict[package]["ONE2ONECOPY_transfer_okay"] = None
 
-        #print
-        #print(packages_dict[package])
+        # print
+        # print(packages_dict[package])
 
     # 2. Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
     for package in packages_dict:
         no_error = packages_dict[package]["ARCHIVE_transfer_okay"] and (
-                    packages_dict[package]["MAKEWINDOW_okay"] or packages_dict[package]["MAKEWINDOW_okay"] is None)
+                packages_dict[package]["MAKEWINDOW_okay"] or packages_dict[package]["MAKEWINDOW_okay"] is None)
         do_dropbox = packages_dict[package]["emails"]
 
         server_object_directory = os.path.join(desktop_path, package, "objects")
@@ -586,19 +602,18 @@ def ingest():
                         filepath = os.path.join(root, filename)
                         dropboxpath = os.path.join(dropbox_directory, filename)
 
-                        try:
-                            fixity_pass = uploadsession.upload_file_to_dropbox(filepath, dropboxpath, packages_dict[package]["do_fixity"], packages_dict[package]["DELIVERY_files_dict"])
-
-                        except ConnectionError:
-                            print("Connection error.")
+                        uploadsession.upload_file_to_dropbox(filepath, dropboxpath,
+                                                                        packages_dict[package]["do_fixity"],
+                                                                        packages_dict[package]["ARCHIVE_files_dict"])
 
             packages_dict[package]["DROPBOX_files_dict"] = uploadsession.DROPBOX_FILES_DICT
             packages_dict[package]["DROPBOX_transfer_okay"] = uploadsession.DROPBOX_TRANSFER_OKAY
-
-            window_dub_share_link = uploadsession.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")
+            packages_dict[package]["DROPBOX_transfer_not_okay_reason"] = uploadsession.DROPBOX_TRANSFER_NOT_OKAY_REASON
 
             # Send email notification if Dropbox transfer goes well.
             if packages_dict[package]["DROPBOX_transfer_okay"]:
+                window_dub_share_link = uploadsession.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")
+
                 # Bifurcate email type
                 cuny_emails = []
                 other_emails = []
@@ -638,7 +653,7 @@ def ingest():
 
                 notification.html_content(html_content)
 
-                gif_path = makegif(os.path.join(server, package, "objects", "access"))
+                gif_path = makegif(os.path.join(server, package))
                 notification.embed_img(gif_path)
 
                 notification.send()
@@ -650,9 +665,8 @@ def ingest():
                     uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
                                                     False, msg)
         else:
-            #packages_dict[package]["DROPBOX_files_dict"] = None
+            # packages_dict[package]["DROPBOX_files_dict"] = None
             packages_dict[package]["DROPBOX_transfer_okay"] = None
-
 
     # 3. Print logs and send email to library in case of error
     for package in packages_dict:
@@ -668,6 +682,7 @@ def ingest():
 
         if packages_dict[package]['do_desktop_delete']:
             shutil.rmtree(os.path.join(desktop_path, package))
+
 
 # Ejects mounted drive
 def eject(path):
@@ -685,17 +700,16 @@ def notification(message):
 
 if __name__ == "__main__":
     # Create dictionary of packages
-    # Follows the format of Package Name {[cards], [input paths], do_fixity boolean, do_drive_delete boolean, do_commands boolean, {file dictionary}, transfer_okay boolean}
     packages_dict = {}
 
     # Check if connected to servers
     server = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
     server_check(server)
-    #server = "/Users/aidagarrido/Desktop"
+    # server = "/Users/aidagarrido/Desktop"
 
     #server2 = "/Users/aidagarrido/Desktop/Camera Card Delivery"
     server2 = "/Volumes/TigerVideo/Camera Card Delivery"
-    server_check(server2)
+    server_check(server2, True)
 
     # Detect recently inserted drives and cards
     countdown(5)
@@ -725,13 +739,13 @@ if __name__ == "__main__":
                         "\tIs this the last batch? y/n: ").lower() == 'y'
                 if multibatch and not last_batch:
                     # Additional file processing options
-                    do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
+                    # do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
 
                     # Create key-value pair
                     packages_dict[package_name] = {
                         "cards": [camera_card_number],
                         "input_paths": [input_path],
-                        "do_fixity": do_fixity,
+                        "do_fixity": True,
                         "do_drive_delete": False,
                         "do_desktop_delete": False,
                         "do_commands": False,
@@ -741,14 +755,14 @@ if __name__ == "__main__":
 
                 else:
                     # Additional file processing options
-                    #do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
+                    # do_fixity = (input("\tFixity check before and after transfer? y/n: ")).lower() == 'y'
                     # do_drive_delete = (input("\tDelete original files after successful transfer? y/n: ")).lower() == 'y'
-                    #do_commands = (input(
+                    # do_commands = (input(
                     #    "\tRun makewindow, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
 
                     do_drive_delete = False
                     do_fixity = True
-                    do_commands = True
+                    do_commands = False
 
                     do_dropbox = (input(
                         "\tUpload to dropbox? y/n: ")).lower() == 'y'
