@@ -209,7 +209,6 @@ class DropboxUploadSession:
             retry_attempt += 1
 
     def upload_queue(self, file_path, chunk_size, offset):
-        print("Creating upload queue...")
         with open(file_path, 'rb') as file:
             while True:
                 chunk = file.read(chunk_size)
@@ -322,7 +321,6 @@ class DropboxUploadSession:
 
     # Uploads file to dropbox
     def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5, num_threads=8):
-        start_time = time.time()
         for attempt in range(max_retries):
             try:
                 # Step 0: Check if ACCESS_TOKEN is still valid
@@ -364,11 +362,6 @@ class DropboxUploadSession:
                 if not complete:  # if session completion fails exit method
                     return
 
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-                print()
-                print(f"Execution time: {elapsed_time:.4f} seconds")
-                print()
 
                 # Step 4 (optional): Fixity check
                 if do_fixity:
@@ -378,8 +371,8 @@ class DropboxUploadSession:
                         cs1 = self.calculate_sha256_checksum(file_path)
                     else:
                         for key, value in files_dict.items():
-                            if key[1] == file_path:
-                                cs1 = value[1]
+                            if key[0] == file_path:
+                                cs1 = value[0]
                                 break
 
                     # Update files dictionary and check fixity
