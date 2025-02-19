@@ -293,7 +293,7 @@ class DropboxUploadSession:
         return True
 
     # Uploads file to dropbox
-    def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5, num_threads=6):
+    def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5, num_threads=8):
         start_time = time.time()
         for attempt in range(max_retries):
             try:
