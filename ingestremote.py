@@ -604,7 +604,7 @@ def ingest():
 
                         uploadsession.upload_file_to_dropbox(filepath, dropboxpath,
                                                                         packages_dict[package]["do_fixity"],
-                                                                        packages_dict[package]["ARCHIVE_files_dict"])
+                                                                        packages_dict[package]["ONE2ONECOPY_files_dict"])
 
             packages_dict[package]["DROPBOX_files_dict"] = uploadsession.DROPBOX_FILES_DICT
             packages_dict[package]["DROPBOX_transfer_okay"] = uploadsession.DROPBOX_TRANSFER_OKAY
@@ -612,7 +612,6 @@ def ingest():
 
             # Send email notification if Dropbox transfer goes well.
             if packages_dict[package]["DROPBOX_transfer_okay"]:
-                window_dub_share_link = uploadsession.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")
 
                 # Bifurcate email type
                 cuny_emails = []
@@ -626,6 +625,9 @@ def ingest():
 
                 # Send network email to CUNY recipients
                 uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
+                window_dub_share_link = uploadsession.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")[0]
+
+
                 notification = sendnetworkmail.SendNetworkEmail()
                 notification.sender("library@tv.cuny.edu")
                 notification.recipients(cuny_emails)
@@ -653,7 +655,7 @@ def ingest():
 
                 notification.html_content(html_content)
 
-                gif_path = makegif(os.path.join(server, package, "objects", "access", "window"))
+                gif_path = makegif(os.path.join(server, package))
                 notification.embed_img(gif_path)
 
                 notification.send()
