@@ -653,7 +653,7 @@ def ingest():
 
                 notification.html_content(html_content)
 
-                gif_path = makegif(os.path.join(server, package))
+                gif_path = makegif(os.path.join(server, package, "objects", "access", "window"))
                 notification.embed_img(gif_path)
 
                 notification.send()
@@ -762,7 +762,7 @@ if __name__ == "__main__":
 
                     do_drive_delete = False
                     do_fixity = True
-                    do_commands = False
+                    do_commands = True
 
                     do_dropbox = (input(
                         "\tUpload to dropbox? y/n: ")).lower() == 'y'
