@@ -41,6 +41,12 @@ class DropboxUploadSession:
         # Share link
         self.share_link = ''
 
+        # Create lock
+        self.lock = threading.Lock()
+
+        # Create queue
+        self.q = queue.Queue()
+
     def get_size(self, path):
         total_size = 0
         if os.path.isfile(path):
@@ -202,70 +208,82 @@ class DropboxUploadSession:
 
             retry_attempt += 1
 
-    def upload_chunk(self, chunk, offset, session_id, close_bool):
-        upload_url = 'https://content.dropboxapi.com/2/files/upload_session/append_v2'
-        # Prepare the Dropbox-API-Arg payload
-        dropbox_api_arg = {
-            "close": close_bool,
-            "cursor": {
-                "offset": offset,
-                "session_id": session_id
+    def upload_chunks(self, session_id):
+        while True:
+            with self.lock:
+                if not self.q.empty():  # get chunk info from queue
+                    item = self.q.get()
+                    chunk = item[0]
+                    offset = item[1]
+                    if self.q.empty():  # if last chunk close upload session
+                        close_bool = True
+                    else:
+                        close_bool = False
+                else:  # terminate thread if queue is empty
+                    break
+
+            upload_url = 'https://content.dropboxapi.com/2/files/upload_session/append_v2'
+            # Prepare the Dropbox-API-Arg payload
+            dropbox_api_arg = {
+                "close": close_bool,
+                "cursor": {
+                    "offset": offset,
+                    "session_id": session_id
+                }
             }
-        }
 
-        # Convert to JSON string
-        dropbox_api_arg_json = json.dumps(dropbox_api_arg)
+            # Convert to JSON string
+            dropbox_api_arg_json = json.dumps(dropbox_api_arg)
 
-        headers = {
-            'Authorization': f'Bearer {self.ACCESS_TOKEN}',
-            'Dropbox-API-Arg': dropbox_api_arg_json,
-            'Content-Type': 'application/octet-stream'
-        }
-        retry_attempt = 0
-        while retry_attempt < 3:
-            try:
-                response = requests.post(upload_url, headers=headers, data=chunk)
-                if response.status_code == 200:
-                    break  # Successful chunk upload
+            headers = {
+                'Authorization': f'Bearer {self.ACCESS_TOKEN}',
+                'Dropbox-API-Arg': dropbox_api_arg_json,
+                'Content-Type': 'application/octet-stream'
+            }
+            retry_attempt = 0
+            while retry_attempt < 3:
+                try:
+                    response = requests.post(upload_url, headers=headers, data=chunk)
+                    if response.status_code == 200:
+                        break  # Successful chunk upload
 
-                elif response.status_code == 429:  # Too many requests
-                    seconds = response.json()["error"]["retry_after"]
-                    for i in range(seconds, 0, -1):
-                        sys.stdout.write(
-                            "\rToo many requests. Retrying chunk upload in {:2d} seconds.".format(i))
-                        sys.stdout.flush()
-                        time.sleep(1)
+                    elif response.status_code == 429:  # Too many requests
+                        seconds = response.json()["error"]["retry_after"]
+                        for i in range(seconds, 0, -1):
+                            sys.stdout.write(
+                                "\rToo many requests. Retrying chunk upload in {:2d} seconds.".format(i))
+                            sys.stdout.flush()
+                            time.sleep(1)
 
-                elif 'Error: 503' in response.text:  # Dropbox service unavailable
-                    seconds = 10
-                    for i in range(seconds, 0, -1):
-                        sys.stdout.write(
-                            "\rDropbox service availability issue. Retrying chunk upload in {:2d} seconds.".format(i))
-                        sys.stdout.flush()
-                        time.sleep(1)
+                    elif 'Error: 503' in response.text:  # Dropbox service unavailable
+                        seconds = 10
+                        for i in range(seconds, 0, -1):
+                            sys.stdout.write(
+                                "\rDropbox service availability issue. Retrying chunk upload in {:2d} seconds.".format(i))
+                            sys.stdout.flush()
+                            time.sleep(1)
 
-                else:
-                    print()
-                    print(response.status_code)
-                    print(f"Failed to upload chunk: {response.text}")
-                    print(f"Offset:{offset}")
+                    else:
+                        print()
+                        print(response.status_code)
+                        print(f"Failed to upload chunk: {response.text}")
+                        print(f"Offset:{offset}")
 
-            except requests.exceptions.RequestException as e:
-                print(f"Network error during chunk upload: {e}")
-                if retry_attempt == 2:
-                    self.DROPBOX_TRANSFER_OKAY = False
-                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"Chunk upload retry attempts exceeded; {response.status_code}: {response.text}"
-                    return
+                except requests.exceptions.RequestException as e:
+                    print(f"Network error during chunk upload: {e}")
+                    if retry_attempt == 2:
+                        self.DROPBOX_TRANSFER_OKAY = False
+                        self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"Chunk upload retry attempts exceeded; {response.status_code}: {response.text}"
+                        return
 
-            retry_attempt += 1
+                retry_attempt += 1
 
-        self.bytes_read += len(chunk)
-        progress = min(self.bytes_read / self.total_size, 1.0) * 100
-        sys.stdout.write(
-            f"\rUpload progress: {progress:.2f}% ({self.bytes_read}/{self.total_size} bytes)")
-        sys.stdout.flush()
-
-        return True
+            with self.lock:
+                self.bytes_read += len(chunk)
+                progress = min(self.bytes_read / self.total_size, 1.0) * 100
+                sys.stdout.write(
+                    f"\rUpload progress: {progress:.2f}% ({self.bytes_read}/{self.total_size} bytes)")
+                sys.stdout.flush()
 
     def complete_upload_session(self, session_id, offset, dropbox_path):
         session_finish_url = 'https://content.dropboxapi.com/2/files/upload_session/finish'
@@ -309,7 +327,6 @@ class DropboxUploadSession:
                 # Step 2: Upload the file in chunks
                 offset = 0
                 chunk_size = 4194304  # required chunk size for concurrent uploads as per dbx api
-                q = queue.Queue()
 
                 print("Creating upload queue...")
                 with open(file_path, 'rb') as file:
@@ -317,31 +334,23 @@ class DropboxUploadSession:
                         chunk = file.read(chunk_size)
                         if not chunk:
                             break
-                        q.put((chunk, offset))
+                        self.q.put((chunk, offset))
                         offset += len(chunk)
 
-                while not q.empty():
-                    threads = []
-                    for _ in range(num_threads):
-                        if q.empty():
-                            break
-                        item = q.get()
-                        chunk = item[0]
-                        offset = item[1]
-                        if q.empty():
-                            close_bool = True
-                        else:
-                            close_bool = False
-                        thread = threading.Thread(target=self.upload_chunk, args=(chunk, offset, session_id, close_bool))
-                        threads.append(thread)
-                        thread.start()
+                # Create threads
+                threads = []
+                for _ in range(num_threads):
+                    thread = threading.Thread(target=self.upload_chunks, args=(session_id,))
+                    threads.append(thread)
+                    thread.start()
 
-                    for thread in threads:
-                        thread.join()
+                for thread in threads:
+                    thread.join()
 
-                        #chunk_okay = self.upload_chunk(chunk, offset, session_id, close_bool)
-                        #if not chunk_okay:
-                        #    return  # if chunk upload fails exit method
+                # check if upload was okay in the event of upload
+                #chunk_okay = self.upload_chunk(chunk, offset, session_id, close_bool)
+                #if not chunk_okay:
+                #    return  # if chunk upload fails exit method
 
                 # Step 3: Complete the upload session
                 complete = self.complete_upload_session(session_id, os.path.getsize(file_path), dropbox_path)
