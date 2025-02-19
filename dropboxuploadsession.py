@@ -379,7 +379,7 @@ class DropboxUploadSession:
                     else:
                         for key, value in files_dict.items():
                             if key[1] == file_path:
-                                cs1 = value[0]
+                                cs1 = value[1]
                                 break
 
                     # Update files dictionary and check fixity
