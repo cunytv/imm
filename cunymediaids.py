@@ -24,6 +24,7 @@ shows = {
     "CUNY Uncut":                  "CNNT",
     "CUNY Laureates":              "CNLR",
     "EdCast":                      "EDCA",
+    "Graduate Center Presents":    "GCPR",
     "Italics":                     "ITAL",
     "Keeping Relevant":            "KPRL",
     "LATiNAS":                     "LTNS",
