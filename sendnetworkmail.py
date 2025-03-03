@@ -52,23 +52,14 @@ class SendNetworkEmail:
 
     def splice_content(self, content):
         """ Split the content into tags and text """
-        pattern = r'<.*?>'
+        # Match both tags and the text between tags
+        pattern = r'(</?[^>]+>)|([^<]+)'
+
+        # Find all tags and text
         content_array = re.findall(pattern, content)
 
-        i = 0
-        while i < len(content_array):
-            content = content.split(content_array[i], 1)[1]
-            if i + 1 < len(content_array):
-                tagged_text = content.split(content_array[i + 1], 1)[0]
-            else:
-                tagged_text = content
-
-            tagged_text = tagged_text.strip()
-            if tagged_text and "\n" not in tagged_text:
-                content_array.insert(i + 1, tagged_text)
-                i = i + 2
-            else:
-                i = i + 1
+        # Flatten the results: Only take the non-empty part of the tuple
+        content_array = [item[0] if item[0] else item[1] for item in content_array]
 
         self.content_array = self.content_array + content_array
 
