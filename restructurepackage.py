@@ -8,22 +8,17 @@ import hashlib
 import subprocess
 import shutil
 import time
-import re
+import datetime
+import threading
+import queue
 
 class RestructurePackage:
-    def __init__(self, output_directory, package):
-        self.ARCHIVE_FILES_DICT = {}
-        self.ARCHIVE_TRANSFER_OKAY = True
-        self.ARCHIVE_TRANSFER_ERROR = ''
+    def __init__(self):
+        self.FILES_DICT = []
+        self.TRANSFER_OKAY = True
+        self.TRANSFER_ERROR = []
 
-        self.ONE2ONECOPY_FILES_DICT = {}
-        self.ONE2ONECOPY_TRANSFER_OKAY = True
-        self.ONE2ONECOPY_TRANSFER_ERROR = ''
-
-        self.DELIVERY_FILES_DICT = {}
-        self.DELIVERY_TRANSFER_OKAY = True
-        self.DELIVERY_TRANSFER_ERROR = ''
-        os.makedirs(output_directory +f'/{package}', exist_ok=True)
+        self.q = queue.Queue()
 
     # Checks if directory is a mounted volume
     def mounted_volume(self, directory):
@@ -41,6 +36,10 @@ class RestructurePackage:
     def mac_system_metadata(self, file):
         if "uuid" in file.lower() or file.startswith('.'):
             return True
+        if any(pattern in file.lower() for pattern in
+               ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.', 'reverse',
+                'shutdown', 'store', 'plist', 'cab', 'psid.db', 'Exclusion', 'Lion']):
+            return True
 
     # Checks if folder is empty
     def empty_folder(self, folder):
@@ -48,23 +47,32 @@ class RestructurePackage:
 
     # Checks if there is a file in the output directory with the same name and returns a unique file name with counter
     def unique_file_path(self, file_path):
-        # If there is already a file in the output directory with the same name
+        if not os.path.exists(file_path):
+            return file_path
+
+        # If file already exists
         counter = 2
+        parts = file_path.rsplit(f".", 1)
+        file_path = f"{parts[0]}_{counter}.{parts[1]}"
         while os.path.exists(file_path):
-            parts = file_path.rsplit(".", 1)
-            file_path = parts[0] + f"_{str(counter)}." + parts[1]
+            file_name = file_path.rsplit(f"_{counter}", 1)[0]
+            file_ext = file_path.rsplit(f".", 1)[1]
             counter += 1
+            file_path = f"{file_name}_{str(counter)}.{file_ext}"
         return file_path
 
     # Checks if there is a directory in the package with the same name and returns a unique path with counter
     def unique_directory_path(self, directory_path):
-        # If there is already a file in the output directory with the same name
-        counter = 2
-        while os.path.exists(directory_path):
-            directory_path = directory_path + f"_{counter}"
-            counter += 1
-        return directory_path
+        if not os.path.isdir(directory_path):
+            return directory_path
 
+        # If directory already exists
+        counter = 2
+        directory_path = directory_path + f"_{counter}"
+        while os.path.exists(directory_path):
+            counter += 1
+            directory_path = directory_path + f"_{counter}"
+        return directory_path
 
     # Determines file type using FFMPEG to bifurcate audio/video from all other kinds of file types
     def file_type(self, file_path):
@@ -93,11 +101,11 @@ class RestructurePackage:
         else:
             return ("metadata/logs")
 
-    def file_transfer(self, input_file_path, output_file_path):
-        # Variables for retry loop
+    # Copies file from source to destination, returns error and success bool tuple
+    def copy_file(self, input_file_path, output_file_path):
         max_retries = 3
         retries = 0
-        # Copy file from source to destination, iterate to next file if error
+        # Copy file from source to destination
         while retries < max_retries:
             try:
                 if not os.path.exists(input_file_path):
@@ -116,9 +124,9 @@ class RestructurePackage:
                         f"Failed to copy {input_file_path} after {max_retries} attempts. Moving to the next file.")
                     return e, False
                 else:
-                    time.sleep(2)  # Optional wait before retrying
+                    time.sleep(2)  # Wait before retrying
 
-    # Creates checksum
+    # Creates checksum, as per dropbox
     def calculate_sha256_checksum(self, file_path, block_size=4 * 1024 * 1024):
         # Get the total size of the file
         total_size = os.path.getsize(file_path)
@@ -155,259 +163,143 @@ class RestructurePackage:
         print()  # Move to the next line after progress
         return final_hash
 
-    # Copies files into archive package structure, performs fixity check (optional), deletes old directory (optional)
-    def archive_restructure_folder(self, input_folder_path, output_directory, output_package_name, output_subfolder_name,
-                           do_fixity, do_delete):
+    # files_dict is none unless specified (consider replacing this with the actual cs1 value)
+    def transfer_file(self, input_file_path, output_file_path, do_fixity, cs1=None):
+        # Check if file path is unique, otherwise appends counter
+        output_file_path = self.unique_file_path(output_file_path)
+
+        # Checksum variables, with option to pass cs1 through method
+        cs2 = None
+
+        # File dict
+        file_dict = {"orig": input_file_path,
+                     "dest": output_file_path,
+                     "checksum_o": cs1,
+                     "checksum_d": cs2,
+                     "fixity_pass": None
+                     }
+
+        # Create pre-transfer checksum or retrieve existing checksum from files_dict
+        if do_fixity and cs1 is None:
+            cs1 = self.calculate_sha256_checksum(input_file_path)
+            file_dict['checksum_o'] = cs1
+
+        # Transfer file using copy_file method, which returns boolean upon succesful or unsuccesful copy
+        error, transfer_okay = self.copy_file(input_file_path, output_file_path)
+
+        if not transfer_okay:
+            self.TRANSFER_OKAY = False
+            self.TRANSFER_ERROR += {
+                "timestamp": str(datetime.datetime.now()),
+                "error_type": type(error).__name__,
+                "message": str(error),
+            }
+            file_dict['fixity_pass'] = False
+            self.FILES_DICT.append(file_dict)
+            return
+
+        # If checksum validation unsuccessful, retry copy_file method up to 3 times
+        max_retries = 3
+        retries = 0
+        while retries < max_retries:
+            if do_fixity:
+                cs2 = self.calculate_sha256_checksum(output_file_path)
+                file_dict['checksum_d'] = cs2
+                if cs1 == cs2:
+                    print(f'File {input_file_path} transferred and passed fixity check')
+                    file_dict["fixity_pass"] = True
+                    self.FILES_DICT.append(file_dict)
+                    return  # Exit on succesful copy
+                else:
+                    if retries >= max_retries:
+                        print(
+                            f"Failed to transfer {input_file_path} after {max_retries} attempts. Moving to the next file.")
+                        file_dict["fixity_pass"] = False
+                        self.FILES_DICT.append(file_dict)
+
+                        self.TRANSFER_OKAY = False
+                        self.TRANSFER_ERROR += {
+                            "timestamp": str(datetime.datetime.now()),
+                            "error_type": "Fixity check",
+                            "message": f'Retries exceeded. See file {input_file_path.rsplit("/", 1)[1]}'
+                        }
+                        return  # Exit on max retries
+
+                    print(f'File {input_file_path} transferred but did not pass fixity check. Retrying file transfer.')
+                    retries += 1
+                    os.remove(output_file_path)
+
+                    error, transfer_okay = self.copy_file(input_file_path, output_file_path)
+                    if not transfer_okay:
+                        file_dict["checksum_d"] = None
+                        file_dict["fixity_pass"] = False
+                        self.FILES_DICT.append(file_dict)
+                        self.TRANSFER_OKAY = False
+                        self.TRANSFER_ERROR += {
+                            "timestamp": str(datetime.datetime.now()),
+                            "error_type": type(error).__name__,
+                            "message": str(error),
+                        }
+                        return  # Exit on file copy failure
+            else:
+                return  # No fixity check, exit loop
+
+    def archive_output_path(self, output_directory, output_package_name, foldername, output_subfolder_name, file):
+        output_file_path = os.path.join(output_directory, output_package_name,
+                                        self.file_type(os.path.join(foldername, file)),
+                                        output_subfolder_name, file)
+        os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+        output_file_path = self.unique_file_path(output_file_path)
+        return output_file_path
+
+    def one2one_output_path(self, output_directory, input_file_path, input_folder_path):
+        output_file_path = os.path.join(output_directory, os.path.relpath(input_file_path, input_folder_path))
+        os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+        output_file_path = self.unique_file_path(output_file_path)
+        return output_file_path
+
+    def delivery_output_path(self, output_directory, output_package_name, file):
+        output_file_path = os.path.join(output_directory, output_package_name, file)
+        os.makedirs(os.path.join(output_directory, output_package_name), exist_ok=True)
+        output_file_path = self.unique_file_path(output_file_path)
+        return output_file_path
+
+
+    # as of now, three copy types: archive, delivery, and one2one
+    def restructure_copy(self, copy_type, input_folder_path, output_directory, output_package_name=None, output_subfolder_name=None,
+                           do_fixity=None, do_delete=None, files_dict=None):
         for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
             for file in filenames:
-                if any(pattern in file.lower() for pattern in ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.' , 'reverse' , 'shutdown', 'store' , 'plist', 'cab', 'psid.db', 'Exclusion', 'Lion']):
-                    continue
-
-                if self.mac_system_metadata(file):
+                if self.mac_system_metadata(file) or os.path.getsize(os.path.join(foldername, file)) == 0:
                     os.remove(os.path.join(foldername, file))
                 else:
                     print(f'Transferring file {file} to {output_directory}')
-                    # Construct input and output paths
+                    # Initialize variables
                     input_file_path = os.path.join(foldername, file)
-
-                    if os.path.getsize(input_file_path) == 0:
-                        continue    
-
-                    output_file_path = os.path.join(output_directory, output_package_name, self.file_type(os.path.join(foldername, file)),
-                                                    output_subfolder_name, file)
-                    # Check if file path is unique, otherwise appends counter
-                    output_file_path = self.unique_file_path(output_file_path)
-                    # Checksum variables
+                    output_file_path = None
                     cs1 = None
-                    cs2 = None
 
-                    # Create pre-transfer checksum
-                    if do_fixity:
-                        cs1 = self.calculate_sha256_checksum(input_file_path)
+                    if copy_type == "archive":
+                        output_file_path = self.archive_output_path(output_directory, output_package_name, foldername, output_subfolder_name, file)
+                    if copy_type == "delivery":
+                        output_file_path = self.delivery_output_path(output_directory, output_package_name, file)
+                    if copy_type == "one2one":
+                        output_file_path = self.one2one_output_path(output_directory, input_file_path, input_folder_path)
 
-                    # Transfer file using file_transfer method, which returns boolean upon succesful or unsuccesful transfer
-                    self.ARCHIVE_TRANSFER_ERROR, self.ARCHIVE_TRANSFER_OKAY = self.file_transfer(input_file_path, output_file_path)
-
-                    if not self.ARCHIVE_TRANSFER_OKAY:
-                        self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                        continue  # Continue to next file on unsuccessful transfer
-
-                    # If checksum validation unsuccessful, retry file_transfer method up to 3 times
-                    max_retries = 3
-                    retries = 0
-                    while retries < max_retries:
-                        if do_fixity:
-                            cs2 = self.calculate_sha256_checksum(output_file_path)
-                            if cs1 == cs2:
-                                print(f'File {file} transferred and passed fixity check')
-                                self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
-                                if do_delete:
-                                    os.remove(input_file_path)
-                                break #Exit on succesful transfer
-                            else:
-                                if retries >= max_retries:
-                                    print(
-                                        f"Failed to transfer {input_file_path} after {max_retries} attempts. Moving to the next file.")
-                                    self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                                    self.ARCHIVE_TRANSFER_OKAY = False
-                                    self.ARCHIVE_TRANSFER_ERROR = 'Fixity check'
-                                    break #Exit on max retries
-
-                                print(f'File {file} transferred but did not pass fixity check. Retrying file transfer.')
-                                retries += 1
-                                os.remove(output_file_path)
-                                self.ARCHIVE_TRANSFER_ERROR, self.ARCHIVE_TRANSFER_OKAY = self.file_transfer(input_file_path, output_file_path)
-
-                                if not self.ARCHIVE_TRANSFER_OKAY:
-                                    self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, None, False]
-                                    self.ARCHIVE_TRANSFER_OKAY = False
-                                    break #Exit on file transfer failure
-                        else:
-                            self.ARCHIVE_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
-                            if do_delete:
-                                os.remove(input_file_path)
-                            break #No fixity check, exit loop
-
-                if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
-                    os.rmdir(foldername)
-
-    # Copies files as is, no restructuring, performs fixity check (optional), deletes old directory (optional)
-    def one2one_copy_folder(self, input_folder_path, output_directory,
-                           do_fixity, do_delete, files_dict):
-        for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
-            for file in filenames:
-                if any(pattern in file.lower() for pattern in ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.' , 'reverse' , 'shutdown', 'store' , 'plist', 'cab', 'psid.db', 'Exclusion', 'Lion']):
-                    continue
-
-                if self.mac_system_metadata(file):
-                    os.remove(os.path.join(foldername, file))
-                else:
-                    print(f'Transferring file {file} to {output_directory}')
-                    # Construct input and output paths
-                    input_file_path = os.path.join(foldername, file)
-
-                    if os.path.getsize(input_file_path) == 0:
-                        continue
-
-                    output_file_path = os.path.join(output_directory, os.path.relpath(input_file_path, input_folder_path))
-
-                    # Ensure the destination directory exists
-                    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
-
-                    # Check if file path is unique, otherwise appends counter
-                    output_file_path = self.unique_file_path(output_file_path)
-                    # Checksum variables
-                    cs1 = None
-                    cs2 = None
-
-                    # Create pre-transfer checksum or retrieve existing checksum from files_dict
-                    if do_fixity and files_dict is None:
-                        cs1 = self.calculate_sha256_checksum(input_file_path)
-                    elif do_fixity and files_dict:
-                        found = False
-                        for key, value in files_dict.items():
-                            if key[1] == input_file_path:  # Check the destination path
-                                cs1 = value[1]  # The first element is the checksum
-                                found = True
+                    if files_dict:
+                        for f in files_dict:
+                            if f['dest'] == input_file_path:  # Check the destination path
+                                cs1 = f['checksum_d']
                                 break
-                    if not found:
-                        cs1 = self.calculate_sha256_checksum(input_file_path)
 
-                    # Transfer file using file_transfer method, which returns boolean upon succesful or unsuccesful transfer
-                    self.ONE2ONECOPY_TRANSFER_ERROR, self.ONE2ONECOPY_TRANSFER_OKAY = self.file_transfer(input_file_path,
-                                                                                                   output_file_path)
+                    self.transfer_file(input_file_path, output_file_path, do_fixity, cs1)
 
-                    if not self.ONE2ONECOPY_TRANSFER_OKAY:
-                        self.ONE2ONECOPY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                        continue  # Continue to next file on unsuccessful transfer
-
-                    # If checksum validation unsuccessful, retry file_transfer method up to 3 times
-                    max_retries = 3
-                    retries = 0
-                    while retries < max_retries + 1:
-                        if do_fixity:
-                            cs2 = self.calculate_sha256_checksum(output_file_path)
-                            if cs1 == cs2:
-                                print(f'File {file} transferred and passed fixity check')
-                                self.ONE2ONECOPY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
-                                if do_delete:
-                                    os.remove(input_file_path)
-                                break  # Exit on succesful transfer
-                            else:
-                                if retries == max_retries:
-                                    print(
-                                        f"Failed to transfer {input_file_path} after {max_retries} attempts. Moving to the next file.")
-                                    self.ONE2ONECOPY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                                    self.ONE2ONECOPY_TRANSFER_OKAY = False
-                                    self.ONE2ONECOPY_TRANSFER_ERROR = 'Fixity check'
-                                    break  # Exit on max retries
-
-                                print(
-                                    f'File {file} transferred but did not pass fixity check. Retrying file transfer.')
-                                retries += 1
-                                os.remove(output_file_path)
-                                self.ONE2ONECOPY_TRANSFER_ERROR, self.ONE2ONECOPY_TRANSFER_OKAY = self.file_transfer(
-                                    input_file_path, output_file_path)
-
-                                if not self.ONE2ONECOPY_TRANSFER_OKAY:
-                                    self.ONE2ONECOPY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, None,
-                                                                                                        False]
-                                    self.ONE2ONECOPY_TRANSFER_OKAY = False
-                                    break  # Exit on file transfer failure
-                        else:
-                            self.ONE2ONECOPY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
-                            if do_delete:
-                                os.remove(input_file_path)
-                            break  # No fixity check, exit loop
+                    if do_delete:
+                        os.remove(output_file_path)
 
                 if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
                     os.rmdir(foldername)
 
-    # Copies files into archive package structure, performs fixity check (optional), deletes old directory (optional)
-    def delivery_restructure_folder(self, input_folder_path, output_directory, output_package_name,
-                           do_fixity, do_delete, files_dict):
-        for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
-            for file in filenames:
-                if any(pattern in file.lower() for pattern in ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.' , 'reverse' , 'shutdown', 'store' , 'plist', 'cab', 'psid.db', 'Exclusion', 'Lion']):
-                    continue
-
-                if self.mac_system_metadata(file):
-                    os.remove(os.path.join(foldername, file))
-                else:
-                    print(f'Transferring file {file} to XSAN')
-                    # Construct input and output paths
-                    input_file_path = os.path.join(foldername, file)
-
-                    if os.path.getsize(input_file_path) == 0:
-                        continue
-
-                    output_file_path = os.path.join(output_directory, output_package_name, file)
-                    os.makedirs(os.path.join(output_directory, output_package_name), exist_ok=True)
-                    # Check if file path is unique, otherwise appends counter
-                    output_file_path = self.unique_file_path(output_file_path)
-                    # Checksum variables
-                    cs1 = None
-                    cs2 = None
-
-                    # Create pre-transfer checksum or retrieve existing checksum from files_dict
-                    if do_fixity and files_dict is None:
-                        cs1 = self.calculate_sha256_checksum(input_file_path)
-                    elif do_fixity and files_dict:
-                        found = False
-                        for key, value in files_dict.items():
-                            if key[1] == input_file_path:  # Check the destination path
-                                cs1 = value[1]  # The first element is the checksum
-                                found = True
-                                break
-                    if not found:
-                        cs1 = self.calculate_sha256_checksum(input_file_path)
-
-                    # Transfer file using file_transfer method, which returns boolean upon succesful or unsuccesful transfer
-                    self.DELIVERY_TRANSFER_ERROR, self.DELIVERY_TRANSFER_OKAY = self.file_transfer(input_file_path, output_file_path)
-
-                    if not self.DELIVERY_TRANSFER_OKAY:
-                        self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                        continue  # Continue to next file on unsuccessful transfer
-
-                    # If checksum validation unsuccessful, retry file_transfer method up to 3 times
-                    max_retries = 3
-                    retries = 0
-                    while retries < max_retries + 1:
-                        if do_fixity:
-                            cs2 = self.calculate_sha256_checksum(output_file_path)
-                            if cs1 == cs2:
-                                print(f'File {file} transferred and passed fixity check')
-                                self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, True]
-
-                                if do_delete:
-                                    os.remove(input_file_path)
-                                break #Exit on succesful transfer
-                            else:
-                                if retries >= max_retries:
-                                    print(
-                                        f"Failed to transfer {input_file_path} after {max_retries} attempts. Moving to the next file.")
-                                    self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, False]
-                                    self.DELIVERY_TRANSFER_OKAY = False
-                                    self.DELIVERY_TRANSFER_ERROR = 'Fixity check'
-                                    break #Exit on max retries
-
-                                print(f'File {file} transferred but did not pass fixity check. Retrying file transfer.')
-                                retries += 1
-                                os.remove(output_file_path)
-                                self.DELIVERY_TRANSFER_ERROR, self.DELIVERY_TRANSFER_OKAY = self.file_transfer(input_file_path, output_file_path)
-
-                                if not self.ARCHIVE_TRANSFER_OKAY:
-                                    self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, None, False]
-                                    self.DELIVERY_TRANSFER_OKAY = False
-                                    break #Exit on file transfer failure
-                        else:
-                            self.DELIVERY_FILES_DICT[(input_file_path, output_file_path)] = [cs1, cs2, None]
-                            if do_delete:
-                                os.remove(input_file_path)
-                            break #No fixity check, exit loop
-
-                if do_delete and not self.mounted_volume(foldername) and self.empty_folder(foldername):
-                    os.rmdir(foldername)
 
 if __name__ == "__main__":
     # Input folder to be restructured
@@ -439,9 +331,9 @@ if __name__ == "__main__":
         cont = (input("Process additional folders for this package? y/n: ")).lower() == 'y'
 
     # Additional file processing options
-    do_fixity = (input("Fixity check before and after transfer? y/n: ")).lower() == 'y'
-    do_delete = (input("Delete folder after succesful transfer? y/n: ")).lower() == 'y'
-    do_commands = (input("Run makeyoutube, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
+    mdo_fixity = (input("Fixity check before and after transfer? y/n: ")).lower() == 'y'
+    mdo_delete = (input("Delete folder after succesful transfer? y/n: ")).lower() == 'y'
+    mdo_commands = (input("Run makeyoutube, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
 
     # Create package object
     package = RestructurePackage(output_directory, package_name)
@@ -449,10 +341,10 @@ if __name__ == "__main__":
     # Begin file processing
     for tuple in input_output_tuples:
         package.create_output_directory(output_directory, package_name, package_subfolder_name)
-        package.archive_restructure_folder(tuple[0], output_directory, package_name, tuple[1], do_fixity, do_delete)
+        package.archive_restructure_folder(tuple[0], output_directory, package_name, tuple[1], mdo_fixity, mdo_delete)
 
     # If user wants commands to run and transfer occured with no issues
-    if do_commands and package.ARCHIVE_TRANSFER_OKAY:
+    if mdo_commands and package.ARCHIVE_TRANSFER_OKAY:
         ingestcommands.commands(os.path.join(output_directory, package_name))
 
     #print error log in output directory
