@@ -34,9 +34,9 @@ class DropboxUploadSession:
         self.refresh_access_token()
 
         # Dropbox errors
-        self.DROPBOX_FILES_DICT = {}
+        self.DROPBOX_FILES_DICT = []
         self.DROPBOX_TRANSFER_OKAY = True
-        self.DROPBOX_TRANSFER_NOT_OKAY_REASON = ''
+        self.DROPBOX_TRANSFER_NOT_OKAY_REASON = []
 
         # Share link
         self.share_link = ''
@@ -82,7 +82,11 @@ class DropboxUploadSession:
                 print(f"Error refreshing access token: {e}")
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
-                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"{response.status_code}: {response.text}"
+                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": "Error refreshing token",
+                                                                "message": str(e)
+                                                            })
                     return False
 
             retry_attempt += 1
@@ -171,10 +175,14 @@ class DropboxUploadSession:
                 if response.status_code == 200:
                     break  # Successful chunk upload
             except requests.exceptions.RequestException as e:
-                print(f"Error completing upload session: {e}")
+                print(f"Error deleting file: {e}")
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
-                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"{response.status_code}: {response.text}"
+                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": "Error deleting file",
+                                                                "message": e
+                                                            })
                     return False
 
             retry_attempt += 1
@@ -200,10 +208,14 @@ class DropboxUploadSession:
                 if response.status_code == 200:
                     return response.json()['session_id']
             except requests.exceptions.RequestException as e:
-                print(f"Failed to initiate upload session: {e}, {response.text}")
+                print(f"Failed to initiate upload session: {e}")
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
-                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"{response.status_code}: {response.text}"
+                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": "Failed to initiate upload session",
+                                                                "message": str(e)
+                                                            })
                 return
 
             retry_attempt += 1
@@ -282,7 +294,11 @@ class DropboxUploadSession:
                     print(f"Network error during chunk upload: {e}")
                     if retry_attempt == 2:
                         self.DROPBOX_TRANSFER_OKAY = False
-                        self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"Chunk upload retry attempts exceeded; {response.status_code}: {response.text}"
+                        self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": "Network error during chunk upload",
+                                                                "message": str(e)
+                                                            })
                         return
 
                 retry_attempt += 1
@@ -312,7 +328,11 @@ class DropboxUploadSession:
                 print(f"Error completing upload session: {e}")
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
-                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"Complete upload session retry attempts exceeded; {response.status_code}: {response.text}"
+                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": "Error completing upload session",
+                                                                "message": str(e)
+                                                            })
                     return
 
             retry_attempt += 1
@@ -352,11 +372,6 @@ class DropboxUploadSession:
                 for thread in threads:
                     thread.join()
 
-                # check if upload was okay in the event of upload
-                #chunk_okay = self.upload_chunk(chunk, offset, session_id, close_bool)
-                #if not chunk_okay:
-                #    return  # if chunk upload fails exit method
-
                 # Step 3: Complete the upload session
                 complete = self.complete_upload_session(session_id, os.path.getsize(file_path), dropbox_path)
                 if not complete:  # if session completion fails exit method
@@ -367,23 +382,38 @@ class DropboxUploadSession:
                 if do_fixity:
                     # Get checksums
                     cs1, cs2 = None, self.get_file_hash(dropbox_path)
-                    if files_dict is None:
+                    if not files_dict:
                         cs1 = self.calculate_sha256_checksum(file_path)
                     else:
-                        for key, value in files_dict.items():
-                            if key[0] == file_path:
-                                cs1 = value[0]
+                        found = False
+                        for f in files_dict:
+                            if f['dest'] == file_path:  # Check the destination path
+                                cs1 = f['checksum_d']
+                                found = True
                                 break
+                        if not found:
+                            cs1 = self.calculate_sha256_checksum(file_path)
+
 
                     # Update files dictionary and check fixity
                     if cs1 == cs2:
                         print(f'File {file_path} transferred and passed fixity check')
-                        self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, True]
+                        self.DROPBOX_FILES_DICT.append({"orig": file_path,
+                                                         "dest": dropbox_path,
+                                                         "checksum_o": cs1,
+                                                         "checksum_d": cs2,
+                                                         "fixity_pass": True
+                                                         })
                         return True
                     else:
                         raise ConnectionError(f'File {file_path} transferred but did not pass fixity check')
                 else:
-                    self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [None, None, None]
+                    self.DROPBOX_FILES_DICT.append({"orig": file_path,
+                                                         "dest": dropbox_path,
+                                                         "checksum_o": None,
+                                                         "checksum_d": None,
+                                                         "fixity_pass": True
+                                                         })
                     return
 
             except ConnectionError as e:
@@ -394,9 +424,18 @@ class DropboxUploadSession:
                     self.bytes_read = self.bytes_read - os.path.getsize(file_path)
                 else:
                     print(f"Max retries reached. Operation failed: {e}")
-                    self.DROPBOX_FILES_DICT[(file_path, dropbox_path)] = [cs1, cs2, False]
+                    self.DROPBOX_FILES_DICT.append({"orig": file_path,
+                                                         "dest": dropbox_path,
+                                                         "checksum_o": cs1,
+                                                         "checksum_d": cs2,
+                                                         "fixity_pass": False
+                                                         })
                     self.DROPBOX_TRANSFER_OKAY = False
-                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"File upload retry attempts exceeded; {e}"
+                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": "Max retry uploads reached",
+                                                                "message": str(e)
+                                                            })
                     return False
 
     # Get shared link
@@ -569,7 +608,11 @@ class DropboxUploadSession:
             return response.json()["shared_folder_id"]
         else:
             print("Error sharing folder:", response.text)
-            self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"{response.status_code}: {response.text}"
+            self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": f"Error sharing folder: {str(response.status_code)}",
+                                                                "message": str(response.text),
+                                                            })
             return False
 
     #Adds member(s) to folder and sends email notification
@@ -598,7 +641,11 @@ class DropboxUploadSession:
             print(f"\nFolder succesfully shared with {emails}")
         else:
             print("Error sharing folder:", response.text)
-            self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"{response.status_code}: {response.text}"
+            self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": f"Error sharing folder: {str(response.status_code)}",
+                                                                "message": str(response.text)
+                                                            })
             return False
 
     # Adds member(s) to file and sends email notification
@@ -629,7 +676,11 @@ class DropboxUploadSession:
              print(f"\nFile succesfully shared with {email}")
          else:
              print("Error sharing file:", response.text)
-             self.DROPBOX_TRANSFER_NOT_OKAY_REASON = f"{response.status_code}: {response.text}"
+             self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                                                "timestamp": str(datetime.datetime.now()),
+                                                                "error_type": f"Error sharing file: {str(response.status_code)}",
+                                                                "message": str(response.text),
+                                                            })
              return False
 
     # Handles folder uploads
