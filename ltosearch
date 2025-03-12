@@ -28,10 +28,14 @@ update_indexes(){
     mv /tmp/index_om.txt "${indexdir}/"
 
     find /Volumes/CUNYTVMEDIA/acquisitions -maxdepth 4 -path "*service*" -type f > /tmp/index_acq.txt
-    mv /tmp/index_acq.txt "${indexdir}/"
-
+    if [[ -s "/tmp/index_acq.txt" ]] ; then
+        mv /tmp/index_acq.txt "${indexdir}/"
+    fi
+    
     find /Volumes/CUNYTVMEDIA/nearline -type f ! -path "*backup*" ! -path "*fingerprints*" ! -path "*dbreports*" -type f ! -name ".*" -maxdepth 2 > /tmp/index_nl.txt
-    mv /tmp/index_nl.txt "${indexdir}/"
+    if [[ -s "/tmp/index_nl.txt" ]] ; then
+        mv /tmp/index_nl.txt "${indexdir}/"
+    fi
 }
 
 usage(){
