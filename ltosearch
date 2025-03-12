@@ -27,10 +27,10 @@ update_indexes(){
     find /Volumes/fs0/cunytv.dir -type f -maxdepth 1 ! -name ".*" > /tmp/index_om.txt 
     mv /tmp/index_om.txt "${indexdir}/"
 
-    find /Volumes/CUNYTV_Media/acquisitions -maxdepth 4 -path "*service*" -type f > /tmp/index_acq.txt
+    find /Volumes/CUNYTVMEDIA/acquisitions -maxdepth 4 -path "*service*" -type f > /tmp/index_acq.txt
     mv /tmp/index_acq.txt "${indexdir}/"
 
-    find /Volumes/CUNYTV_Media/nearline -type f ! -path "*backup*" ! -path "*fingerprints*" ! -path "*dbreports*" -type f ! -name ".*" -maxdepth 2 > /tmp/index_nl.txt
+    find /Volumes/CUNYTVMEDIA/nearline -type f ! -path "*backup*" ! -path "*fingerprints*" ! -path "*dbreports*" -type f ! -name ".*" -maxdepth 2 > /tmp/index_nl.txt
     mv /tmp/index_nl.txt "${indexdir}/"
 }
 
