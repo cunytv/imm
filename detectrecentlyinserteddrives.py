@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import subprocess
-# Returns disks mounted within the last 10 minutes
+# Returns disks mounted within the last minute
 def mounted_paths():
     # Define the command to be executed
-    command = """log show --last 10m --info --predicate 'eventMessage contains "mounted"'"""
+    command = """log show --last 1m --info --predicate 'eventMessage contains "mounted"'"""
 
     # Execute the command and capture its output
     output = subprocess.check_output(command, shell=True)
