@@ -11,14 +11,13 @@ import time
 import datetime
 import threading
 import queue
+import re
 
 class RestructurePackage:
     def __init__(self):
         self.FILES_DICT = []
         self.TRANSFER_OKAY = True
         self.TRANSFER_ERROR = []
-
-        self.q = queue.Queue()
 
     # Checks if directory is a mounted volume
     def mounted_volume(self, directory):
@@ -53,6 +52,8 @@ class RestructurePackage:
         # If file already exists
         counter = 2
         parts = file_path.rsplit(f".", 1)
+        if bool(re.search(r"_\d+$", parts[0])):
+            parts[0] = parts[0].rsplit("_", 1)[0]
         file_path = f"{parts[0]}_{counter}.{parts[1]}"
         while os.path.exists(file_path):
             file_name = file_path.rsplit(f"_{counter}", 1)[0]
@@ -68,14 +69,24 @@ class RestructurePackage:
 
         # If directory already exists
         counter = 2
-        directory_path = directory_path + f"_{counter}"
+        if bool(re.search(r"_\d+$", directory_path)):
+            directory_path = directory_path.rsplit("_", 1)[0] + f"_{counter}"
         while os.path.exists(directory_path):
             counter += 1
-            directory_path = directory_path + f"_{counter}"
+            directory_path = directory_path.rsplit("_", 1)[0] + f"_{counter}"
         return directory_path
 
+    # Determines if file should be saved in object or metadata directory
+    def objORmeta(self, file_path):
+        av = self.is_av(file_path)
+
+        if av:
+            return ("objects")
+        else:
+            return ("metadata/logs")
+
     # Determines file type using FFMPEG to bifurcate audio/video from all other kinds of file types
-    def file_type(self, file_path):
+    def is_av(self, file_path):
 
         # Number of streams
         command = ["ffprobe", "-loglevel", "quiet", file_path, "-show_entries", "format=nb_streams", "-of", "default=nw=1:nk=1"]
@@ -90,16 +101,22 @@ class RestructurePackage:
         if not nb_streams:
             nb_streams = 0
         else:
-            nb_streams = int(nb_streams)
+            try:
+                nb_streams = int(nb_streams)
+            except ValueError:
+                nb_streams = 0
         if not duration:
             duration = 0
         else:
-            duration = float(duration)
+            try:
+                duration = float(duration)
+            except ValueError:
+                duration = 0
 
         if nb_streams >= 1 and duration > 0:
-            return ("objects")
+            return True
         else:
-            return ("metadata/logs")
+            return False
 
     # Copies file from source to destination, returns error and success bool tuple
     def copy_file(self, input_file_path, output_file_path):
@@ -246,15 +263,16 @@ class RestructurePackage:
 
     def archive_output_path(self, output_directory, output_package_name, foldername, output_subfolder_name, file):
         output_file_path = os.path.join(output_directory, output_package_name,
-                                        self.file_type(os.path.join(foldername, file)),
+                                        self.objORmeta(os.path.join(foldername, file)),
                                         output_subfolder_name, file)
         os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
         output_file_path = self.unique_file_path(output_file_path)
         return output_file_path
 
     def one2one_output_path(self, output_directory, input_file_path, input_folder_path):
-        output_file_path = os.path.join(output_directory, os.path.relpath(input_file_path, input_folder_path))
-        os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+        output_dir_path = self.unique_directory_path(os.path.dirname(input_file_path))
+        output_file_path = os.path.join(output_dir_path, os.path.relpath(input_file_path, input_folder_path))
+        os.makedirs(output_dir_path, exist_ok=False)
         output_file_path = self.unique_file_path(output_file_path)
         return output_file_path
 
@@ -268,6 +286,8 @@ class RestructurePackage:
     # as of now, three copy types: archive, delivery, and one2one
     def restructure_copy(self, copy_type, input_folder_path, output_directory, output_package_name=None, output_subfolder_name=None,
                            do_fixity=None, do_delete=None, files_dict=None):
+        if copy_type == 'archive':
+            self.create_output_directory(output_directory, output_package_name, output_subfolder_name)
         for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
             for file in filenames:
                 if self.mac_system_metadata(file) or os.path.getsize(os.path.join(foldername, file)) == 0:
@@ -282,6 +302,8 @@ class RestructurePackage:
                     if copy_type == "archive":
                         output_file_path = self.archive_output_path(output_directory, output_package_name, foldername, output_subfolder_name, file)
                     if copy_type == "delivery":
+                        if not self.is_av(input_file_path):
+                            continue
                         output_file_path = self.delivery_output_path(output_directory, output_package_name, file)
                     if copy_type == "one2one":
                         output_file_path = self.one2one_output_path(output_directory, input_file_path, input_folder_path)
@@ -302,6 +324,16 @@ class RestructurePackage:
 
 
 if __name__ == "__main__":
+    # Define variables
+    # Array of input folder and output subfolder tuples (input, output)
+    input_output_tuples = []
+    package_name = None
+    package_subfolder_name = None
+    copy_type = input(f"1) archive, creates archival package with metadata and objects folders"
+                      f"\n2) delivery, filters for audiovisual files and places them in a flat directory structure"
+                      f"\n3) one2one, a one-to-one copy of the original directory"
+                      f"\nSelect copy type: ")
+
     # Input folder to be restructured
     input_directory = validateuserinput.path(input("Input folder path: "))
 
@@ -312,39 +344,50 @@ if __name__ == "__main__":
     else:
         output_directory = validateuserinput.path(output_directory)
 
+    while copy_type != '1' and copy_type != '2' and copy_type != '3':
+        input(f"Select one of the following numbers 1) archive 2) delivery 3) one2one: ")
+    if copy_type == '1':
+        copy_type = 'archive'
+        # Package follow the structure of package_name/metadata | objects /subfolder_name
+        # The files from the input folder path are saved in the subfolder_name
+        package_name = validateuserinput.card_package_name(input(f"Enter package name: "))
+        package_subfolder_name = validateuserinput.card_subfolder_name(
+            input(f"Enter subfolder name (or serialize from 1 if none): "))
+        input_output_tuples.append((input_directory, package_name, package_subfolder_name))
+    elif copy_type == '2':
+        copy_type = 'delivery'
+        package_name = validateuserinput.card_package_name(input(f"Enter output folder name: "))
+        input_output_tuples.append((input_directory, package_name, package_subfolder_name))
+    else:
+        copy_type = 'one2one'
+        input_output_tuples.append((input_directory, package_name, package_subfolder_name))
 
-    # Array of input folder and output subfolder tuples (input, output)
-    input_output_tuples = []
-
-    # Package follow the structure of package_name/metadata | objects /subfolder_name
-    # The files from the input folder path are saved in the subfolder_name
-    package_name = validateuserinput.card_package_name(input(f"Enter package name: "))
-    package_subfolder_name = validateuserinput.card_subfolder_name(input(f"Enter subfolder name (or serialize from 1 if none): "))
-    input_output_tuples.append((input_directory, package_subfolder_name))
 
     # Continue processing additional package subfolders if user types 'y'
-    cont = (input("Process additional folders for this package? y/n: ")).lower() == 'y'
-    while cont:
-        input_directory = validateuserinput.path(input("Input folder path: "))
-        package_subfolder_name = validateuserinput.card_subfolder_name(input(f"Enter subfolder name: "))
-        input_output_tuples.append((input_directory, package_subfolder_name))
+    if copy_type == 'delivery' or copy_type == 'archive':
         cont = (input("Process additional folders for this package? y/n: ")).lower() == 'y'
+        while cont:
+            input_directory = validateuserinput.path(input("Input folder path: "))
+            if copy_type == 'archive':
+                package_subfolder_name = validateuserinput.card_subfolder_name(input(f"Enter subfolder name: "))
+            input_output_tuples.append((input_directory, package_name, package_subfolder_name))
+            cont = (input("Process additional folders for this package? y/n: ")).lower() == 'y'
 
     # Additional file processing options
-    mdo_fixity = (input("Fixity check before and after transfer? y/n: ")).lower() == 'y'
-    mdo_delete = (input("Delete folder after succesful transfer? y/n: ")).lower() == 'y'
-    mdo_commands = (input("Run makeyoutube, makemetdata, checksumpackage? y/n: ")).lower() == 'y'
+    mdo_fixity = True
+    mdo_delete = False
 
     # Create package object
-    package = RestructurePackage(output_directory, package_name)
+    package = RestructurePackage()
 
     # Begin file processing
     for tuple in input_output_tuples:
-        package.create_output_directory(output_directory, package_name, package_subfolder_name)
-        package.archive_restructure_folder(tuple[0], output_directory, package_name, tuple[1], mdo_fixity, mdo_delete)
+        package.restructure_copy(copy_type, tuple[0], output_directory, tuple[1], tuple[2], mdo_fixity, mdo_delete)
 
     # If user wants commands to run and transfer occured with no issues
-    if mdo_commands and package.ARCHIVE_TRANSFER_OKAY:
-        ingestcommands.commands(os.path.join(output_directory, package_name))
+    if copy_type == 'archive' and package.TRANSFER_OKAY:
+        ingestcommands.makewindow(os.path.join(output_directory, package_name))
+        ingestcommands.makemetadata(os.path.join(output_directory, package_name))
+        ingestcommands.makechecksumpackage(os.path.join(output_directory, package_name))
 
     #print error log in output directory
