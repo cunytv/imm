@@ -11,13 +11,14 @@ import time
 import datetime
 import threading
 import queue
-import re
 
 class RestructurePackage:
     def __init__(self):
         self.FILES_DICT = []
         self.TRANSFER_OKAY = True
         self.TRANSFER_ERROR = []
+
+        self.q = queue.Queue()
 
     # Checks if directory is a mounted volume
     def mounted_volume(self, directory):
@@ -76,17 +77,8 @@ class RestructurePackage:
             directory_path = directory_path.rsplit("_", 1)[0] + f"_{counter}"
         return directory_path
 
-    # Determines if file should be saved in object or metadata directory
-    def objORmeta(self, file_path):
-        av = self.is_av(file_path)
-
-        if av:
-            return ("objects")
-        else:
-            return ("metadata/logs")
-
     # Determines file type using FFMPEG to bifurcate audio/video from all other kinds of file types
-    def is_av(self, file_path):
+    def file_type(self, file_path):
 
         # Number of streams
         command = ["ffprobe", "-loglevel", "quiet", file_path, "-show_entries", "format=nb_streams", "-of", "default=nw=1:nk=1"]
@@ -101,22 +93,16 @@ class RestructurePackage:
         if not nb_streams:
             nb_streams = 0
         else:
-            try:
-                nb_streams = int(nb_streams)
-            except ValueError:
-                nb_streams = 0
+            nb_streams = int(nb_streams)
         if not duration:
             duration = 0
         else:
-            try:
-                duration = float(duration)
-            except ValueError:
-                duration = 0
+            duration = float(duration)
 
         if nb_streams >= 1 and duration > 0:
-            return True
+            return ("objects")
         else:
-            return False
+            return ("metadata/logs")
 
     # Copies file from source to destination, returns error and success bool tuple
     def copy_file(self, input_file_path, output_file_path):
@@ -263,16 +249,15 @@ class RestructurePackage:
 
     def archive_output_path(self, output_directory, output_package_name, foldername, output_subfolder_name, file):
         output_file_path = os.path.join(output_directory, output_package_name,
-                                        self.objORmeta(os.path.join(foldername, file)),
+                                        self.file_type(os.path.join(foldername, file)),
                                         output_subfolder_name, file)
         os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
         output_file_path = self.unique_file_path(output_file_path)
         return output_file_path
 
     def one2one_output_path(self, output_directory, input_file_path, input_folder_path):
-        output_dir_path = self.unique_directory_path(os.path.dirname(input_file_path))
-        output_file_path = os.path.join(output_dir_path, os.path.relpath(input_file_path, input_folder_path))
-        os.makedirs(output_dir_path, exist_ok=False)
+        output_file_path = os.path.join(output_directory, os.path.relpath(input_file_path, input_folder_path))
+        os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
         output_file_path = self.unique_file_path(output_file_path)
         return output_file_path
 
@@ -286,8 +271,6 @@ class RestructurePackage:
     # as of now, three copy types: archive, delivery, and one2one
     def restructure_copy(self, copy_type, input_folder_path, output_directory, output_package_name=None, output_subfolder_name=None,
                            do_fixity=None, do_delete=None, files_dict=None):
-        if copy_type == 'archive':
-            self.create_output_directory(output_directory, output_package_name, output_subfolder_name)
         for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
             for file in filenames:
                 if self.mac_system_metadata(file) or os.path.getsize(os.path.join(foldername, file)) == 0:
@@ -302,8 +285,6 @@ class RestructurePackage:
                     if copy_type == "archive":
                         output_file_path = self.archive_output_path(output_directory, output_package_name, foldername, output_subfolder_name, file)
                     if copy_type == "delivery":
-                        if not self.is_av(input_file_path):
-                            continue
                         output_file_path = self.delivery_output_path(output_directory, output_package_name, file)
                     if copy_type == "one2one":
                         output_file_path = self.one2one_output_path(output_directory, input_file_path, input_folder_path)
