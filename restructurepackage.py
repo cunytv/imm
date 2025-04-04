@@ -10,15 +10,13 @@ import shutil
 import time
 import datetime
 import threading
-import queue
+import re
 
 class RestructurePackage:
     def __init__(self):
         self.FILES_DICT = []
         self.TRANSFER_OKAY = True
         self.TRANSFER_ERROR = []
-
-        self.q = queue.Queue()
 
     # Checks if directory is a mounted volume
     def mounted_volume(self, directory):
