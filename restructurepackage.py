@@ -75,6 +75,14 @@ class RestructurePackage:
             directory_path = directory_path.rsplit("_", 1)[0] + f"_{counter}"
         return directory_path
 
+    # Determines if string can be cast to int
+    def can_cast_to_int(self, s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
     # Determines file type using FFMPEG to bifurcate audio/video from all other kinds of file types
     def file_type(self, file_path):
 
@@ -88,11 +96,11 @@ class RestructurePackage:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         duration = process.stdout.readline()
 
-        if not nb_streams:
+        if not self.can_cast_to_int(nb_streams):
             nb_streams = 0
         else:
             nb_streams = int(nb_streams)
-        if not duration:
+        if not self.can_cast_to_int(duration):
             duration = 0
         else:
             duration = float(duration)
