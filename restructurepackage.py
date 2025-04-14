@@ -76,9 +76,9 @@ class RestructurePackage:
         return directory_path
 
     # Determines if string can be cast to int
-    def can_cast_to_int(self, s):
+    def can_cast_to_float(self, s):
         try:
-            int(s)
+            float(s)
             return True
         except ValueError:
             return False
@@ -96,11 +96,13 @@ class RestructurePackage:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         duration = process.stdout.readline()
 
-        if not self.can_cast_to_int(nb_streams):
+        print(nb_streams)
+        print(duration)
+        if not self.can_cast_to_float(nb_streams):
             nb_streams = 0
         else:
             nb_streams = int(nb_streams)
-        if not self.can_cast_to_int(duration):
+        if not self.can_cast_to_float(duration):
             duration = 0
         else:
             duration = float(duration)
