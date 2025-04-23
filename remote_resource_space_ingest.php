@@ -1,7 +1,9 @@
 <?php
 
+include 'cunymediaids.php';
 
 // global vars
+// fixed
 $private_key = "156641200d23f91776660d814ee554294b6c3e3348cf051f3f0fbbbe6ecc1842";
 $user = "admin_test";
 $url = "http://resourcespace/test/api/";
@@ -9,10 +11,14 @@ $remote_fc_id = 103; // Remote footage featured collection ID
 $path_tree_field_id = 91; // ID for path tree field type 
 $remote_node_id = 288; // Remote footage parent node ID for path tree
 
+// user input
+$searchDir = '';
+$dropboxLink = '';
+
+// code generated
 $resource_fp = '';
 $resource_id = 0;
 $alternative_fps = [];
-
 $showcode = '';
 
 // deprecated
@@ -570,7 +576,8 @@ function set_asset_type(){
 function set_file_path(){
 	global $private_key, $user, $url, $resource_id, $resource_fp, $showcode;
 	
-	$tiger_fp = '/Volumes/TigerVideo/Camera Card Delivery/' . $showcode . '/' . preg_split("/_WINDOW\.mp4/i", basename($resource_fp))[0] . '/' . basename($resource_fp);
+	$tiger_fp = '/Volumes/TigerVideo/Camera Card Delivery/' . $showcode . '/' . preg_split("/_WINDOW\.mp4/i", basename($resource_fp))[0];
+	//$tiger_fp = str_replace(' ', '%20', $tiger_fp);
 	
 	$data = [
 	    'user' => $user,
@@ -606,12 +613,14 @@ function set_file_path(){
 function set_production_title(){
 	global $private_key, $user, $url, $resource_id, $showcode;
 
+	$showname = get_full_show_name($showcode);
+
 	$data = [
 	    'user' => $user,
 	    'function' => 'update_field',
 	    'resource' => $resource_id,
 		'field' => 89, // type field ID for Title
-		'value' => $showcode,
+		'value' => $showname,
 	];
 
 	$query = http_build_query($data);
@@ -649,7 +658,7 @@ function create_field_tree(){
 }
 
 function set_node(){
-	global $private_key, $user, $url, $showcode;
+	global $private_key, $user, $url, $showcode, $remote_node_id;
 
 	$data = [
 	    'user' => $user,
@@ -752,14 +761,14 @@ function add_resource_to_nodes($nodeid){
 }
 
 function set_dropbox_link(){
-	global $private_key, $user, $url, $resource_id;
+	global $private_key, $user, $url, $resource_id, $dropboxLink;
 
 	$data = [
 	    'user' => $user,
 	    'function' => 'update_field',
 	    'resource' => $resource_id,
 		'field' => 103, // type field ID for Title
-		'value' => 'some link here',
+		'value' => $dropboxLink,
 	];
 
 	$query = http_build_query($data);
@@ -788,7 +797,17 @@ function set_dropbox_link(){
 
 // Path to search
 //need to pass directory with objects at the end... less to recurse but is this a good idea? consider changing, in case archive structure changes in the future
-$searchDir = '/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests/AALF20250418_ISLAMOPHOBIA_INTRO/objects';
+
+if ($argc > 1) {
+    $searchDir  = $argv[1];
+    echo "Processing dir: $searchDir\n";
+    if ($argc > 2) {
+    	$dropboxLink = $argv[2];
+    }
+} else {
+    echo "No filename provided.\n";
+    die();
+}
 
 findWindowMp4Files($searchDir);
 findAllFiles($searchDir);
@@ -808,5 +827,3 @@ echo "Resource ID: " . $resource_id . PHP_EOL;
 echo "Show code: " . $showcode . PHP_EOL;
 
 //uploadFile();
-
-
