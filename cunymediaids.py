@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from difflib import SequenceMatcher
 
 def print_media_dict():
     # Print the titles and their abbreviations
@@ -6,6 +7,29 @@ def print_media_dict():
     print('-' * 50)  # Separator
     for title, abbreviation in shows.items():
         print(f"{title:<40} {abbreviation}")
+
+# Full show name similarity (not between codes)
+def check_similarity(s):
+    match_tuple = (None, 0) # show name, ratio
+
+    for key, value in shows.items():
+        similarity = SequenceMatcher(None, s, key).ratio()
+        if similarity > match_tuple[1]:
+            match_tuple = (key, similarity)
+
+    if match_tuple[1] > 0.5:
+        return match_tuple[0]
+    else:
+        return 'No Show'
+
+# Takes code and return show name
+def get_full_show_name(s):
+    name = None
+    for key, value in shows.items():
+        if value == s:
+            name = key
+            return name
+    return 'No Show'
 
 # Create a dictionary from the provided list
 shows = {
