@@ -4,12 +4,13 @@ include 'cunymediaids.php';
 
 // global vars
 // fixed
-$private_key = "156641200d23f91776660d814ee554294b6c3e3348cf051f3f0fbbbe6ecc1842";
-$user = "admin_test";
-$url = "http://resourcespace/test/api/";
-$remote_fc_id = 103; // Remote footage featured collection ID
+$private_key = "61f7477d9cdad97ad99295ca7a2de2967172f866f1b21e1ee83ee570da999e87";
+$user = "admin";
+$url = "http://resourcespace/api/";
+$remote_fc_id = 540; // Remote footage featured collection ID
 $path_tree_field_id = 91; // ID for path tree field type 
-$remote_node_id = 288; // Remote footage parent node ID for path tree
+$prod_title_field_id = 89;
+$remote_node_id = 43395; // Remote footage parent node ID for path tree
 
 // user input
 $searchDir = '';
@@ -482,7 +483,7 @@ function getFCs() {
 
     while ($attempt < $maxRetries) {
         $attempt++;
-        $response = file_get_contents("http://resourcespace/test/api/?" . $query . "&sign=" . $sign);
+        $response = file_get_contents("http://resourcespace/api/?" . $query . "&sign=" . $sign);
         $http_code = '';
 
         if (isset($http_response_header)) {
@@ -611,62 +612,45 @@ function set_file_path(){
 }
 
 function set_production_title(){
-	global $private_key, $user, $url, $resource_id, $showcode;
+	global $private_key, $user, $url, $resource_id, $showcode, $prod_title_field_id;
 
 	$showname = get_full_show_name($showcode);
+	echo $showname . "\n";
 
-	$data = [
-	    'user' => $user,
-	    'function' => 'update_field',
-	    'resource' => $resource_id,
-		'field' => 89, // type field ID for Title
-		'value' => $showname,
-	];
-
-	$query = http_build_query($data);
-	$sign = hash("sha256", $private_key . $query);
-	$data['sign'] = $sign;
-
-	$postdata = array();
-	$postdata['query'] = http_build_query($data);
-	$postdata['sign'] = $sign;
-	$postdata['user'] = $user;
-
-	$curl = curl_init($url);
-	curl_setopt( $curl, CURLOPT_HEADER, "Content-Type:application/x-www-form-urlencoded" );
-	curl_setopt( $curl, CURLOPT_POST, 1);
-	curl_setopt( $curl, CURLOPT_POSTFIELDS, $postdata);
-	curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1 );
-
-	$curl_response = curl_exec($curl);
-	$curl_error = curl_error($curl);
-
-	print_r($curl_error);
-	print_r($curl_response);
+	$nodes = get_nodes($prod_title_field_id); // type field ID for production title
+	$node_id = does_node_exist($nodes, $showname); // returns 0 if no match found
+	echo $node_id . "\n";
 	
+	if ($node_id == 0){
+		$node_id = set_node($showname, $prod_title_field_id);
+	}
+	echo $node_id . "\n";
+	
+	add_resource_to_nodes([$node_id]);
 }
 
 function create_field_tree(){
-	$nodes = get_nodes();
-	$node_id = does_node_exist($nodes); // returns 0 if no match found
+	global $remote_node_id, $showcode, $path_tree_field_id;
+	$nodes = get_nodes($path_tree_field_id, $remote_node_id); // type field ID for file tree
+	$node_id = does_node_exist($nodes, $showcode); // returns 0 if no match found
 	
 	if ($node_id == 0){
-		$node_id = set_node();
+		$node_id = set_node($showcode, $path_tree_field_id, $remote_node_id);
 	}
 	
-	add_resource_to_nodes($node_id);
+	add_resource_to_nodes([$remote_node_id, $node_id]);
 }
 
-function set_node(){
-	global $private_key, $user, $url, $showcode, $remote_node_id;
+function set_node($name, $field, $parent=null){
+	global $private_key, $user, $url;
 
 	$data = [
 	    'user' => $user,
 	    'function' => 'set_node',
 	    'ref' => 'NULL',
-		'resource_type_field' => 91,
-		'name' => $showcode,
-		'parent' => $remote_node_id,
+		'resource_type_field' => $field,
+		'name' => $name,
+		'parent' => $parent,
 	];
 
 	$query = http_build_query($data);
@@ -693,14 +677,12 @@ function set_node(){
 	return $curl_response;
 }
 
-function does_node_exist($nodes){
-	global $showcode;
-	
+function does_node_exist($nodes, $string){	
 	$nodes = json_decode($nodes, true);
 	$match_id = 0;
 
 	foreach ($nodes as $node) {
-	    if (isset($node["name"]) && $node["name"] === $showcode) {
+	    if (isset($node["name"]) && $node["name"] === $string) {
 	        $match_id = $node["ref"];
 	        break;
 	    }
@@ -708,33 +690,36 @@ function does_node_exist($nodes){
 	return $match_id;
 }
 
-function get_nodes(){
+function get_nodes($ref, $parent=null){
 	global $private_key, $user, $url, $resource_id, $remote_node_id;
 	
 	$params = [
 	    'user' => $user,
 	    'function' => 'get_nodes',
-	    'ref' => 91, // type field ID for file tree
-	    'parent' => $remote_node_id
+	    'ref' => $ref, 
+	    'parent' => $parent,
 	];
 
 	$query = http_build_query($params);
 
 	$sign=hash("sha256",$private_key . $query);
-	$response = file_get_contents("http://resourcespace/test/api/?" . $query . "&sign=" . $sign);
+	$response = file_get_contents("http://resourcespace/api/?" . $query . "&sign=" . $sign);
 
 	return $response;
 	
 }
 
-function add_resource_to_nodes($nodeid){
-	global $private_key, $user, $url, $resource_id, $remote_node_id;
+// make more modular
+function add_resource_to_nodes($nodearray){
+	global $private_key, $user, $url, $resource_id; 
 	
+	$nodestring = implode(',', $nodearray);
+
 	$data = [
 	    'user' => $user,
 	    'function' => 'add_resource_nodes',
 	    'resource' => $resource_id,
-		'nodestring' => $remote_node_id . ',' . $nodeid,
+		'nodestring' => $nodestring,
 	];
 
 	$query = http_build_query($data);
@@ -813,8 +798,6 @@ findWindowMp4Files($searchDir);
 findAllFiles($searchDir);
 extractShowCode($searchDir);
 createResource();
-uploadFile();
-uploadAltFiles();
 checkandCreateFC();
 set_title();
 set_asset_type();
@@ -822,6 +805,9 @@ set_file_path();
 set_production_title();
 create_field_tree();
 set_dropbox_link();
+//uploadFile();
+//uploadAltFiles();
+
 
 echo "Resource ID: " . $resource_id . PHP_EOL;
 echo "Show code: " . $showcode . PHP_EOL;
