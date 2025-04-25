@@ -805,8 +805,8 @@ set_file_path();
 set_production_title();
 create_field_tree();
 set_dropbox_link();
-//uploadFile();
-//uploadAltFiles();
+uploadFile();
+uploadAltFiles();
 
 
 echo "Resource ID: " . $resource_id . PHP_EOL;
