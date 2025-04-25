@@ -535,7 +535,7 @@ function set_title(){
 	$curl_error = curl_error($curl);
 
 	print_r($curl_error);
-	print_r($curl_response);
+	//print_r($curl_response);
 	
 }
 
@@ -569,7 +569,7 @@ function set_asset_type(){
 	$curl_error = curl_error($curl);
 
 	print_r($curl_error);
-	print_r($curl_response);
+	//print_r($curl_response);
 	
 }
 
@@ -607,7 +607,7 @@ function set_file_path(){
 	$curl_error = curl_error($curl);
 
 	print_r($curl_error);
-	print_r($curl_response);
+	//print_r($curl_response);
 	
 }
 
@@ -672,7 +672,7 @@ function set_node($name, $field, $parent=null){
 	$curl_error = curl_error($curl);
 
 	print_r($curl_error);
-	print_r($curl_response);
+	//print_r($curl_response);
 	
 	return $curl_response;
 }
@@ -741,7 +741,7 @@ function add_resource_to_nodes($nodearray){
 	$curl_error = curl_error($curl);
 
 	print_r($curl_error);
-	print_r($curl_response);
+	//print_r($curl_response);
 	
 }
 
@@ -775,7 +775,7 @@ function set_dropbox_link(){
 	$curl_error = curl_error($curl);
 
 	print_r($curl_error);
-	print_r($curl_response);
+	//print_r($curl_response);
 	
 }
 
@@ -813,3 +813,5 @@ echo "Resource ID: " . $resource_id . PHP_EOL;
 echo "Show code: " . $showcode . PHP_EOL;
 
 //uploadFile();
+
+
