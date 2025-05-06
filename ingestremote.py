@@ -577,7 +577,7 @@ def ingest():
 
 if __name__ == "__main__":
     # Check if connected to servers
-    archive_server = "/Volumes/CUNYTV_Media/archive_projects/camera_card_ingests"
+    archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
     server_check(archive_server, "archive")
     # archive_server = "/Users/aidagarrido/Desktop"
 
