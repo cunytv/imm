@@ -2,7 +2,7 @@
 version="0.4"
 #indexdir=/Volumes/data/archive_projects/storage_indexes
 indexdir="${HOME}/Documents"
-updateindexevery=9000
+updateindexevery=90000
 cleanup(){
     echo -n $(tput sgr0)
     echo Fine then.
@@ -27,11 +27,15 @@ update_indexes(){
     find /Volumes/fs0/cunytv.dir -type f -maxdepth 1 ! -name ".*" > /tmp/index_om.txt 
     mv /tmp/index_om.txt "${indexdir}/"
 
-    find /Volumes/CUNYTV_Media/acquisitions -maxdepth 4 -path "*service*" -type f > /tmp/index_acq.txt
-    mv /tmp/index_acq.txt "${indexdir}/"
-
-    find /Volumes/CUNYTV_Media/nearline -type f ! -path "*backup*" ! -path "*fingerprints*" ! -path "*dbreports*" -type f ! -name ".*" -maxdepth 2 > /tmp/index_nl.txt
-    mv /tmp/index_nl.txt "${indexdir}/"
+    find /Volumes/CUNYTVMEDIA/acquisitions -maxdepth 4 -path "*service*" -type f > /tmp/index_acq.txt
+    if [[ -s "/tmp/index_acq.txt" ]] ; then
+        mv /tmp/index_acq.txt "${indexdir}/"
+    fi
+    
+    find /Volumes/CUNYTVMEDIA/nearline -type f ! -path "*backup*" ! -path "*fingerprints*" ! -path "*dbreports*" -type f ! -name ".*" -maxdepth 2 > /tmp/index_nl.txt
+    if [[ -s "/tmp/index_nl.txt" ]] ; then
+        mv /tmp/index_nl.txt "${indexdir}/"
+    fi
 }
 
 usage(){

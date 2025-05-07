@@ -45,8 +45,8 @@ elif [ ! -f "${IDLIST}" ] ; then
 fi
 
 #location of delivery folders
-PREPDIR="/Volumes/CUNYTV_Media/archive_projects/filestore/PREPPED/"
-PREPPING="/Volumes/CUNYTV_Media/archive_projects/filestore/PREPPING/"
+PREPDIR="/Volumes/CUNYTVMEDIA/archive_projects/filestore/PREPPED/"
+PREPPING="/Volumes/CUNYTVMEDIA/archive_projects/filestore/PREPPING/"
 
 if [ ! -d "${PREPDIR}" ] ; then
     _report -wt "Error: the delivery folder is not loaded! "
