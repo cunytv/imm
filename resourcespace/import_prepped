@@ -1,5 +1,5 @@
 #!/bin/bash
-PREPDIR="/Volumes/filestore/PREPPED"
+PREPDIR="/Volumes/CUNYTVMEDIA/archive_projects/rs_fs/PREPPED"
 
 SCRIPTDIR="$(dirname "$0")"
 while read file ; do
