@@ -49,12 +49,18 @@ else
             else
                 PRIVACY_TYPE="private"
             fi
+            CHAPTERLIST="$(ffprobe -sexagesimal -v 0 "${file}" -show_entries chapter=start_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep=' '" | awk '{split($1, t, "."); printf "%s", t[1]; for (i=2; i<=NF; i++) printf " %s", $i; print ""}' |   sed 's/\\ / /g')"
+            if [[ -n "${CHAPTERLIST}" ]] ; then
+                DRAFT_DESCRIPTION="${CHAPTERLIST}"$'\n\n\n'
+                CHAP_COMMENT=" with $(echo "${CHAPTERLIST}" | wc -l) chapters."
+            fi
+            DRAFT_DESCRIPTION+="${FILE_NAME%.*}"
             # --credentials-file="${logDir}/.youtube-upload-credentials.json"
-            YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" "${CAPTION[@]}" -title "$(basename "${file%.*}")" -privacy "${PRIVACY_TYPE}" -filename "${file}" 2>$ytErr | grep -i "success" | awk 'NF>1{print $NF}')"
-            echo "Outcome of uploading ${file} is ${YOUTUBE_ID}."
+            YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" "${CAPTION[@]}" -title "$(basename "${file%.*}")" -description "${DRAFT_DESCRIPTION}" -privacy "${PRIVACY_TYPE}" -filename "${file}" 2>$ytErr | grep -i "success" | awk 'NF>1{print $NF}')"
+            echo "Outcome of uploading ${file} is ${YOUTUBE_ID}${CHAP_COMMENT}."
             if [[ "${#YOUTUBE_ID}" == 11 ]] ; then
                 mv -v "${file}" "${donedir}"
-                logit "${FILE_NAME} is uploaded, (${YOUTUBE_ID})."
+                logit "${FILE_NAME} is uploaded${CHAP_COMMENT}, (${YOUTUBE_ID})."
                 if [[ -f "${SCC_NAME}" ]] ; then
                     mv -v "${SCC_NAME}" "${donedir}"
                 fi
