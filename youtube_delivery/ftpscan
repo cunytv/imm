@@ -32,7 +32,7 @@ else
     while read file ; do
         echo "Trying to upload ${file} to youtube"
         FILE_NAME="$(basename "${file}")"
-        UPLOADED="$(grep "${FILE_NAME}" "${logFile}" | grep "is uploaded")"
+        UPLOADED="$(grep " ${FILE_NAME}." "${logFile}" | grep "is uploaded")"
         if [[ -n "${UPLOADED}" ]] ; then
             echo "${FILE_NAME} was already uploaded:"
             echo "${UPLOADED}"
