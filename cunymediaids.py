@@ -47,6 +47,7 @@ shows = {
     "CUNY TV Presents Film":       "CNTVPR",
     "CUNY Uncut":                  "CNNT",
     "CUNY Laureates":              "CNLR",
+    "CUNY Specials":               "SPEC",
     "EdCast":                      "EDCA",
     "Graduate Center Presents":    "GCPR",
     "Italics":                     "ITAL",
