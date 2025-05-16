@@ -174,7 +174,7 @@ class RestructurePackage:
         print()  # Move to the next line after progress
         return final_hash
 
-    # files_dict is none unless specified (consider replacing this with the actual cs1 value)
+    # uses copy_file function to perform file transfer as per archive standards, e.g. checksum, file dict, error log
     def transfer_file(self, input_file_path, output_file_path, do_fixity, cs1=None):
         # Check if file path is unique, otherwise appends counter
         output_file_path = self.unique_file_path(output_file_path)
@@ -276,13 +276,16 @@ class RestructurePackage:
         return output_file_path
 
 
-    # as of now, three copy types: archive, delivery, and one2one
+    # core function, as of now, three copy types: archive, delivery, and one2one
     def restructure_copy(self, copy_type, input_folder_path, output_directory, output_package_name=None, output_subfolder_name=None,
                            do_fixity=None, do_delete=None, files_dict=None):
         for foldername, subfolders, filenames in os.walk(input_folder_path, topdown=False):
             for file in filenames:
                 if self.mac_system_metadata(file) or os.path.getsize(os.path.join(foldername, file)) == 0:
-                    os.remove(os.path.join(foldername, file))
+                    try:
+                        os.remove(os.path.join(foldername, file))
+                    except Exception as e:
+                        print(f"Could not remove file {file}: {e}")     
                 else:
                     print(f'Transferring file {file} to {output_directory}')
                     # Initialize variables
