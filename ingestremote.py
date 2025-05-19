@@ -596,36 +596,10 @@ def ingest_dropbox_upload(desktop_path):
                     uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
                                                     False, msg)
 
-
-# Ingests files
-def ingest():
-    # 1. Transfer files and run commands
-    # Create desktop file path
-    # Get the path to the user's home directory
-    home_dir = os.path.expanduser('~')
-    desktop_path = os.path.join(home_dir, 'Desktop')
-
-    # 2. Local transfer from card to desktop
-    ingest_desktop_transfer(desktop_path)
-
-    # 3. Run commands
-    ingest_commands(desktop_path)
-
-    # 4. Transfer to Tiger server
-    ingest_delivery_transfer(desktop_path)
-
-    # 5. Transfer to Archive server
-    ingest_archive_transfer(desktop_path)
-
-    # 6. Upload to dropbox
-    ingest_dropbox_upload(desktop_path)
-
-    # 7. Print logs and send email to library in case of error
+def ingest_log_and_errors(desktop_path):
     for package in packages_dict:
-        # Write dictionary to a text file
         log_dest = os.path.join(archive_server, package, "metadata")
-
-        # Check if the directory exists, if not, create it
+        # Check if the log exists, if not, create it
         if not os.path.exists(log_dest):
             os.makedirs(log_dest)
 
@@ -635,30 +609,51 @@ def ingest():
         if packages_dict[package]['do_desktop_delete']:
             shutil.rmtree(os.path.join(desktop_path, package))
 
-    # 8. Do Resourcespace ingest
-    #for package in packages_dict:
-    #    no_error = (packages_dict[package]["ARCHIVE_transfer_okay"] and
-    #                packages_dict[package]["DROPBOX_transfer_okay"] and (
-    #            packages_dict[package]["MAKEWINDOW_okay"] or packages_dict[package]["MAKEWINDOW_okay"] is None))
+def ingest_resourcespace():
+    from pathlib import Path
+    import subprocess
+    script_dir = Path(__file__).resolve().parent
+    php_script_path = script_dir / "remote_resource_space_ingest.php"
 
-    #    if no_error:
-            # Write dictionary to a text file
-    #        dir = os.path.join(archive_server, package, "objects")
-    #        command = f"php /Users/aidagarrido/Desktop/remote_resource_space_ingest.php {dir} {packages_dict[package]['DROPBOX_link']}"
-    #        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-    #                                   text=True)
+    for package in packages_dict:
+        no_error = (packages_dict[package]["ARCHIVE_transfer_okay"] and packages_dict[package]["MAKEWINDOW_okay"])
 
-    #        for line in process.stdout:
-    #            print(line, end='')
-    #        process.wait()
+        if no_error:
+            dir = os.path.join(archive_server, package, "objects")
+            dropbox_link = packages_dict[package]['DROPBOX_link']
+            if dropbox_link is None:
+                dropbox_link = ""
+            command = f"php {php_script_path} {dir} {dropbox_link}"
+            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   text=True)
 
-    #         print("Exit code:", process.returncode)
+            for line in process.stdout:
+                print(line, end='')
+                process.wait()
+
+            print("Exit code:", process.returncode)
+
+# Ingests files
+def ingest():
+    home_dir = os.path.expanduser('~')
+    desktop_path = os.path.join(home_dir, 'Desktop')
+
+    ingest_desktop_transfer(desktop_path)
+    ingest_commands(desktop_path)
+
+    ## multi thread these three
+    ingest_delivery_transfer(desktop_path)
+    ingest_archive_transfer(desktop_path)
+    ingest_dropbox_upload(desktop_path)
+
+    ingest_log_and_errors(desktop_path) # Deletes dekstop transfer at this point
+    ingest_resourcespace() # Uses archive package since filestore and cc ingests are on the same server
 
 if __name__ == "__main__":
     # Check if connected to servers
-    archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
+    #archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
+    archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
     server_check(archive_server, "archive")
-    # archive_server = "/Users/aidagarrido/Desktop"
 
     # tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
     tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
