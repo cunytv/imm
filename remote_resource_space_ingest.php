@@ -799,11 +799,11 @@ if ($argc > 1) {
 }
 
 findWindowMp4Files($searchDir);
-findAllFiles($searchDir);
+//findAllFiles($searchDir);
 extractShowCode($searchDir);
 createResource();
 uploadFile();
-uploadAltFiles();
+//uploadAltFiles();
 checkandCreateFC();
 set_title();
 set_asset_type();
@@ -817,3 +817,5 @@ echo "Resource ID: " . $resource_id . PHP_EOL;
 echo "Show code: " . $showcode . PHP_EOL;
 
 //uploadFile();
+
+
