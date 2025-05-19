@@ -16,6 +16,7 @@ import shutil
 from datetime import datetime
 import json
 import detectiphone
+from pathlib import Path
 
 # Tiger server flag; proceed with all other aspects of ingest if tiger_down true
 tiger_down = False
@@ -315,8 +316,8 @@ def error_report(log_dest, package):
     if not all(variables):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
-        #notification.recipients(["library@tv.cuny.edu"])
-        notification.recipients(["aida.garrido@tv.cuny.edu"])
+        notification.recipients(["library@tv.cuny.edu"])
+        #notification.recipients(["aida.garrido@tv.cuny.edu"])
         notification.subject(f"Ingest error: {package}")
 
 
@@ -441,7 +442,8 @@ def ingest_desktop_transfer(desktop_path):
 
 def ingest_iphone_media():
     # Path to your AppleScript file
-    script_path = "/Users/aidagarrido/Desktop/downloadlatestiphonemedia.scpt"
+    script_dir = Path(__file__).resolve().parent
+    script_path = script_dir / "downloadlatestiphonemedia.scpt"
 
     # Run the script using osascript
     try:
@@ -610,8 +612,6 @@ def ingest_log_and_errors(desktop_path):
             shutil.rmtree(os.path.join(desktop_path, package))
 
 def ingest_resourcespace():
-    from pathlib import Path
-    import subprocess
     script_dir = Path(__file__).resolve().parent
     php_script_path = script_dir / "remote_resource_space_ingest.php"
 
@@ -651,8 +651,8 @@ def ingest():
 
 if __name__ == "__main__":
     # Check if connected to servers
-    #archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
-    archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
+    archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
+    #archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
     server_check(archive_server, "archive")
 
     # tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
@@ -660,7 +660,8 @@ if __name__ == "__main__":
     server_check(tiger_server, "tiger")
 
     # path to Iphone temp folder
-    iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
+    #iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
+    iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
 
     # Detect recently inserted drives, cards, and iphone
     countdown(5)
@@ -719,8 +720,8 @@ if __name__ == "__main__":
                     if do_dropbox:
                         emails = validateuserinput.emails(
                             input("\tList email(s) delimited by space or press enter to continue: "))
-                        #emails.extend(["library@tv.cuny.edu"])
-                        emails.extend(["aida.garrido@tv.cuny.edu"])
+                        emails.extend(["library@tv.cuny.edu"])
+                        #emails.extend(["aida.garrido@tv.cuny.edu"])
                         # Update key-value pair from default
                         package_dict['do_dropbox'] = True
                         package_dict['emails'] = emails
