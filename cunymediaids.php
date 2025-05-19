@@ -15,6 +15,7 @@ $shows = [
     "CUNY TV Presents Film" => "CNTVPR",
     "CUNY Uncut" => "CNNT",
     "CUNY Laureates" => "CNLR",
+    "CUNY Specials" => "SPEC",
     "EdCast" => "EDCA",
     "Graduate Center Presents" => "GCPR",
     "Italics" => "ITAL",
@@ -51,6 +52,7 @@ function check_similarity($input) {
             $bestMatch = $title;
         }
     }
+    echo $highestRatio;
 
     if ($highestRatio > 0.5){
         return $bestMatch;
@@ -71,5 +73,5 @@ function get_full_show_name($code) {
 
 // Example usage
 // print_media_dict($shows);
- echo check_similarity("American Life") . "\n";
+ echo check_similarity("One_To_One") . "\n";
 // echo get_full_show_name($shows, "AITC") . "\n";
