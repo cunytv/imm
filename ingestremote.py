@@ -623,6 +623,9 @@ def ingest_resourcespace():
             dropbox_link = packages_dict[package]['DROPBOX_link']
             if dropbox_link is None:
                 dropbox_link = ""
+            else:
+                dropbox_link = dropbox_link.split("&")[0]
+
             command = f"php {php_script_path} {dir} {dropbox_link}"
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                    text=True)
