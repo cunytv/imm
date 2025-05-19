@@ -508,13 +508,17 @@ function getFCs() {
 function set_title(){
 	global $private_key, $user, $url, $resource_id, $resource_fp;
 
+	$title = basename($resource_fp);
+	$title_upper = strtoupper($title);
+	$title_s = explode('_WINDOW.MP4', $title_upper)[0];
+
 	$data = [
-	    'user' => $user,
-	    'function' => 'update_field',
-	    'resource' => $resource_id,
-		'field' => 8, // type field ID for Title
-		'value' => basename($resource_fp),
-	];
+		    'user' => $user,
+		    'function' => 'update_field',
+		    'resource' => $resource_id,
+			'field' => 8, // type field ID for Title
+			'value' => $title_s,
+		];
 
 	$query = http_build_query($data);
 	$sign = hash("sha256", $private_key . $query);
@@ -547,7 +551,7 @@ function set_asset_type(){
 	    'function' => 'update_field',
 	    'resource' => $resource_id,
 		'field' => 88, // type field ID for Asset Type
-		'value' => 'remote',
+		'value' => 'Remote',
 	];
 
 	$query = http_build_query($data);
@@ -798,6 +802,8 @@ findWindowMp4Files($searchDir);
 findAllFiles($searchDir);
 extractShowCode($searchDir);
 createResource();
+uploadFile();
+uploadAltFiles();
 checkandCreateFC();
 set_title();
 set_asset_type();
@@ -805,13 +811,9 @@ set_file_path();
 set_production_title();
 create_field_tree();
 set_dropbox_link();
-uploadFile();
-uploadAltFiles();
 
 
 echo "Resource ID: " . $resource_id . PHP_EOL;
 echo "Show code: " . $showcode . PHP_EOL;
 
 //uploadFile();
-
-
