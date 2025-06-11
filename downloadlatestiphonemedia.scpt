@@ -11,12 +11,12 @@ tell application "System Events"
 		repeat until (exists window 1)
 			delay 1
 		end repeat
-		display dialog "Main window detected" buttons {"OK"}
+		--display dialog "Main window detected" buttons {"OK"}
 
 		-- Select iPhone from device list
 		if exists row 2 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1 then
 			select row 2 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1
-			display dialog "iPhone selected in device list" buttons {"OK"}
+			--display dialog "iPhone selected in device list" buttons {"OK"}
 			delay 2
 		else
 			display dialog "Please connect and unlock your iPhone." buttons {"OK"}
@@ -30,7 +30,7 @@ tell application "System Events"
 			set splitParts to words of numitemsstring
 			set itemCountText to item 1 of splitParts
 			set numitems to itemCountText as integer
-			display dialog "Number of items: " & numitems buttons {"OK"}
+			--display dialog "Number of items: " & numitems buttons {"OK"}
 		else
 			display dialog "Please unlock your iPhone." buttons {"OK"}
 			error "iPhone is locked or unreadable"
@@ -44,11 +44,11 @@ tell application "System Events"
 			set AppleScript's text item delimiters to " at"
 			set groupdate to text item 1 of groupdate
 			set AppleScript's text item delimiters to oldDelimiters
-			display dialog "Latest file date: " & groupdate buttons {"OK"}
+			--display dialog "Latest file date: " & groupdate buttons {"OK"}
 
 			select row 1 of table 1 of scroll area 1 of group 2 of splitter group 1 of window 1 
 			click button "Download" of group 2 of splitter group 1 of window 1
-			display dialog "Downloaded row 1" buttons {"OK"}
+			--display dialog "Downloaded row 1" buttons {"OK"}
 			delay 2
 		else
 			display dialog "Unable to locate latest media file." buttons {"OK"}
@@ -67,7 +67,7 @@ tell application "System Events"
 				if datevar = groupdate then
 					select row i of table 1 of scroll area 1 of group 2 of splitter group 1 of window 1 
 					click button "Download" of group 2 of splitter group 1 of window 1
-					display dialog "Downloaded row " & i buttons {"OK"}
+					--display dialog "Downloaded row " & i buttons {"OK"}
 					delay 1
 				else
 					display dialog "Reached different date at row " & i buttons {"OK"}
@@ -80,13 +80,13 @@ tell application "System Events"
 		end repeat
 
 		delay 3 -- Let downloads finish
-		display dialog "Download loop complete" buttons {"OK"}
+		--display dialog "Download loop complete" buttons {"OK"}
 	end tell
 
 	-- Optional: Quit Image Capture at the end
 	try
 		quit application "Image Capture"
-		display dialog "Quit Image Capture" buttons {"OK"}
+		--display dialog "Quit Image Capture" buttons {"OK"}
 	end try
 end tell
 
