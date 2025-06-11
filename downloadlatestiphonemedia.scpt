@@ -49,7 +49,7 @@ tell application "System Events"
 			do shell script "echo 'Latest file date: " & groupdate & "'"
 
 			select row 1 of table 1 of scroll area 1 of group 2 of splitter group 1 of window 1 
-			click button "Download" of group 2 of splitter group 1 of window 1
+			click button 1 of group 2 of splitter group 1 of window 1
 			do shell script "echo 'Downloaded row 1'"
 			delay 2
 		else
@@ -69,7 +69,7 @@ tell application "System Events"
 
 				if datevar = groupdate then
 					select row i of table 1 of scroll area 1 of group 2 of splitter group 1 of window 1 
-					click button "Download" of group 2 of splitter group 1 of window 1
+					click button 1 of group 2 of splitter group 1 of window 1
 					do shell script "echo 'Downloaded row " & i & "'"
 					delay 1
 				else
