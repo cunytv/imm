@@ -2,7 +2,7 @@
 tell application "Image Capture" to activate
 delay 2
 
-display dialog "Activated Image Capture" buttons {"OK"}
+--display dialog "Activated Image Capture" buttons {"OK"}
 
 tell application "System Events"
 	tell process "Image Capture"
@@ -48,8 +48,10 @@ tell application "System Events"
 
 			select row 1 of table 1 of scroll area 1 of group 2 of splitter group 1 of window 1 
 			click button "Download" of group 2 of splitter group 1 of window 1
+			repeat while (name of button 1 of group 2 of splitter group 1 of window 1 is "Cancel")
+				delay 0.2
+			end repeat
 			--display dialog "Downloaded row 1" buttons {"OK"}
-			delay 2
 		else
 			display dialog "Unable to locate latest media file." buttons {"OK"}
 			error "No media rows found"
@@ -67,8 +69,10 @@ tell application "System Events"
 				if datevar = groupdate then
 					select row i of table 1 of scroll area 1 of group 2 of splitter group 1 of window 1 
 					click button "Download" of group 2 of splitter group 1 of window 1
+					repeat while (name of button 1 of group 2 of splitter group 1 of window 1 is "Cancel")
+						delay 0.2
+					end repeat
 					--display dialog "Downloaded row " & i buttons {"OK"}
-					delay 1
 				else
 					display dialog "Reached different date at row " & i buttons {"OK"}
 					exit repeat
