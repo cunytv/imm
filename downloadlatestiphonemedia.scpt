@@ -9,6 +9,11 @@ tell application "System Events"
 			delay 2
 		end repeat
 		
+		-- Select first iPhone
+		if exists row 2 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1 then
+			select row 2 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1
+		end if
+		
 		-- Get number of items on iphone
 		set numitems to 0
 		if exists value of static text 2 of window 1 then
