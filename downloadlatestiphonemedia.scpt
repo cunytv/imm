@@ -2,7 +2,7 @@
 tell application "Image Capture" to activate
 delay 2
 
-do shell script "echo 'Activated Image Capture'"
+display dialog "Activated Image Capture" buttons {"OK"}
 
 tell application "System Events"
 	tell process "Image Capture"
@@ -11,15 +11,14 @@ tell application "System Events"
 		repeat until (exists window 1)
 			delay 1
 		end repeat
-		do shell script "echo 'Main window detected'"
+		display dialog "Main window detected" buttons {"OK"}
 
 		-- Select iPhone from device list
 		if exists row 2 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1 then
 			select row 2 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1
-			do shell script "echo 'iPhone selected in device list'"
+			display dialog "iPhone selected in device list" buttons {"OK"}
 			delay 2
 		else
-			do shell script "echo 'iPhone not found in device list'"
 			display dialog "Please connect and unlock your iPhone." buttons {"OK"}
 			error "iPhone device not found"
 		end if
@@ -31,9 +30,8 @@ tell application "System Events"
 			set splitParts to words of numitemsstring
 			set itemCountText to item 1 of splitParts
 			set numitems to itemCountText as integer
-			do shell script "echo 'Number of items: " & numitems & "'"
+			display dialog "Number of items: " & numitems buttons {"OK"}
 		else
-			do shell script "echo 'Unable to read number of items — possibly locked'"
 			display dialog "Please unlock your iPhone." buttons {"OK"}
 			error "iPhone is locked or unreadable"
 		end if
@@ -46,14 +44,13 @@ tell application "System Events"
 			set AppleScript's text item delimiters to " at"
 			set groupdate to text item 1 of groupdate
 			set AppleScript's text item delimiters to oldDelimiters
-			do shell script "echo 'Latest file date: " & groupdate & "'"
+			display dialog "Latest file date: " & groupdate buttons {"OK"}
 
 			select row 1 of table 1 of scroll area 1 of group 2 of splitter group 1 of window 1 
-			click button 1 of group 2 of splitter group 1 of window 1
-			do shell script "echo 'Downloaded row 1'"
+			click button "Download" of group 2 of splitter group 1 of window 1
+			display dialog "Downloaded row 1" buttons {"OK"}
 			delay 2
 		else
-			do shell script "echo 'Latest item date not found'"
 			display dialog "Unable to locate latest media file." buttons {"OK"}
 			error "No media rows found"
 		end if
@@ -69,29 +66,29 @@ tell application "System Events"
 
 				if datevar = groupdate then
 					select row i of table 1 of scroll area 1 of group 2 of splitter group 1 of window 1 
-					click button 1 of group 2 of splitter group 1 of window 1
-					do shell script "echo 'Downloaded row " & i & "'"
+					click button "Download" of group 2 of splitter group 1 of window 1
+					display dialog "Downloaded row " & i buttons {"OK"}
 					delay 1
 				else
-					do shell script "echo 'Reached different date at row " & i & "'"
+					display dialog "Reached different date at row " & i buttons {"OK"}
 					exit repeat
 				end if
 			on error errMsg
-				do shell script "echo 'Error on row " & i & ": " & errMsg & "'"
+				display dialog "Error on row " & i & ": " & errMsg buttons {"OK"}
 				exit repeat
 			end try
 		end repeat
 
 		delay 3 -- Let downloads finish
-		do shell script "echo 'Download loop complete'"
+		display dialog "Download loop complete" buttons {"OK"}
 	end tell
 
 	-- Optional: Quit Image Capture at the end
 	try
 		quit application "Image Capture"
-		do shell script "echo 'Quit Image Capture'"
+		display dialog "Quit Image Capture" buttons {"OK"}
 	end try
 end tell
 
--- Final marker for Python
-do shell script "echo 'DONE'"
+-- Final marker (visual only)
+display dialog "DONE" buttons {"OK"}
