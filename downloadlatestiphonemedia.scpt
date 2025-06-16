@@ -74,7 +74,7 @@ tell application "System Events"
 					end repeat
 					--display dialog "Downloaded row " & i buttons {"OK"}
 				else
-					display dialog "Reached different date at row " & i buttons {"OK"}
+					--display dialog "Reached different date at row " & i buttons {"OK"}
 					exit repeat
 				end if
 			on error errMsg
@@ -95,4 +95,4 @@ tell application "System Events"
 end tell
 
 -- Final marker (visual only)
-display dialog "DONE" buttons {"OK"}
+--display dialog "DONE" buttons {"OK"}
