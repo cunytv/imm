@@ -646,9 +646,9 @@ def ingest():
 
     ## multi thread these three
     ingest_dropbox_upload(desktop_path)
-    ingest_resourcespace() # Uses archive package since filestore and cc ingests are on the same server
     ingest_delivery_transfer(desktop_path)
     ingest_archive_transfer(desktop_path)
+    ingest_resourcespace() # Uses archive package since filestore and cc ingests are on the same server
 
     ingest_log_and_errors(desktop_path) # Deletes dekstop transfer at this point
 
