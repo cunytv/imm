@@ -543,66 +543,6 @@ function set_title(){
 	
 }
 
-function extractDateFromString($string) {
-    // Find all 8-digit numbers
-    preg_match_all('/\d{8}/', $string, $matches);
-	
-    foreach ($matches[0] as $match) {
-        // Validate date format
-        $year = substr($match, 0, 4);
-        $month = substr($match, 4, 2);
-        $day = substr($match, 6, 2);
-		
-        if (checkdate((int)$month, (int)$day, (int)$year)) {
-            return "$year-$month-$day"; // Return the first valid date found
-        }
-    }
-
-    return null; // No valid date found
-}
-
-function set_date(){
-	global $private_key, $user, $url, $resource_id, $resource_fp;
-
-	$date = extractDateFromString(basename($resource_fp));
-	
-	if (is_null($date)) {
-	        return; // exit the function if $date is null
-	    }
-	
-	echo "Date: " . $date . PHP_EOL;
-	$data = [
-		    'user' => $user,
-		    'function' => 'update_field',
-		    'resource' => $resource_id,
-			'field' => 12, // type field ID for Date
-			'value' => $date,
-		];
-
-	$query = http_build_query($data);
-	$sign = hash("sha256", $private_key . $query);
-	$data['sign'] = $sign;
-
-	$postdata = array();
-	$postdata['query'] = http_build_query($data);
-	$postdata['sign'] = $sign;
-	$postdata['user'] = $user;
-
-	$curl = curl_init($url);
-	curl_setopt( $curl, CURLOPT_HEADER, "Content-Type:application/x-www-form-urlencoded" );
-	curl_setopt( $curl, CURLOPT_POST, 1);
-	curl_setopt( $curl, CURLOPT_POSTFIELDS, $postdata);
-	curl_setopt( $curl, CURLOPT_RETURNTRANSFER, 1 );
-
-	$curl_response = curl_exec($curl);
-	$curl_error = curl_error($curl);
-
-	print_r($curl_error);
-	//print_r($curl_response);
-	
-}
-
-
 function set_asset_type(){
 	global $private_key, $user, $url, $resource_id;
 
@@ -863,7 +803,6 @@ uploadFile();
 //uploadAltFiles();
 checkandCreateFC();
 set_title();
-set_date();
 set_asset_type();
 set_file_path();
 set_production_title();
