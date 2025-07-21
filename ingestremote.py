@@ -497,21 +497,25 @@ def ingest_delivery_transfer(desktop_path):
 
 def ingest_archive_transfer(desktop_path):
     for package in packages_dict:
-        # Create new package object
-        # Files are transferred from desktop to CUNYTVMedia
-        # File are not transformed, since desktop copy is already an archive package; thus one2one method
-        package_obj = restructurepackage.RestructurePackage()
-        package_obj.restructure_copy("one2one", os.path.join(desktop_path, package),
-                                     os.path.join(archive_server, package),
-                                     do_fixity=packages_dict[package]["do_fixity"],
-                                     do_delete=False,
-                                     files_dict=packages_dict[package]["DESKTOP_files_dict"])
-
-        # Save delivery transfer results and checksums
-        packages_dict[package]["ARCHIVE_files_dict"] = package_obj.FILES_DICT
-        packages_dict[package]["ARCHIVE_transfer_okay"] = package_obj.TRANSFER_OKAY
-        if package_obj.TRANSFER_ERROR:
-            packages_dict[package]["ARCHIVE_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
+        # Transfer to servers if last batch or only batch in process
+        # do_desktop_delete is set accordingly in main
+        if packages_dict[package]["do_desktop_delete"]:
+            for package in packages_dict:
+                # Create new package object
+                # Files are transferred from desktop to CUNYTVMedia
+                # File are not transformed, since desktop copy is already an archive package; thus one2one method
+                package_obj = restructurepackage.RestructurePackage()
+                package_obj.restructure_copy("one2one", os.path.join(desktop_path, package),
+                                             os.path.join(archive_server, package),
+                                             do_fixity=packages_dict[package]["do_fixity"],
+                                             do_delete=False,
+                                             files_dict=packages_dict[package]["DESKTOP_files_dict"])
+        
+                # Save delivery transfer results and checksums
+                packages_dict[package]["ARCHIVE_files_dict"] = package_obj.FILES_DICT
+                packages_dict[package]["ARCHIVE_transfer_okay"] = package_obj.TRANSFER_OKAY
+                if package_obj.TRANSFER_ERROR:
+                    packages_dict[package]["ARCHIVE_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
 
 def ingest_dropbox_upload(desktop_path):
     # Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
