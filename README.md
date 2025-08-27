@@ -51,7 +51,32 @@ The files from cards/drives are nested in subfolders that are named after the ph
 
 An archival package bifurcates audiovisual media and metadata. It is structured in this way:
 - PACKAGENAME -> "objects" -> CARD# -> media
--             -> "metadata" -> "logs" -> CARD# -> metadata
+- PACKAGENAME -> "metadata" -> "logs" -> CARD# -> metadata
+
+The ingest process comprises the following scripts:
+
+#### ingestremote.py
+
+#### cunymediaideas.py
+
+#### detectrecentlyinserteddrives.py
+
+#### validateuserinput.py
+
+#### sendnetworkmail.py
+
+#### detectiphone.py 
+
+#### downloadlatestiphonemedia.scpt
+
+#### restructurepackage.py
+
+#### dropboxuploadsession.py
+
+#### remote_resource_space_ingest.php
+
+
+
 
 
 
