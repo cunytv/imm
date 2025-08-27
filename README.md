@@ -21,6 +21,7 @@ A custom translator to convert BXF scheduling metadata to a proprietary XML form
 This script is intended to scan a folder for newly uploaded files and then upload those files to youtube automatically. To enable a show to be automatically uploaded, you need to add that prefix to the script. To do this, ssh to archivesx@10.10.200.28. Then type in terminal: nano /usr/local/bin/ftpscan. Scroll down to the list of prefixes and edit or add a prefix. Exit out of nano and answer yes to save. Then press enter. After you edit this, you then need to edit the bash script as well. Then commit your changes in github. 
 
 ### ingestremote.py
+August 27, 2025
 
 Field footage is brought to the library by videographers on XQD cards (most common), solid state drives (radio recordings), SXS cards. and iPhones. 
 
@@ -37,7 +38,20 @@ The ingest processs:
 7. Sends email report to library in the event of errors
 8. Fixity check is run at every point where file is transferred
 
-The package names are in this format:
+<img width="1174" height="182" alt="image" src="https://github.com/user-attachments/assets/0de25cf6-d3cd-4fc2-8364-fff7b7c01190" />
+
+The package names follow this format:
+SHOWCODEYYYYMMDD_DESCRIPTION_OF_SHOOT
+LTNS20250827_TINABETH_TOSSES
+
+The files from cards/drives are nested in subfolders that are named after the physical labels on the cards/drives:
+L14
+235
+CAM_4
+
+An archival package is structure in this way:
+PACKAGENAME -> "objects" ->
+
 
 
 
