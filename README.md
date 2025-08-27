@@ -41,16 +41,17 @@ The ingest processs:
 <img width="1174" height="182" alt="image" src="https://github.com/user-attachments/assets/0de25cf6-d3cd-4fc2-8364-fff7b7c01190" />
 
 The package names follow this format:
-SHOWCODEYYYYMMDD_DESCRIPTION_OF_SHOOT
-LTNS20250827_TINABETH_TOSSES
+- SHOWCODEYYYYMMDD_DESCRIPTION_OF_SHOOT
+- LTNS20250827_TINABETH_TOSSES
 
 The files from cards/drives are nested in subfolders that are named after the physical labels on the cards/drives:
-L14
-235
-CAM_4
+- L14
+- 235
+- CAM_4
 
-An archival package is structure in this way:
-PACKAGENAME -> "objects" ->
+An archival package bifurcates audiovisual media and metadata. It is structured in this way:
+- PACKAGENAME -> "objects" -> CARD# -> media
+-             -> "metadata" -> "logs" -> CARD# -> metadata
 
 
 
