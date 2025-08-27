@@ -53,27 +53,64 @@ An archival package bifurcates audiovisual media and metadata. It is structured 
 - PACKAGENAME -> "objects" -> CARD# -> media
 - PACKAGENAME -> "metadata" -> "logs" -> CARD# -> metadata
 
-The ingest process comprises the following scripts:
+The ingest process comprises the following scripts. Some the helper scripts can be helpful for other coding projects:
 
-#### ingestremote.py
+[#### ingestremote.py]
 
-#### cunymediaideas.py
+This script is a initializes the programs and primarily calls other scripts to do the bulk of the process.
 
-#### detectrecentlyinserteddrives.py
+[#### detectrecentlyinserteddrives.py]
 
-#### validateuserinput.py
+A helper script that detects drives that were mounted in the past minute. This short time window is so that you can prompt parallel ingests for different packages.
 
-#### sendnetworkmail.py
+[#### cunymediaids.py]
 
-#### detectiphone.py 
+A helper script that lists show names and their show codes. It includes functions print_media_dict, check_similarity($string) ((should be renamed find_best_match)), and get_full_show_name($code).
 
-#### downloadlatestiphonemedia.scpt
+[#### validateuserinput.py]
 
-#### restructurepackage.py
+A helper script that the sanitizes* and/or validates:
+- Package names*
+- Card names*
+- Emails
+- File paths
 
-#### dropboxuploadsession.py
+* Sanitize = all capitals and spaces replaced by underscores
 
-#### remote_resource_space_ingest.php
+[#### sendnetworkmail.py]
+
+A class that simplifies sending network emails. This only works when sending emails to tv.cuny.edu addresses.
+
+email = SendNetworkEmail()
+email.sender($string)
+email.recipients([array])
+email.subject($string)
+email.html_content($string)
+email.attachment($file_path)
+email.embed_img($img_path)
+email.send()
+
+[#### detectiphone.py]
+
+Detects mounted iphone using command line. 
+
+[#### downloadlatestiphonemedia.scpt (BETA)]
+
+Recording on iPhone has become increasingly common. The problem is that these devices don't mount like volumes and are not programatically accessible. 
+
+There was a open source project called libimobiledevice which reverse-engineered apple protocals, but has stopped working since iOS ~10.
+
+The Apple application ImageCapture used to have an API, but that has been deprecated around 2022-2024, macOS Ventura/Sonoma/Sequoia.
+
+As a short term solution, this is an AppleScript which controls ImageCapture through its UI. It's awkward, and may not work well. This was coded with the assistance of UI Browser, since Apple has also deprecated the AppleScript dictionary for ImageCapture.
+
+The script downloads the latest photo/video and downloads all other photos/videos from the same date to an intermediary location in the Pictures/Iphone_Ingest_Temp folder. 
+
+[#### restructurepackage.py]
+
+[#### dropboxuploadsession.py]
+
+[#### remote_resource_space_ingest.php]
 
 
 
