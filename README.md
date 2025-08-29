@@ -23,7 +23,7 @@ This script is intended to scan a folder for newly uploaded files and then uploa
 ### ingestremote.py
 August 27, 2025
 
-Field footage is brought to the library by videographers on XQD cards (most common), solid state drives (radio recordings), SXS cards. and iPhones. 
+Field footage is brought to the library by videographers on XQD cards (most common), solid state drives (radio recordings), SXS cards, and iPhones. 
 
 The script is designed to handle multiple volumes that are mounted at the same time, as well as multiple volumes that need to be mounted sequentially in the event the number of cards from a shoot exceed the number of card readers.
 
@@ -60,7 +60,7 @@ The ingest process comprises the following scripts. Some the helper scripts can 
 
 `ingestremote.py`
 
-This script is a initializes the programs and primarily calls other scripts to do the bulk of the process.
+This script initializes the program and primarily calls other scripts to do the bulk of the process.
 
 `detectrecentlyinserteddrives.py`
 
