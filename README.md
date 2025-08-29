@@ -86,14 +86,14 @@ A helper script that the sanitizes* and/or validates:
 
 A class that simplifies sending network emails. This only works when sending emails to tv.cuny.edu addresses.
 
-email = SendNetworkEmail()
-email.sender($string)
-email.recipients([array])
-email.subject($string)
-email.html_content($string)
-email.attachment($file_path)
-email.embed_img($img_path)
-email.send()
+- email = SendNetworkEmail()
+- email.sender($string)
+- email.recipients([array])
+- email.subject($string)
+- email.html_content($string)
+- email.attachment($file_path)
+- email.embed_img($img_path)
+- email.send()
 
 This script can be run as a main program.
 
@@ -125,7 +125,7 @@ You can run the script as a main program, or you can also call it from another s
 
 restructure_copy(copy_type, input_folder_path, output_directory, output_package_name=None, output_subfolder_name=None,do_fixity=None, do_delete=None, files_dict=None)
 
--copy_type is string value that is either 'archive,' delivery,' or 'one2one.'
+- copy_type is string value that is either 'archive,' delivery,' or 'one2one.'
 - input_folder_path is a string value
 - output_directory is a string value which designates just the directory destination, e.x. if you want the folder to be transferred to desk top, the output directory is /Desktop/ and not /Desktop/Foldername
 - output_package_name is a string that needs to be defined for archive and delivery transfers; a one-to-one copy will assume the output folder name is the same as the origin folder name
