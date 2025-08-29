@@ -80,7 +80,7 @@ A helper script that the sanitizes* and/or validates:
 - Emails
 - File paths
 
-* Sanitize = all capitals and spaces replaced by underscores
+*Sanitize = all capitals and spaces replaced by underscores
 
 `sendnetworkmail.py`
 
@@ -125,7 +125,7 @@ You can run the script as a main program, or you can also call it from another s
 
 restructure_copy(copy_type, input_folder_path, output_directory, output_package_name=None, output_subfolder_name=None,do_fixity=None, do_delete=None, files_dict=None)
 
-- copy_type is string value that is either 'archive,' delivery,' or 'one2one.'
+- copy_type is string value that is either 'archive,' delivery,' or 'one2one'
 - input_folder_path is a string value
 - output_directory is a string value which designates just the directory destination, e.x. if you want the folder to be transferred to desk top, the output directory is /Desktop/ and not /Desktop/Foldername
 - output_package_name is a string that needs to be defined for archive and delivery transfers; a one-to-one copy will assume the output folder name is the same as the origin folder name
@@ -147,4 +147,4 @@ This script utilizes the resourcespace API. It uploads a package's window dub to
 
 The script is able to upload original files as alternative files, but that feature has been commented out because it's redundant and time consuming. The resourcespace filestore is on the same server as the archival packages (CUNYTVMEDIA). This creates a situation where files are duplicated on the same server, while relying on a time-consuming http request to make those copies.
 
-Using the staticsync upload process is an alternative to consider, but relying on that will give less manipulability over the resourcespace folder structure unless significant edits are made to the source code. 
+Using the staticsync upload process is an alternative to consider. This feature allows you to upload files to resourcespace "in-situ," but relying on that will give less manipulability over the resourcespace folder structure unless significant edits are made to the source code. 
