@@ -51,7 +51,7 @@ The files from cards/drives are nested in subfolders that are named after the ph
 
 An archival package bifurcates audiovisual media and metadata. It is structured in this way:
 - PACKAGENAME -> "objects" -> CARD# -> media
-- __________  -> "metadata" -> "logs" -> CARD# -> metadata
+- PACKAGENAME -> "metadata" -> "logs" -> CARD# -> metadata
 
 A delivery package is a flat file structure which contains only media files:
 - PACKAGENAME -> video.mp4 & video.mp4 ...
@@ -126,9 +126,25 @@ You can run the script as a main program, or you can also call it from another s
 restructure_copy(copy_type, input_folder_path, output_directory, output_package_name=None, output_subfolder_name=None,do_fixity=None, do_delete=None, files_dict=None)
 
 -copy_type is string value that is either 'archive,' delivery,' or 'one2one.'
-
-do_fixity, do_delete, and files_dict are optional variables. do_fixity performs fixity check for the transfer. do_delete deletes the original folder. and files_dict follows the files_dict structure defined at that top of ingestremote.py, which stores checksum values and circumvents redundant checksum calculations. 
+- input_folder_path is a string value
+- output_directory is a string value which designates just the directory destination, e.x. if you want the folder to be transferred to desk top, the output directory is /Desktop/ and not /Desktop/Foldername
+- output_package_name is a string that needs to be defined for archive and delivery transfers; a one-to-one copy will assume the output folder name is the same as the origin folder name
+- do_fixity performs fixity check for the transfer
+- do_delete deletes the original folder
+- files_dict follows the files_dict structure defined at that top of ingestremote.py, which stores checksum values and allows for circumvention of redundant checksum calculations. 
 
 `dropboxuploadsession.py`
 
+This script uploads a folder or file to dropbox. 
+
+You can run the script as a main program, or you can call it from another script as a class instantiation. 
+
+-- Add more info --
+
 `remote_resource_space_ingest.php`
+
+This script utilizes the resourcespace API. It uploads a package's window dub to resourcespace. It modifies the resourcespace asset metadata to include the filepath to the delivery address, a link to the dropbox upload, showname, studio type, and date.
+
+The script is able to upload original files as alternative files, but that feature has been commented out because it's redundant and time consuming. The resourcespace filestore is on the same server as the archival packages (CUNYTVMEDIA). This creates a situation where files are duplicated on the same server, while relying on a time-consuming http request to make those copies.
+
+Using the staticsync upload process is an alternative to consider, but relying on that will give less manipulability over the resourcespace folder structure unless significant edits are made to the source code. 
