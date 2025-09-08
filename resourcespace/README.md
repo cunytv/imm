@@ -13,7 +13,6 @@ This is a collection of scripts and documentation on CUNY TV's resourcespace ins
 
 2. Start the database
 -     brew services start mysql
-or
 -     /opt/homebrew/opt/mysql/bin/mysqld_safe --datadir\=/opt/homebrew/var/mysql)
 
 3. Connect to servers
@@ -22,6 +21,5 @@ The resourcespace filestore, which is the folder where all media assets are save
 
 4. In case of error, check log
 -     open /var/log/resourcespace/resourcespace.log
-or
 -     tail -n 100 /var/log/resourcespace/resourcespace.log
 
