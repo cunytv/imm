@@ -41,7 +41,6 @@ class SendNetworkEmail:
     def html_content(self, content):
         """ Add HTML content to the email """
         content = self.strip_html_and_body(content)
-        print(content)
         self.splice_content(content)
 
     def strip_html_and_body(self, content):
@@ -162,8 +161,6 @@ if __name__ == "__main__":
         email.embed_img(embed_image)
     for attachment in attachments:
         email.attachment(attachment)
-
-    print(email.content_array)
 
     # Send the email
     email.send()
