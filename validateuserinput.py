@@ -8,10 +8,10 @@ def card_package_name(name):
     # Checks pattern
     pattern = r'^[A-Za-z]{3,4}\d{4}(0[1-9]|1[0-2])(0[1-9]|[1-2]\d|3[0-1])$'
     if not re.match(pattern, name.split('_', 1)[0]):
-        new_name = input(f"Warning. {name} does not match show code and date pattern SHOWYYYYMMDD, ex. LTNS20250402. Press enter to continue or type new package name: ")
+        new_name = input(f"\033[31mWarning. {name} does not match show code and date pattern, e.g. LTNS20250402.\033[0m Press enter to continue or type new package name: ")
         while new_name and not re.match(pattern, new_name.split('_', 1)[0]):
                 new_name = input(
-                    f"Warning. {new_name} does not match show code and date pattern. Press enter to continue or type new package name: ")
+                    f"\033[31mWarning. {new_name} does not match show code and date pattern. Press enter to continue or type new package name: \033[0m")
         if new_name:
             name = new_name
 
@@ -23,7 +23,7 @@ def card_package_name(name):
 # Validates camera card subfolder name by replacing spaces with underscores, capitalizing all letters
 def card_subfolder_name(name):
     while not name:
-        new_name = input(f"Subfolder name cannot be blank. Please type new name: ")
+        new_name = input(f"\033[31mSubfolder name cannot be blank. Please type new name: \033[0m")
         name = new_name
 
     # Eliminates spaces and capitalizes letters
@@ -43,9 +43,9 @@ def emails(string):
     non_matching_text = [part.strip() for part in non_matching_parts if part.strip()]
 
     while non_matching_text:
-        print ("Invalid emails detected.")
+        print ("\033[31mInvalid emails detected.\033[0m")
         print (f"\tValid: {emails}")
-        print (f"\tInvalid: {non_matching_text}")
+        print (f"\033[31m\tInvalid: {non_matching_text}\033[0m")
         string = input("Re-enter incorrect inputs: ")
 
         emails.extend(re.findall(email_pattern, string))
@@ -57,5 +57,5 @@ def emails(string):
 # Checks if path exists
 def path(path):
     while os.path.exists(path) == False:
-        path = input("Invalid path. Please reenter: ")
+        path = input("\033[31mInvalid path. Please reenter: \033[0m")
     return (path)
