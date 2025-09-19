@@ -2,32 +2,36 @@
 
 import os
 import subprocess
-
 import validateuserinput
-
 
 # Performs CUNY TV bash scripts makewindow, makemetadata, and checksumpackage
 def makewindow(directory):
     command = f"makewindow {directory}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
-    # Print the output line by line in real-time
     for line in process.stdout:
-        print(line, end='')
-    # Wait for the process to finish
+        if 'time=' in line and 'bitrate=' in line:
+            line = line.rstrip('\n')
+            print(line, end='\r', flush=True)
+        else:
+            print(line, end='')
     process.wait()
 
-    # Check the return code
     if process.returncode == 0:
         return True, None
     else:
         return False, process.returncode
+        
 def makemetadata(directory):
     command = f"makemetadata {directory}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
     for line in process.stdout:
-        print(line, end='')
+        if line.endswith(".left") or not line.strip():
+            line = line.rstrip('\n')
+            print(line, end='\r', flush=True)
+        else:
+            print(line, end='')
     process.wait()
     if process.returncode == 0:
         return True, None
