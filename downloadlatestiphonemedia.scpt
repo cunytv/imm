@@ -2,8 +2,6 @@
 tell application "Image Capture" to activate
 delay 2
 
---display dialog "Activated Image Capture" buttons {"OK"}
-
 tell application "System Events"
 	tell process "Image Capture"
 		
@@ -11,17 +9,15 @@ tell application "System Events"
 		repeat until (exists window 1)
 			delay 1
 		end repeat
-		--display dialog "Main window detected" buttons {"OK"}
 
 		-- Select iPhone from device list
-		if exists row 2 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1 then
-			select row 2 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1
-			--display dialog "iPhone selected in device list" buttons {"OK"}
-			delay 2
-		else
-			display dialog "Please connect and unlock your iPhone." buttons {"OK"}
-			error "iPhone device not found"
-		end if
+		if exists title of button 1 of UI element 1 of row 1 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1 then
+		    set numiphones to title of button 1 of UI element 1 of row 1 of outline 1 of scroll area 1 of group 1 of splitter group 1 of window 1
+            if numiphones = 0 then
+                display dialog "Please connect and unlock your iPhone, then press OK." buttons {"OK"}
+                delay 2
+            end if
+        end if
 
 		-- Get number of items
 		set numitems to 0
@@ -32,8 +28,15 @@ tell application "System Events"
 			set numitems to itemCountText as integer
 			--display dialog "Number of items: " & numitems buttons {"OK"}
 		else
-			display dialog "Please unlock your iPhone." buttons {"OK"}
-			error "iPhone is locked or unreadable"
+			display dialog "Please unlock your iPhone, then press OK." buttons {"OK"}
+			delay 2
+			if exists value of static text 2 of window 1 then
+                set numitemsstring to value of static text 2 of window 1
+                set splitParts to words of numitemsstring
+                set itemCountText to item 1 of splitParts
+                set numitems to itemCountText as integer
+                --display dialog "Number of items: " & numitems buttons {"OK"}
+            end if
 		end if
 
 		-- Check and download the latest item
