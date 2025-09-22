@@ -12,9 +12,11 @@ import json
 import threading
 import validateuserinput
 import sendnetworkmail
+import filetype
+import subprocess
 
 class DropboxUploadSession:
-    def __init__(self, path):
+    def __init__(self, path, filesdict=None, transfertype=None, checksum=True):
         # Credentials for creating access token
         self.client_id = 'wjmmemxgpuxh911'
         self.client_secret = 'mynnf0nelu4xahk'
@@ -31,7 +33,8 @@ class DropboxUploadSession:
         self.total_files = 0
         self.files_read = 0
         self.current_process = ''
-        self.get_size(path)
+
+        self.get_path_stats(path, transfertype, filesdict, checksum)
 
         # Dropbox access token and expiration
         self.refresh_access_token()
@@ -50,16 +53,47 @@ class DropboxUploadSession:
         # Create queue
         self.q = queue.Queue()
 
-    def get_size(self, path):
+    def get_path_stats(self, path, transfer_type=None, files_dict=None, checksum=True):
+        total_size = 0
+        total_files = 0
+        nondict_file_bytes = 0
+
         if os.path.isfile(path):
-            self.total_size =  os.path.getsize(path)
-            self.total_files = 1
-        elif os.path.isdir(path):
+            total_size = os.path.getsize(path)
+            total_files = 1
+
+            if files_dict and all(f["dest"] != path for f in files_dict):
+                nondict_file_bytes += total_size
+
+        else:
             for dirpath, _, filenames in os.walk(path):
-                for filename in filenames:
-                    file_path = os.path.join(dirpath, filename)
-                    self.total_size += os.path.getsize(file_path)
-                    self.total_files += 1
+                for f in filenames:
+                    fp = os.path.join(dirpath, f)
+
+                    if transfer_type == 'delivery' and filetype.is_av(fp) != 'objects':
+                        continue
+
+                    if self.mac_system_metadata(fp) or os.path.getsize(fp) == 0:
+                        continue
+
+                    try:
+                        total_size += os.path.getsize(fp)
+                        total_files += 1
+
+                        if files_dict and all(f["dest"] != fp for f in files_dict):
+                            nondict_file_bytes += os.path.getsize(fp)
+                    except (OSError, FileNotFoundError):
+                        pass
+
+        if checksum and not files_dict:
+            self.total_size = total_size * 2
+        else:
+            self.total_size = total_size + nondict_file_bytes
+
+        self.total_files = total_files
+
+        # add bytes to account for sending notifcation
+        self.total_size += round(self.total_size/100)
 
     # Generates access tokens to make API calls
     def refresh_access_token(self):
@@ -482,6 +516,109 @@ class DropboxUploadSession:
         except requests.exceptions.HTTPError as e:
             return None
 
+    def make_gif_summary(self, directory):
+        # Get the path to the user's home directory
+        home_dir = os.path.expanduser('~')
+        desktop_path = os.path.join(home_dir, 'Desktop')
+        name = directory.rsplit('/', 1)[1] + '.gif'
+
+        gif_output_filepath = os.path.join(desktop_path, name)
+        command = f"makegifsummary -o {gif_output_filepath} {directory}"
+
+        # Open /dev/null for writing
+        devnull_fd = os.open(os.devnull, os.O_WRONLY)
+
+        # Save the original stdout/stderr file descriptors
+        old_stdout_fd = os.dup(1)
+        old_stderr_fd = os.dup(2)
+
+        # Redirect stdout/stderr to /dev/null
+        os.dup2(devnull_fd, 1)
+        os.dup2(devnull_fd, 2)
+        os.close(devnull_fd)
+
+        try:
+            # Run the subprocess
+            process = subprocess.Popen(command, shell=True)
+            process.wait()
+        finally:
+            # Restore original stdout/stderr
+            os.dup2(old_stdout_fd, 1)
+            os.dup2(old_stderr_fd, 2)
+            os.close(old_stdout_fd)
+            os.close(old_stderr_fd)
+
+        if process.returncode == 0:
+            return gif_output_filepath
+        else:
+            return process.returncode
+
+    def ingestremote_email(self, desktop_path, emails, dropbox_directory, package):
+        self.current_process = "Sending notification email to recipients"
+        # Bifurcate email type
+        cuny_emails = []
+        other_emails = []
+        if emails:
+            for email in emails:
+                if "@tv.cuny.edu" in email:
+                    cuny_emails.append(email)
+                else:
+                    other_emails.append(email)
+
+        # Send network email to CUNY recipients
+        self.share_link = self.get_shared_link(dropbox_directory)[0]
+        window_dub_share_link = self.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")[0]
+
+        notification = sendnetworkmail.SendNetworkEmail()
+        notification.sender("library@tv.cuny.edu")
+        notification.recipients(cuny_emails)
+        notification.subject(f"Dropbox Upload: {package}")
+
+        # Write text content with HTML formatting
+        html_content = f"""
+            <html>
+                <body>
+                <p>Hello, </p>
+                <p></p>
+                Click the link below to stream the window dub:
+                <br><a href="{window_dub_share_link}">{window_dub_share_link}</a>.
+                <p></p>
+                Click the link below to access all files, including the window dub:
+                <br><a href="{self.share_link}">{self.share_link}</a>.
+                <p></p>
+                Best
+                <br>
+                Library Bot
+                <p></p>
+                </body>
+            </html>
+            """
+
+        notification.html_content(html_content)
+        gif_path = self.make_gif_summary(os.path.join(desktop_path, package))
+
+        with open(os.devnull, "w") as devnull:
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            sys.stdout = devnull
+            sys.stderr = devnull
+            try:
+                notification.embed_img(gif_path)
+                notification.send()
+            finally:
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+
+        os.remove(gif_path)
+
+        # Send dropbox notification to non-CUNY recipients
+        if other_emails is not None:
+            msg = f"{dropbox_directory} has finished uploading."
+            self.add_folder_member(other_emails, self.get_shared_folder_id(dropbox_directory),
+                                            False, msg)
+
+        self.bytes_read += round(self.total_size / 100)
+
     def email(self, emails, filename, link):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
@@ -622,7 +759,6 @@ class DropboxUploadSession:
 
         # Check the response
         if response.status_code != 200:
-            print("Error sharing folder:", response.text)
             self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
                                                                 "timestamp": str(datetime.datetime.now()),
                                                                 "error_type": f"Error sharing folder: {str(response.status_code)}",
@@ -655,7 +791,6 @@ class DropboxUploadSession:
 
          # Check the response
          if response.status_code != 200:
-             print("Error sharing file:", response.text)
              self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
                                                                 "timestamp": str(datetime.datetime.now()),
                                                                 "error_type": f"Error sharing file: {str(response.status_code)}",
