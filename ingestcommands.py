@@ -2,7 +2,9 @@
 
 import os
 import subprocess
+
 import validateuserinput
+
 
 # Performs CUNY TV bash scripts makewindow, makemetadata, and checksumpackage
 def makewindow(directory):
@@ -21,7 +23,6 @@ def makewindow(directory):
         return True, None
     else:
         return False, process.returncode
-        
 def makemetadata(directory):
     command = f"makemetadata {directory}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -43,7 +44,11 @@ def makechecksumpackage(directory):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
     for line in process.stdout:
-        print(line, end='')
+        if line.endswith(".left") or not line.strip():
+            line = line.rstrip('\n')
+            print(line, end='\r', flush=True)
+        else:
+            print(line, end='')
     process.wait()
     if process.returncode == 0:
         return True, None
