@@ -93,7 +93,7 @@ class DropboxUploadSession:
         self.total_files = total_files
 
         # add bytes to account for sending notifcation
-        self.total_size += round(self.total_size/100)
+        self.total_size += 1000
 
     # Generates access tokens to make API calls
     def refresh_access_token(self):
@@ -617,7 +617,7 @@ class DropboxUploadSession:
             self.add_folder_member(other_emails, self.get_shared_folder_id(dropbox_directory),
                                             False, msg)
 
-        self.bytes_read += round(self.total_size / 100)
+        self.bytes_read += 1000
 
     def email(self, emails, filename, link):
         notification = sendnetworkmail.SendNetworkEmail()
