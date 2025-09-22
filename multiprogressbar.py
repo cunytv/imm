@@ -52,13 +52,13 @@ class MultiProgressBar:
             sys.stdout.write('\x1b[2K')  # Clear entire line
         sys.stdout.flush()
 
-    def render(self):
+    def render(self, stop_event):
         allprog = [0] * len(self.tasks)
 
         for x in allprog:
             print()
 
-        while any(v < 1 for v in allprog):
+        while any(v < 1 for v in allprog) and not stop_event.is_set():
             time.sleep(0.05)
             self.clear_lines(len(self.tasks))
 
