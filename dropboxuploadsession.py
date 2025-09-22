@@ -10,7 +10,6 @@ import hashlib
 import queue
 import json
 import threading
-
 import validateuserinput
 import sendnetworkmail
 
@@ -27,8 +26,12 @@ class DropboxUploadSession:
         self.time_expire = ''
 
         # File progress
-        self.total_size = self.get_size(path)
+        self.total_size = 0
         self.bytes_read = 0
+        self.total_files = 0
+        self.files_read = 0
+        self.current_process = ''
+        self.get_size(path)
 
         # Dropbox access token and expiration
         self.refresh_access_token()
@@ -48,15 +51,15 @@ class DropboxUploadSession:
         self.q = queue.Queue()
 
     def get_size(self, path):
-        total_size = 0
         if os.path.isfile(path):
-            return os.path.getsize(path)
+            self.total_size =  os.path.getsize(path)
+            self.total_files = 1
         elif os.path.isdir(path):
             for dirpath, _, filenames in os.walk(path):
                 for filename in filenames:
                     file_path = os.path.join(dirpath, filename)
-                    total_size += os.path.getsize(file_path)
-            return total_size
+                    self.total_size += os.path.getsize(file_path)
+                    self.total_files += 1
 
     # Generates access tokens to make API calls
     def refresh_access_token(self):
@@ -71,15 +74,13 @@ class DropboxUploadSession:
         retry_attempt = 0
         while retry_attempt < 3:
             try:
-                response = requests.post(url, data=data)
+                response = requests.post(url, data=data, timeout=15)
                 if response.status_code == 200:
                     self.ACCESS_TOKEN = response.json()['access_token']
                     expires_in = response.json()['expires_in']
-
                     time_now = datetime.datetime.now()
                     self.time_expire = time_now + datetime.timedelta(seconds=expires_in - 1000)
             except requests.exceptions.RequestException as e:
-                print(f"Error refreshing access token: {e}")
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
                     self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
@@ -88,7 +89,6 @@ class DropboxUploadSession:
                                                                 "message": str(e)
                                                             })
                     return False
-
             retry_attempt += 1
 
     # Checks if access token has expired
@@ -122,8 +122,8 @@ class DropboxUploadSession:
 
     # Creates checksum
     def calculate_sha256_checksum(self, file_path, block_size=4 * 1024 * 1024):
-        # Get the total size of the file
-        total_size = os.path.getsize(file_path)
+        self.current_process = f"Calculating checksum {os.path.basename(file_path)}"
+
         hash_object = hashlib.sha256()
         bytes_read = 0
         block_hashes = []
@@ -146,15 +146,11 @@ class DropboxUploadSession:
                 # Update the main hash with the current block hash
                 hash_object.update(block_hash)
 
-                # Calculate and display progress
-                progress = min(int((bytes_read / total_size) * 100), 100)
-                sys.stdout.write("\rChecksum progress: [{:<50}] {:d}% ".format('=' * (progress // 2), progress))
-                sys.stdout.flush()
+                self.bytes_read += len(block)
 
         # Compute the final hash of the concatenated block hashes
         final_hash = hash_object.hexdigest()
 
-        print()  # Move to the next line after progress
         return final_hash
 
     # Deletes file from dropbox
@@ -171,11 +167,10 @@ class DropboxUploadSession:
         retry_attempt = 0
         while retry_attempt < 3:
             try:
-                response = requests.post(url, headers=headers, json=data)
+                response = requests.post(url, headers=headers, json=data, timeout=15)
                 if response.status_code == 200:
                     break  # Successful chunk upload
             except requests.exceptions.RequestException as e:
-                print(f"Error deleting file: {e}")
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
                     self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
@@ -204,11 +199,10 @@ class DropboxUploadSession:
         retry_attempt = 0
         while retry_attempt < 3:
             try:
-                response = requests.post(session_start_url, headers=headers)
+                response = requests.post(session_start_url, headers=headers, timeout=15)
                 if response.status_code == 200:
                     return response.json()['session_id']
             except requests.exceptions.RequestException as e:
-                print(f"Failed to initiate upload session: {e}")
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
                     self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
@@ -264,34 +258,40 @@ class DropboxUploadSession:
             retry_attempt = 0
             while retry_attempt < 3:
                 try:
-                    response = requests.post(upload_url, headers=headers, data=chunk)
+                    response = requests.post(upload_url, headers=headers, data=chunk, timeout=15)
                     if response.status_code == 200:
                         break  # Successful chunk upload
 
                     elif response.status_code == 429:  # Too many requests
                         seconds = response.json()["error"]["retry_after"]
                         for i in range(seconds, 0, -1):
-                            sys.stdout.write(
-                                "\rToo many requests. Retrying chunk upload in {:2d} seconds.".format(i))
-                            sys.stdout.flush()
                             time.sleep(1)
+                        retry_attempt += 1
+                        if retry_attempt >= 3:
+                            self.DROPBOX_TRANSFER_OKAY = False
+                            self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                "timestamp": str(datetime.datetime.now()),
+                                "error_type": "Too many retries (429 Too Many Requests)",
+                                "message": f"Retry-after {seconds}s exhausted"
+                            })
+                            return
+
 
                     elif 'Error: 503' in response.text:  # Dropbox service unavailable
                         seconds = 10
                         for i in range(seconds, 0, -1):
-                            sys.stdout.write(
-                                "\rDropbox service availability issue. Retrying chunk upload in {:2d} seconds.".format(i))
-                            sys.stdout.flush()
                             time.sleep(1)
-
-                    else:
-                        print()
-                        print(response.status_code)
-                        print(f"Failed to upload chunk: {response.text}")
-                        print(f"Offset:{offset}")
+                        retry_attempt += 1
+                        if retry_attempt >= 3:
+                            self.DROPBOX_TRANSFER_OKAY = False
+                            self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                                "timestamp": str(datetime.datetime.now()),
+                                "error_type": "Dropbox service unavailable",
+                                "message": "Received 503 multiple times"
+                            })
+                            return
 
                 except requests.exceptions.RequestException as e:
-                    print(f"Network error during chunk upload: {e}")
                     if retry_attempt == 2:
                         self.DROPBOX_TRANSFER_OKAY = False
                         self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
@@ -300,15 +300,8 @@ class DropboxUploadSession:
                                                                 "message": str(e)
                                                             })
                         return
-
                 retry_attempt += 1
-
-            with self.lock:
-                self.bytes_read += len(chunk)
-                progress = min(self.bytes_read / self.total_size, 1.0) * 100
-                sys.stdout.write(
-                    f"\rUpload progress: {progress:.2f}% ({self.bytes_read}/{self.total_size} bytes)")
-                sys.stdout.flush()
+            self.bytes_read += len(chunk)
 
     def complete_upload_session(self, session_id, offset, dropbox_path):
         session_finish_url = 'https://content.dropboxapi.com/2/files/upload_session/finish'
@@ -325,7 +318,6 @@ class DropboxUploadSession:
                 if response.status_code == 200:
                     break  # Successful chunk upload
             except requests.exceptions.RequestException as e:
-                print(f"Error completing upload session: {e}")
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
                     self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
@@ -341,6 +333,7 @@ class DropboxUploadSession:
 
     # Uploads file to dropbox
     def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5, num_threads=8):
+        self.files_read += 1
         for attempt in range(max_retries):
             try:
                 # Step 0: Check if ACCESS_TOKEN is still valid
@@ -356,14 +349,14 @@ class DropboxUploadSession:
                 offset = 0
                 chunk_size = 4194304  # required chunk size for concurrent uploads as per dbx api
 
-
                 # Create threads
                 threads = []
                 thread = threading.Thread(target=self.upload_queue, args=(file_path, chunk_size, offset,))
                 threads.append(thread)
                 thread.start()
-                time.sleep(5)
+                time.sleep(1)
 
+                self.current_process = f"Uploading {os.path.basename(file_path)}"
                 for _ in range(num_threads):
                     thread = threading.Thread(target=self.upload_chunks, args=(session_id,))
                     threads.append(thread)
@@ -397,7 +390,6 @@ class DropboxUploadSession:
 
                     # Update files dictionary and check fixity
                     if cs1 == cs2:
-                        print(f'File {file_path} transferred and passed fixity check')
                         self.DROPBOX_FILES_DICT.append({"orig": file_path,
                                                          "dest": dropbox_path,
                                                          "checksum_o": cs1,
@@ -417,13 +409,10 @@ class DropboxUploadSession:
                     return
 
             except ConnectionError as e:
-                print(f"Attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
-                    print("Retrying upload.")
                     self.delete_file(dropbox_path)
                     self.bytes_read = self.bytes_read - os.path.getsize(file_path)
                 else:
-                    print(f"Max retries reached. Operation failed: {e}")
                     self.DROPBOX_FILES_DICT.append({"orig": file_path,
                                                          "dest": dropbox_path,
                                                          "checksum_o": cs1,
@@ -485,16 +474,12 @@ class DropboxUploadSession:
             'settings': settings
         }
         response = requests.post(url, headers=headers, json=data)
-        print("CREATE SHARED LINK")
-        print(response)
 
         # Check Response
         try:
             response.raise_for_status()
             return response.json()['url'], response.json()['id']
         except requests.exceptions.HTTPError as e:
-            print(f"HTTP error occurred: {e}")
-            print(f"Response content: {response.content}")
             return None
 
     def email(self, emails, filename, link):
@@ -607,7 +592,6 @@ class DropboxUploadSession:
         if response.status_code == 200:
             return response.json()["shared_folder_id"]
         else:
-            print("Error sharing folder:", response.text)
             self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
                                                                 "timestamp": str(datetime.datetime.now()),
                                                                 "error_type": f"Error sharing folder: {str(response.status_code)}",
@@ -637,9 +621,7 @@ class DropboxUploadSession:
         response = requests.post(url, headers=headers, json=data)
 
         # Check the response
-        if response.status_code == 200:
-            print(f"\nFolder succesfully shared with {emails}")
-        else:
+        if response.status_code != 200:
             print("Error sharing folder:", response.text)
             self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
                                                                 "timestamp": str(datetime.datetime.now()),
@@ -672,9 +654,7 @@ class DropboxUploadSession:
          response = requests.post(url, headers=headers, json=data)
 
          # Check the response
-         if response.status_code == 200:
-             print(f"\nFile succesfully shared with {email}")
-         else:
+         if response.status_code != 200:
              print("Error sharing file:", response.text)
              self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
                                                                 "timestamp": str(datetime.datetime.now()),
