@@ -43,7 +43,7 @@ class MultiProgressBar:
 
         with self.print_lock:
             width = shutil.get_terminal_size().columns
-            line = f"\033[1;34m{name:<20}\033[0m|{bar}| {int(fract * 100):3d}%    {filecount or '':<14} {process or ''}"
+            line = f"\033[1;34m{name:<20}\033[0m|{bar}| {(fract * 100):.2f}%    {filecount or '':<14} {process or '':<10}"
             print(line[:width])
 
     def clear_lines(self, n):
