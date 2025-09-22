@@ -227,8 +227,8 @@ def error_report(log_dest, package):
     if not all(variables):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
-        #notification.recipients(["library@tv.cuny.edu"])
-        notification.recipients(["aida.garrido@tv.cuny.edu"])
+        notification.recipients(["library@tv.cuny.edu"])
+        #notification.recipients(["aida.garrido@tv.cuny.edu"])
         notification.subject(f"Ingest error: {package}")
 
         notification.html_content("<p>Hello, </p><p>Error(s) occurred during ingest:</p>")
@@ -688,8 +688,8 @@ def startup(multibatchname=None):
                     if do_dropbox:
                         emails = validateuserinput.emails(
                             input("\tList email(s) delimited by space or press enter to continue: "))
-                        #emails.extend(["library@tv.cuny.edu"])
-                        emails.extend(["aida.garrido@tv.cuny.edu"])
+                        emails.extend(["library@tv.cuny.edu"])
+                        #emails.extend(["aida.garrido@tv.cuny.edu"])
                         # Update key-value pair from default
                         new_package_dict['do_dropbox'] = True
                         new_package_dict['emails'] = emails
@@ -702,17 +702,17 @@ def startup(multibatchname=None):
 
 if __name__ == "__main__":
     # Check if connected to servers
-    #archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
-    archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
+    archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
+    #archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
     server_check(archive_server, "archive")
 
-    tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
-    #tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
+    #tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
+    tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
     server_check(tiger_server, "tiger")
 
     # path to Iphone temp folder
-    iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
-    #iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
+    #iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
+    iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
 
     # Detect recently inserted drives, cards, and iphone
     countdown(5)
