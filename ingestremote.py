@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 
+# top of your script, before anything else
+import builtins
+import traceback
+
+original_print = print
+
+def debug_print(*args, **kwargs):
+    stack = traceback.extract_stack(limit=3)
+    filename, lineno, func, _ = stack[0]
+    original_print(f"[PRINT from {filename}:{lineno} in {func}] ", *args, **kwargs)
+
+builtins.print = debug_print
+
 import detectrecentlyinserteddrives
 import restructurepackage
 import ingestcommands
@@ -225,6 +238,7 @@ def error_report(log_dest, package):
     variables = [v if v is not None else True for v in event_values]
 
     if not all(variables):
+        print("\033[31mAn error occured during ingest.\033[0m")
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
         notification.recipients(["library@tv.cuny.edu"])
@@ -234,7 +248,6 @@ def error_report(log_dest, package):
         notification.html_content("<p>Hello, </p><p>Error(s) occurred during ingest:</p>")
         notification.html_content("<u>user input</u><br>")
         notification.html_content(f"do_dropbox: {packages_dict[package]['do_dropbox']}<br>")
-        print(packages_dict[package]["do_dropbox"])
         if packages_dict[package]["do_dropbox"]:
             notification.html_content(f"emails: {', '.join(map(str, packages_dict[package]['emails']))}<br>")
         notification.html_content("<br><u>ingest events</u><br>")
@@ -243,6 +256,7 @@ def error_report(log_dest, package):
         while i < len(event_keys):
             if event_values[i] is False:
                 notification.html_content(f"<u><strong>{event_keys[i]}: {event_values[i]}</strong></u><br>")
+                print(f"{event_keys[i]}: {event_values[i]}")
             else:
                 notification.html_content(f"{event_keys[i]}: {event_values[i]}<br>")
             i += 1
@@ -253,31 +267,23 @@ def error_report(log_dest, package):
                 log_path = os.path.join(log_dest, filename)
                 break
 
+        print(f"See {log_path} for more information.")
         notification.html_content(
             f"<p>Check attachment for more information or navigate to {log_path}</p>Best, <br>Library Bot")
 
         notification.attachment(log_path)
-        notification.send()
-
-def makegif(directory):
-    # Get the path to the user's home directory
-    home_dir = os.path.expanduser('~')
-    # Path to the Desktop folder (typically under the user's home directory)
-    desktop_path = os.path.join(home_dir, 'Desktop')
-    name = directory.rsplit('/', 1)[1] + '.gif'
-
-    gif_output_filepath = os.path.join(desktop_path, name)
-    command = f"makegifsummary -o {gif_output_filepath} {directory}"
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                               text=True)
-    for line in process.stdout:
-        print(line, end='')
-    process.wait()
-    if process.returncode == 0:
-        return gif_output_filepath
+        with open(os.devnull, "w") as devnull:
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            sys.stdout = devnull
+            sys.stderr = devnull
+            try:
+                notification.send()
+            finally:
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
     else:
-        return process.returncode
-
+        print(f"\033[32mIngest succesfully completed\033[0m")
 
 def runcommands(filepath, package):
     if packages_dict[package]["DESKTOP_transfer_okay"] and packages_dict[package]["do_commands"]:
@@ -450,60 +456,8 @@ def ingest_dropbox_upload(desktop_path, package, uploadsession):
 
         # Send email notification if Dropbox transfer goes well.
         if packages_dict[package]["DROPBOX_transfer_okay"]:
-            # Bifurcate email type
-            cuny_emails = []
-            other_emails = []
-            if emails:
-                for email in emails:
-                    if "@tv.cuny.edu" in email:
-                        cuny_emails.append(email)
-                    else:
-                        other_emails.append(email)
-
-            # Send network email to CUNY recipients
-            uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
+            uploadsession.ingestremote_email(desktop_path, emails, dropbox_directory, package)
             packages_dict[package]["DROPBOX_link"] = uploadsession.share_link
-            window_dub_share_link = uploadsession.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")[0]
-
-            notification = sendnetworkmail.SendNetworkEmail()
-            notification.sender("library@tv.cuny.edu")
-            notification.recipients(cuny_emails)
-            notification.subject(f"Dropbox Upload: {package}")
-
-            # Write text content with HTML formatting
-            html_content = f"""
-                <html>
-                    <body>
-                    <p>Hello, </p>
-                    <p></p>
-                    Click the link below to stream the window dub:
-                    <br><a href="{window_dub_share_link}">{window_dub_share_link}</a>.
-                    <p></p>
-                    Click the link below to access all files, including the window dub:
-                    <br><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.
-                    <p></p>
-                    Best
-                    <br>
-                    Library Bot
-                    <p></p>
-                    </body>
-                </html>
-                """
-
-            notification.html_content(html_content)
-
-            gif_path = makegif(os.path.join(desktop_path, package))
-            notification.embed_img(gif_path)
-
-            notification.send()
-            os.remove(gif_path)
-
-            # Send dropbox notification to non-CUNY recipients
-            if other_emails is not None:
-                msg = f"{dropbox_directory} has finished uploading."
-                uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
-                                                    False, msg)
-
 
 def ingest_log_and_errors(desktop_path):
     for package in packages_dict:
@@ -564,14 +518,16 @@ def ingest():
 
         # Create threads for each function
         t1 = threading.Thread(target=ingest_desktop_transfer, args=(package_obj, package, desktop_path,))
-        t2 = threading.Thread(target=mpb.render)
+        stop_event = threading.Event()
+        t2 = threading.Thread(target=mpb.render, args=(stop_event,))
 
-        # Start all threads
-        t1.start()
-        t2.start()
+        for t in (t1, t2):
+            t.start()
 
-        # Wait for all threads to complete
         t1.join()
+
+        stop_event.set()
+
         t2.join()
 
     ingest_commands(desktop_path)
@@ -583,7 +539,7 @@ def ingest():
             delivery_obj = restructurepackage.RestructurePackage()
 
             desktop_object_directory = os.path.join(desktop_path, package, "objects")
-            db_obj = dropboxuploadsession.DropboxUploadSession(desktop_object_directory)
+            db_obj = dropboxuploadsession.DropboxUploadSession(desktop_object_directory, packages_dict[package]["DESKTOP_files_dict"])
 
             mpb = multiprogressbar.MultiProgressBar()
             if packages_dict[package]["do_dropbox"]:
@@ -598,20 +554,21 @@ def ingest():
             t1 = threading.Thread(target=ingest_dropbox_upload, args=(desktop_path, package, db_obj,))
             t2 = threading.Thread(target=ingest_delivery_transfer, args=(desktop_path, package, delivery_obj,))
             t3 = threading.Thread(target=ingest_archive_transfer, args=(desktop_path, package, archive_obj,))
-            t4 = threading.Thread(target=mpb.render)
+
+            stop_event = threading.Event()
+            t4 = threading.Thread(target=mpb.render, args=(stop_event,))
 
             mpb.threads = [t1, t2, t3]
 
             # Start all threads
-            t1.start()
-            t2.start()
-            t3.start()
-            t4.start()
+            for t in (t1, t2, t3, t4):
+                t.start()
 
-            # Wait for all threads to complete
-            t1.join()
-            t2.join()
-            t3.join()
+            for t in (t1, t2, t3):
+                t.join()
+
+            stop_event.set()
+
             t4.join()
 
     #ingest_resourcespace()  # Uses archive package since filestore and cc ingests are on the same server
