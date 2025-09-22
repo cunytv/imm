@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
 # top of your script, before anything else
-import builtins
-import traceback
+#import builtins
+#import traceback
 
-original_print = print
+#original_print = print
 
-def debug_print(*args, **kwargs):
-    stack = traceback.extract_stack(limit=3)
-    filename, lineno, func, _ = stack[0]
-    original_print(f"[PRINT from {filename}:{lineno} in {func}] ", *args, **kwargs)
+#def debug_print(*args, **kwargs):
+#    stack = traceback.extract_stack(limit=3)
+#    filename, lineno, func, _ = stack[0]
+#    original_print(f"[PRINT from {filename}:{lineno} in {func}] ", *args, **kwargs)
 
-builtins.print = debug_print
+#builtins.print = debug_print
 
 import detectrecentlyinserteddrives
 import restructurepackage
