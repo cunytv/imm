@@ -33,6 +33,7 @@ class DropboxUploadSession:
         self.total_files = 0
         self.files_read = 0
         self.current_process = ''
+        self.email_incremen
 
         self.get_path_stats(path, transfertype, filesdict, checksum)
 
@@ -93,7 +94,8 @@ class DropboxUploadSession:
         self.total_files = total_files
 
         # add bytes to account for sending notifcation
-        self.total_size += 1000
+        self.email_increment = round(self.total_size/100)
+        self.total_size += self.email_increment
 
     # Generates access tokens to make API calls
     def refresh_access_token(self):
@@ -616,8 +618,8 @@ class DropboxUploadSession:
             msg = f"{dropbox_directory} has finished uploading."
             self.add_folder_member(other_emails, self.get_shared_folder_id(dropbox_directory),
                                             False, msg)
-
-        self.bytes_read += 1000
+        
+        self.bytes_read += self.email_increment
 
     def email(self, emails, filename, link):
         notification = sendnetworkmail.SendNetworkEmail()
