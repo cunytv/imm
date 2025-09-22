@@ -7,6 +7,8 @@ import validateuserinput
 import dropboxuploadsession
 import cunymediaids
 import sendnetworkmail
+import multiprogressbar
+import threading
 import re
 import sys
 import os
@@ -26,6 +28,9 @@ iphone = False
 
 # Create dictionary of packages
 packages_dict = {}
+
+# Array of incomplete multibatch packages
+incomplete_multibatch = []
 
 # Create dictionary structure for one package
 package_dict = {
@@ -57,6 +62,8 @@ package_dict = {
     "DELIVERY_files_dict": None,
     "DROPBOX_files_dict": None
 }
+
+DESKTOP_obj = ''
 
 # Checks if user is connected to server
 def server_check(s, s_type):
@@ -109,10 +116,12 @@ def mac_system_metadata(file):
     if '.' not in file or file.startswith('.'):
         return True
 
+
 # Ejects mounted drive
 def eject(path):
     subprocess.run(["diskutil", "eject", path])
     notification(f"{path} ejected. Safe to remove.")
+
 
 # Sends onscreen notification
 def notification(message):
@@ -120,6 +129,7 @@ def notification(message):
             display notification "{message}" with title "Ingest Notification"
         '''
     subprocess.run(["osascript", "-e", applescript])
+
 
 # Extracts showcode from package name string
 def get_showcode(input_string):
@@ -150,149 +160,53 @@ def dropbox_prefix(s):
     showcode = get_showcode(s)
     return f'/_CUNY TV CAMERA CARD DELIVERY/{showcode}'
 
+def merge_dicts(d1, d2):
+    merged = dict(d1)  # start with a copy of d1
+    for k, v in d2.items():
+        if k in merged:
+            if isinstance(merged[k], dict) and isinstance(v, dict):
+                merged[k] = merge_dicts(merged[k], v)
+            elif isinstance(merged[k], list) and isinstance(v, list):
+                merged[k] = merged[k] + v  # concatenate lists
+            elif v is not None:
+                merged[k] = v  # overwrite if new value not None
+        else:
+            merged[k] = v
+    return merged
 
 def print_log(log_dest, package):
-    log_exists = False
-    log_path = ''
+    # Check if there is an existing log
+    old_log_exists = False
+    old_log_path = ''
+    old_log_data = {}
     for filename in os.listdir(log_dest):
-        # Check if the filename starts with "ingestlog"
         if filename.startswith("ingestlog"):
-            log_exists = True
-            log_path = os.path.join(log_dest, filename)
+            old_log_exists = True
+            old_log_path = os.path.join(log_dest, filename)
+            with open(old_log_path, "r") as f:
+                old_log_data = json.load(f)
             break
 
-    # If part of multi-batch process and not yet last batch
-    if log_exists and not packages_dict[package]['do_desktop_delete']:
+    # Create a new log
+    now = datetime.now()
+    time_str = now.strftime("%H%M%S")
 
-        # Move existing log to desktop to append values (doesn't work when trying to write directly to server)
-        home_dir = os.path.expanduser('~')
-        desktop_path = os.path.join(home_dir, 'Desktop')
-        desktop_log = os.path.join(desktop_path, f"ingestlog{package}.json")
-        shutil.move(log_path, desktop_log)
+    new_log_path = os.path.join(archive_server, package, "metadata", f"ingestlog{package}_{time_str}.json")
 
-        with open(desktop_log, "r") as file:
-            log_data = json.load(file)
+    new_log_data = {
+        "package": package,
+        **packages_dict[package]
+    }
 
-        # Update these values
-        # Find the cards and input_paths tag, and append new values
-        log_data['cards'] += f", {', '.join(map(str, packages_dict[package]['cards']))}"
-        log_data['input_paths'] += f", {', '.join(map(str, packages_dict[package]['input_paths']))}"
-
-        # Find DESKTOP_transfer_okay and replace value
-        log_data['DESKTOP_transfer_okay'] = packages_dict[package]['DESKTOP_transfer_okay']
-        if not log_data['DESKTOP_transfer_okay']:
-            log_data['DESKTOP_transfer_not_okay_reason'] = packages_dict[package]['DESKTOP_transfer_not_okay_reason']
-
-        # Append DESKTOP_files_dict
-        for file_data in packages_dict[package]['DESKTOP_files_dict']:
-            log_data['DESKTOP_files_dict'].append(file_data)
-
-        with open(desktop_log, "w") as file:
-            json.dump(log_data, file, indent=4)
-
-        # Move log back to server; append time to avoid cache issues
-        now = datetime.now()
-        time_str = now.strftime("%H%M%S")
-
-        shutil.move(desktop_log, os.path.join(archive_server, package, "metadata", f"ingestlog{package}_{time_str}.json"))
-
-    # If part of multi-batch process and last batch
-    elif log_exists and packages_dict[package]['do_desktop_delete']:
-        # Move existing log to desktop to append values (doesn't work when trying to write directly to server)
-        home_dir = os.path.expanduser('~')
-        desktop_path = os.path.join(home_dir, 'Desktop')
-        desktop_log = os.path.join(desktop_path, f"ingestlog{package}.json")
-        shutil.move(log_path, desktop_log)
-
-        # Load the json file
-        with open(desktop_log, "r") as file:
-            log_data = json.load(file)
-
-        # Find the cards and input_paths tag, and append new values
-        log_data['cards'] += f", {', '.join(map(str, packages_dict[package]['cards']))}"
-        log_data['input_paths'] += f", {', '.join(map(str, packages_dict[package]['input_paths']))}"
-
-        # Replace or create these values
-        log_data['do_fixity'] = packages_dict[package]['do_fixity']
-        log_data['do_drive_delete'] = packages_dict[package]['do_drive_delete']
-        log_data['do_desktop_delete'] = packages_dict[package]['do_desktop_delete']
-        log_data['do_commands'] = packages_dict[package]['do_commands']
-        log_data['do_dropbox'] = packages_dict[package]['do_dropbox']
-        if packages_dict[package]['emails']:
-            log_data['emails'] = ", ".join(map(str, packages_dict[package]['emails']))
-        if packages_dict[package]['DROPBOX_transfer_okay']:
-            log_data['DROPBOX_link'] = packages_dict[package]["DROPBOX_link"]
-        log_data['MAKEWINDOW_okay'] = packages_dict[package]['MAKEWINDOW_okay']
-        if not log_data['MAKEWINDOW_okay']:
-            log_data['MAKEWINDOW_not_okay_reason'] = packages_dict[package]['MAKEWINDOW_not_okay_reason']
-        log_data['MAKEMETADATA_okay'] = packages_dict[package]['MAKEMETADATA_okay']
-        if not log_data['MAKEMETADATA_okay']:
-            log_data['MAKEMETADATA_not_okay_reason'] = packages_dict[package]['MAKEMETADATA_not_okay_reason']
-        log_data['MAKECHECKSUMPACKAGE_okay'] = packages_dict[package]['MAKECHECKSUMPACKAGE_okay']
-        if not log_data['MAKECHECKSUMPACKAGE_okay']:
-            log_data['MAKECHECKSUMPACKAGE_not_okay_reason'] = packages_dict[package]['MAKECHECKSUMPACKAGE_not_okay_reason']
-        log_data['DELIVERY_transfer_okay'] = packages_dict[package]['DELIVERY_transfer_okay']
-        if not log_data['DELIVERY_transfer_okay']:
-            log_data['DELIVERY_transfer_not_okay_reason'] = packages_dict[package]['DELIVERY_transfer_not_okay_reason']
-        log_data['ARCHIVE_transfer_okay'] = packages_dict[package]['ARCHIVE_transfer_okay']
-        if not log_data['ARCHIVE_transfer_okay']:
-            log_data['ARCHIVE_transfer_not_okay_reason'] = packages_dict[package]['ARCHIVE_transfer_not_okay_reason']
-        log_data['DROPBOX_transfer_okay'] = packages_dict[package]['DROPBOX_transfer_okay']
-        if not log_data['DROPBOX_transfer_okay']:
-            log_data['DROPBOX_transfer_not_okay_reason'] = packages_dict[package]['DROPBOX_transfer_not_okay_reason']
-        log_data['ARCHIVE_files_dict'] = packages_dict[package]['ARCHIVE_files_dict']
-        log_data['DELIVERY_files_dict'] = packages_dict[package]['DELIVERY_files_dict']
-        log_data['DROPBOX_files_dict'] = packages_dict[package]['DROPBOX_files_dict']
-
-        # Append DESKTOP_files_dict
-        for file_data in packages_dict[package]['DESKTOP_files_dict']:
-            log_data['DESKTOP_files_dict'].append(file_data)
-
-        # Remove none values
-        log_data = remove_none(log_data)
-
-        with open(desktop_log, "w") as file:
-            json.dump(log_data, file, indent=4)
-
-        # Move log back to server; append time to avoid cache issues
-        now = datetime.now()
-        time_str = now.strftime("%H%M%S")
-
-        shutil.move(desktop_log, os.path.join(archive_server, package, "metadata", f"ingestlog{package}_{time_str}.json"))
-
-    # If only batch or first batch
+    # Write data to json file
+    if old_log_exists:
+        merged_data = merge_dicts(old_log_data, new_log_data)
+        with open(new_log_path, "w") as file:
+            json.dump(merged_data, file, indent=4)
+        os.remove(old_log_path)
     else:
-        now = datetime.now()
-        time_str = now.strftime("%H%M%S")
-
-        log_path = os.path.join(archive_server, package, "metadata", f"ingestlog{package}_{time_str}.json")
-
-        packages_dict[package]['cards'] = ", ".join(map(str, packages_dict[package]['cards']))
-        packages_dict[package]['input_paths'] = ", ".join(map(str, packages_dict[package]['input_paths']))
-
-        # Create a custom structure
-        log_data = {
-            "package": f"{package}",
-            **packages_dict[package]  # Unpack the dictionary and add its keys/values
-        }
-
-        # if only batch, and not first batch
-        if packages_dict[package]['do_desktop_delete']:
-            if log_data['emails']:
-                log_data['emails'] = ", ".join(map(str, log_data['emails']))
-            log_data = remove_none(log_data)
-
-        with open(log_path, "w") as file:
-            json.dump(log_data, file, indent=4)
-
-#Remove keys with None values from a dictionary (non-recursively).
-def remove_none(d):
-    if isinstance(d, dict):
-        return {k: v for k, v in d.items() if v is not None and v != 'null'}
-    elif isinstance(d, list):
-        return [v for v in d if v is not None and v != 'null']
-    else:
-        return d
+        with open(new_log_path, "w") as file:
+            json.dump(new_log_data, file, indent=4)
 
 def error_report(log_dest, package):
     dpto = packages_dict[package]["DESKTOP_transfer_okay"]
@@ -303,12 +217,9 @@ def error_report(log_dest, package):
     dyto = packages_dict[package]["DELIVERY_transfer_okay"]
     dbto = packages_dict[package]["DROPBOX_transfer_okay"]
 
-    event_keys = ["DESKTOP_transfer_okay", "MAKEWINDOW_okay", "MAKEMETADATA_okay", "MAKECHECKSUMPACKAGE_okay", "ARCHIVE_transfer_okay", "DELIVERY_transfer_okay", "DROPBOX_transfer_okay"]
+    event_keys = ["DESKTOP_transfer_okay", "MAKEWINDOW_okay", "MAKEMETADATA_okay", "MAKECHECKSUMPACKAGE_okay",
+                  "ARCHIVE_transfer_okay", "DELIVERY_transfer_okay", "DROPBOX_transfer_okay"]
     event_values = [dpto, mwo, mmo, mcpo, ato, dyto, dbto]
-
-    print(event_keys)
-    print(event_values)
-
 
     # Treat None as True
     variables = [v if v is not None else True for v in event_values]
@@ -316,10 +227,9 @@ def error_report(log_dest, package):
     if not all(variables):
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
-        notification.recipients(["library@tv.cuny.edu"])
-        #notification.recipients(["aida.garrido@tv.cuny.edu"])
+        #notification.recipients(["library@tv.cuny.edu"])
+        notification.recipients(["aida.garrido@tv.cuny.edu"])
         notification.subject(f"Ingest error: {package}")
-
 
         notification.html_content("<p>Hello, </p><p>Error(s) occurred during ingest:</p>")
         notification.html_content("<u>user input</u><br>")
@@ -335,21 +245,18 @@ def error_report(log_dest, package):
                 notification.html_content(f"<u><strong>{event_keys[i]}: {event_values[i]}</strong></u><br>")
             else:
                 notification.html_content(f"{event_keys[i]}: {event_values[i]}<br>")
-            i+=1
+            i += 1
 
         log_path = ''
         for filename in os.listdir(log_dest):
-            # Check if the filename starts with "ingestlog"
             if filename.startswith("ingestlog"):
                 log_path = os.path.join(log_dest, filename)
                 break
 
-        notification.html_content(f"<p>Check attachment for more information or navigate to {log_path}</p>Best, <br>Library Bot")
+        notification.html_content(
+            f"<p>Check attachment for more information or navigate to {log_path}</p>Best, <br>Library Bot")
 
-        # Add the attachment
         notification.attachment(log_path)
-
-        # Send the notification
         notification.send()
 
 def makegif(directory):
@@ -371,6 +278,7 @@ def makegif(directory):
     else:
         return process.returncode
 
+
 def runcommands(filepath, package):
     if packages_dict[package]["DESKTOP_transfer_okay"] and packages_dict[package]["do_commands"]:
         makewindow_okay, makewindow_error = ingestcommands.makewindow(filepath)
@@ -383,9 +291,9 @@ def runcommands(filepath, package):
         makemetadata_okay, makemetadata_error = ingestcommands.makemetadata(filepath)
     else:
         packages_dict[package]["MAKEWINDOW_not_okay_reason"] = {
-                "timestamp": str(datetime.now()),
-                "error_type": makewindow_error,
-            }
+            "timestamp": str(datetime.now()),
+            "error_type": makewindow_error,
+        }
 
         return
 
@@ -395,17 +303,18 @@ def runcommands(filepath, package):
         makechecksumpackage_okay, makechecksumpackage_error = ingestcommands.makechecksumpackage(filepath)
     else:
         packages_dict[package]["MAKEMETADATA_not_okay_reason"] = {
-                "timestamp": str(datetime.now()),
-                "error_type": makemetadata_error
-            }
+            "timestamp": str(datetime.now()),
+            "error_type": makemetadata_error
+        }
         return
 
     packages_dict[package]["MAKECHECKSUMPACKAGE_okay"] = makechecksumpackage_okay
     if not makechecksumpackage_okay:
         packages_dict[package]["MAKECHECKSUMPACKAGE_not_okay_reason"] = {
-                "timestamp": str(datetime.now()),
-                "error_type": makechecksumpackage_error
-            }
+            "timestamp": str(datetime.now()),
+            "error_type": makechecksumpackage_error
+        }
+
 
 def empty_iphone_temp():
     # Loop through all files and delete them
@@ -414,31 +323,30 @@ def empty_iphone_temp():
         if os.path.isfile(file_path):
             os.remove(file_path)
 
-def ingest_desktop_transfer(desktop_path):
+
+def ingest_desktop_transfer(package_obj, package, desktop_path):
     # Create package object from RestructurePackage class
     # Files are first transferred locally to desktop to quicken file processing (e.g. windowdub)
     # File are transformed into archive package
-    for package in packages_dict:
-        package_obj = restructurepackage.RestructurePackage()
-        for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
-            if input_path == iphone_temp_folder:
-                ingest_iphone_media()
+    for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
+        if input_path == iphone_temp_folder:
+            ingest_iphone_media()
 
-            package_obj.create_output_directory(desktop_path, package, card)
-            # Transfer files to Desktop
-            package_obj.restructure_copy("archive", input_path, desktop_path, package, card,
-                                         packages_dict[package]["do_fixity"],
-                                         packages_dict[package]["do_drive_delete"])
-            if input_path == iphone_temp_folder:
-                empty_iphone_temp()
-            else:
-                eject(input_path)
+        package_obj.create_output_directory(desktop_path, package, card)
+        # Transfer files to Desktop
+        package_obj.restructure_copy("archive", input_path, desktop_path, package, card,
+                                     packages_dict[package]["do_fixity"],
+                                     packages_dict[package]["do_drive_delete"])
+        if input_path == iphone_temp_folder:
+            empty_iphone_temp()
+        else:
+            eject(input_path)
 
-        # Save desktop transfer results and checksums
-        packages_dict[package]["DESKTOP_files_dict"] = package_obj.FILES_DICT
-        packages_dict[package]["DESKTOP_transfer_okay"] = package_obj.TRANSFER_OKAY
-        if package_obj.TRANSFER_ERROR:
-            packages_dict[package]["DESKTOP_transfer_error"] = package_obj.TRANSFER_ERROR
+    # Save desktop transfer results and checksums
+    packages_dict[package]["DESKTOP_files_dict"] = package_obj.FILES_DICT
+    packages_dict[package]["DESKTOP_transfer_okay"] = package_obj.TRANSFER_OKAY
+    if package_obj.TRANSFER_ERROR:
+        packages_dict[package]["DESKTOP_transfer_error"] = package_obj.TRANSFER_ERROR
 
 def ingest_iphone_media():
     # Path to your AppleScript file
@@ -453,11 +361,10 @@ def ingest_iphone_media():
             capture_output=True,
             text=True
         )
-        print("Script Output:")
-        print(result.stdout)
     except subprocess.CalledProcessError as e:
         print("AppleScript failed:")
         print(e.stderr)
+
 
 def ingest_commands(desktop_path):
     # Run commands on local copy if last batch or only batch in process
@@ -466,141 +373,137 @@ def ingest_commands(desktop_path):
         if packages_dict[package]["do_commands"]:
             runcommands(os.path.join(desktop_path, package), package)
 
-def ingest_delivery_transfer(desktop_path):
-    for package in packages_dict:
-        # Transfer to servers if last batch or only batch in process
-        # do_desktop_delete is set accordingly in main
-        if packages_dict[package]["do_desktop_delete"]:
-            # Transfer files to Tiger
-            global tiger_down
-            if not tiger_down:
-                # Create new package object from RestructurePackage class
-                # Files are transferred from desktop to Tiger server
-                # File are transformed into delivery package
-                package_obj = restructurepackage.RestructurePackage()
-                package_obj.restructure_copy("delivery", os.path.join(desktop_path, package, "objects"),
+
+def ingest_delivery_transfer(desktop_path, package, package_obj):
+    # Transfer to servers if last batch or only batch in process
+    # do_desktop_delete is set accordingly in main
+    if packages_dict[package]["do_desktop_delete"]:
+        # Transfer files to Tiger
+        global tiger_down
+        if not tiger_down:
+            # Create new package object from RestructurePackage class
+            # Files are transferred from desktop to Tiger server
+            # File are transformed into delivery package
+            package_obj.restructure_copy("delivery", os.path.join(desktop_path, package, "objects"),
                                              os.path.join(tiger_server, get_showcode(package)),
                                              package, do_fixity=packages_dict[package]["do_fixity"],
                                              do_delete=False,
                                              files_dict=packages_dict[package]["ARCHIVE_files_dict"])
 
-                # Save delivery transfer results and checksums
-                packages_dict[package]["DELIVERY_files_dict"] = package_obj.FILES_DICT
-                packages_dict[package]["DELIVERY_transfer_okay"] = package_obj.TRANSFER_OKAY
-                if package_obj.TRANSFER_ERROR:
-                    packages_dict[package]["DELIVERY_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
-            else:
-                packages_dict[package]["DELIVERY_transfer_okay"] = False
-                packages_dict[package]["DELIVERY_transfer_not_okay_reason"] = {"timestamp": str(datetime.now()),
+            # Save delivery transfer results and checksums
+            packages_dict[package]["DELIVERY_files_dict"] = package_obj.FILES_DICT
+            packages_dict[package]["DELIVERY_transfer_okay"] = package_obj.TRANSFER_OKAY
+            if package_obj.TRANSFER_ERROR:
+                packages_dict[package]["DELIVERY_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
+        else:
+            packages_dict[package]["DELIVERY_transfer_okay"] = False
+            packages_dict[package]["DELIVERY_transfer_not_okay_reason"] = {"timestamp": str(datetime.now()),
                                                                                "error_type": None,
                                                                                "message": "Tiger volume is down"}
 
-def ingest_archive_transfer(desktop_path):
-    for package in packages_dict:
-        # Transfer to servers if last batch or only batch in process
-        # do_desktop_delete is set accordingly in main
-        if packages_dict[package]["do_desktop_delete"]:
-            for package in packages_dict:
-                # Create new package object
-                # Files are transferred from desktop to CUNYTVMedia
-                # File are not transformed, since desktop copy is already an archive package; thus one2one method
-                package_obj = restructurepackage.RestructurePackage()
-                package_obj.restructure_copy("one2one", os.path.join(desktop_path, package),
+
+def ingest_archive_transfer(desktop_path, package, package_obj):
+    # Transfer to servers if last batch or only batch in process
+    # do_desktop_delete is set accordingly in main
+    if packages_dict[package]["do_desktop_delete"]:
+        # Create new package object
+        # Files are transferred from desktop to CUNYTVMedia
+        # File are not transformed, since desktop copy is already an archive package; thus one2one method
+        package_obj.restructure_copy("one2one", os.path.join(desktop_path, package),
                                              os.path.join(archive_server, package),
                                              do_fixity=packages_dict[package]["do_fixity"],
                                              do_delete=False,
                                              files_dict=packages_dict[package]["DESKTOP_files_dict"])
-        
-                # Save delivery transfer results and checksums
-                packages_dict[package]["ARCHIVE_files_dict"] = package_obj.FILES_DICT
-                packages_dict[package]["ARCHIVE_transfer_okay"] = package_obj.TRANSFER_OKAY
-                if package_obj.TRANSFER_ERROR:
-                    packages_dict[package]["ARCHIVE_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
 
-def ingest_dropbox_upload(desktop_path):
+        # Save delivery transfer results and checksums
+        packages_dict[package]["ARCHIVE_files_dict"] = package_obj.FILES_DICT
+        packages_dict[package]["ARCHIVE_transfer_okay"] = package_obj.TRANSFER_OKAY
+        if package_obj.TRANSFER_ERROR:
+            packages_dict[package]["ARCHIVE_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
+
+
+def ingest_dropbox_upload(desktop_path, package, uploadsession):
     # Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
-    for package in packages_dict:
-        no_error = packages_dict[package]["DESKTOP_transfer_okay"]
-        do_dropbox = packages_dict[package]["do_dropbox"]
+    no_error = packages_dict[package]["DESKTOP_transfer_okay"]
+    do_dropbox = packages_dict[package]["do_dropbox"]
 
-        desktop_object_directory = os.path.join(desktop_path, package, "objects")
-        dropbox_directory = dropbox_prefix(package) + f'/{package}'
-        emails = packages_dict[package]["emails"]
+    desktop_object_directory = os.path.join(desktop_path, package, "objects")
+    dropbox_directory = dropbox_prefix(package) + f'/{package}'
+    emails = packages_dict[package]["emails"]
 
-        if no_error and do_dropbox:
-            uploadsession = dropboxuploadsession.DropboxUploadSession(desktop_object_directory)
+    if no_error and do_dropbox:
+        for root, _, files in os.walk(desktop_object_directory, topdown=False):
+            for filename in files:
+                if not mac_system_metadata(filename):
+                    filepath = os.path.join(root, filename)
+                    dropboxpath = os.path.join(dropbox_directory, filename)
 
-            for root, _, files in os.walk(desktop_object_directory, topdown=False):
-                for filename in files:
-                    if not mac_system_metadata(filename):
-                        filepath = os.path.join(root, filename)
-                        dropboxpath = os.path.join(dropbox_directory, filename)
-
-                        uploadsession.upload_file_to_dropbox(filepath, dropboxpath,
+                    uploadsession.upload_file_to_dropbox(filepath, dropboxpath,
                                                              packages_dict[package]["do_fixity"],
                                                              packages_dict[package]["DESKTOP_files_dict"])
 
-            packages_dict[package]["DROPBOX_files_dict"] = uploadsession.DROPBOX_FILES_DICT
-            packages_dict[package]["DROPBOX_transfer_okay"] = uploadsession.DROPBOX_TRANSFER_OKAY
-            if not packages_dict[package]["DROPBOX_transfer_okay"]:
+        packages_dict[package]["DROPBOX_files_dict"] = uploadsession.DROPBOX_FILES_DICT
+        packages_dict[package]["DROPBOX_transfer_okay"] = uploadsession.DROPBOX_TRANSFER_OKAY
+        if not packages_dict[package]["DROPBOX_transfer_okay"]:
                 packages_dict[package][
-                    "DROPBOX_transfer_not_okay_reason"] = uploadsession.DROPBOX_TRANSFER_NOT_OKAY_REASON
+                "DROPBOX_transfer_not_okay_reason"] = uploadsession.DROPBOX_TRANSFER_NOT_OKAY_REASON
 
-            # Send email notification if Dropbox transfer goes well.
-            if packages_dict[package]["DROPBOX_transfer_okay"]:
-                # Bifurcate email type
-                cuny_emails = []
-                other_emails = []
-                if emails:
-                    for email in emails:
-                        if "@tv.cuny.edu" in email:
-                            cuny_emails.append(email)
-                        else:
-                            other_emails.append(email)
+        # Send email notification if Dropbox transfer goes well.
+        if packages_dict[package]["DROPBOX_transfer_okay"]:
+            # Bifurcate email type
+            cuny_emails = []
+            other_emails = []
+            if emails:
+                for email in emails:
+                    if "@tv.cuny.edu" in email:
+                        cuny_emails.append(email)
+                    else:
+                        other_emails.append(email)
 
-                # Send network email to CUNY recipients
-                uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
-                packages_dict[package]["DROPBOX_link"] = uploadsession.share_link
-                window_dub_share_link = uploadsession.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")[0]
+            # Send network email to CUNY recipients
+            uploadsession.share_link = uploadsession.get_shared_link(dropbox_directory)[0]
+            packages_dict[package]["DROPBOX_link"] = uploadsession.share_link
+            window_dub_share_link = uploadsession.get_shared_link(f"{dropbox_directory}/{package}_WINDOW.mp4")[0]
 
-                notification = sendnetworkmail.SendNetworkEmail()
-                notification.sender("library@tv.cuny.edu")
-                notification.recipients(cuny_emails)
-                notification.subject(f"Dropbox Upload: {package}")
+            notification = sendnetworkmail.SendNetworkEmail()
+            notification.sender("library@tv.cuny.edu")
+            notification.recipients(cuny_emails)
+            notification.subject(f"Dropbox Upload: {package}")
 
-                # Write text content with HTML formatting
-                html_content = f"""
-                    <html>
-                      <body>
-                        <p>Hello, </p>
-                        <p></p>
-                        Click the link below to stream the window dub:
-                        <br><a href="{window_dub_share_link}">{window_dub_share_link}</a>.
-                        <p></p>
-                        Click the link below to access all files, including the window dub:
-                        <br><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.
-                        <p></p>
-                        Best
-                        <br>
-                        Library Bot
-                        <p></p>
-                      </body>
-                    </html>
-                    """
+            # Write text content with HTML formatting
+            html_content = f"""
+                <html>
+                    <body>
+                    <p>Hello, </p>
+                    <p></p>
+                    Click the link below to stream the window dub:
+                    <br><a href="{window_dub_share_link}">{window_dub_share_link}</a>.
+                    <p></p>
+                    Click the link below to access all files, including the window dub:
+                    <br><a href="{uploadsession.share_link}">{uploadsession.share_link}</a>.
+                    <p></p>
+                    Best
+                    <br>
+                    Library Bot
+                    <p></p>
+                    </body>
+                </html>
+                """
 
-                notification.html_content(html_content)
+            notification.html_content(html_content)
 
-                gif_path = makegif(os.path.join(desktop_path, package))
-                notification.embed_img(gif_path)
+            gif_path = makegif(os.path.join(desktop_path, package))
+            notification.embed_img(gif_path)
 
-                notification.send()
-                os.remove(gif_path)
+            notification.send()
+            os.remove(gif_path)
 
-                # Send dropbox notification to non-CUNY recipients
-                if other_emails is not None:
-                    msg = f"{dropbox_directory} has finished uploading."
-                    uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
+            # Send dropbox notification to non-CUNY recipients
+            if other_emails is not None:
+                msg = f"{dropbox_directory} has finished uploading."
+                uploadsession.add_folder_member(other_emails, uploadsession.get_shared_folder_id(dropbox_directory),
                                                     False, msg)
+
 
 def ingest_log_and_errors(desktop_path):
     for package in packages_dict:
@@ -614,6 +517,11 @@ def ingest_log_and_errors(desktop_path):
 
         if packages_dict[package]['do_desktop_delete']:
             shutil.rmtree(os.path.join(desktop_path, package))
+
+    to_delete = [pkg for pkg in packages_dict if pkg not in incomplete_multibatch]
+    for pkg in to_delete:
+        del packages_dict[pkg]
+
 
 def ingest_resourcespace():
     script_dir = Path(__file__).resolve().parent
@@ -632,7 +540,7 @@ def ingest_resourcespace():
 
             command = f"php {php_script_path} {dir} {dropbox_link}"
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                   text=True)
+                                       text=True)
 
             for line in process.stdout:
                 print(line, end='')
@@ -645,44 +553,81 @@ def ingest():
     home_dir = os.path.expanduser('~')
     desktop_path = os.path.join(home_dir, 'Desktop')
 
-    ingest_desktop_transfer(desktop_path)
+    for package in packages_dict:
+        print(f"\033[32m-----{package}-----\033[0m")
+        package_obj = restructurepackage.RestructurePackage()
+
+        mpb = multiprogressbar.MultiProgressBar()
+        mpb.add_task("Desktop Transfer", package_obj, 'TOTAL_BYTES', 'TOTAL_FILES', 'PROG_BYTES', 'PROG_FILES',
+                         'CURRENT_PROCESS')
+
+
+        # Create threads for each function
+        t1 = threading.Thread(target=ingest_desktop_transfer, args=(package_obj, package, desktop_path,))
+        t2 = threading.Thread(target=mpb.render)
+
+        # Start all threads
+        t1.start()
+        t2.start()
+
+        # Wait for all threads to complete
+        t1.join()
+        t2.join()
+
     ingest_commands(desktop_path)
 
-    ## multi thread these three
-    ingest_dropbox_upload(desktop_path)
-    ingest_delivery_transfer(desktop_path)
-    ingest_archive_transfer(desktop_path)
-    ingest_resourcespace() # Uses archive package since filestore and cc ingests are on the same server
+    for package in packages_dict:
+        if package not in incomplete_multibatch:
+            print(f"\033[32m-----{package}-----\033[0m")
+            archive_obj = restructurepackage.RestructurePackage()
+            delivery_obj = restructurepackage.RestructurePackage()
 
-    ingest_log_and_errors(desktop_path) # Deletes dekstop transfer at this point
+            desktop_object_directory = os.path.join(desktop_path, package, "objects")
+            db_obj = dropboxuploadsession.DropboxUploadSession(desktop_object_directory)
 
-if __name__ == "__main__":
-    # Check if connected to servers
-    archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
-    #archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
-    server_check(archive_server, "archive")
+            mpb = multiprogressbar.MultiProgressBar()
+            if packages_dict[package]["do_dropbox"]:
+                mpb.add_task("Dropbox Upload", db_obj, 'total_size', 'total_files', 'bytes_read', 'files_read',
+                         'current_process')
+            mpb.add_task("Archive Transfer", archive_obj, 'TOTAL_BYTES', 'TOTAL_FILES', 'PROG_BYTES', 'PROG_FILES',
+                             'CURRENT_PROCESS')
+            mpb.add_task("Delivery Transfer", delivery_obj, 'TOTAL_BYTES', 'TOTAL_FILES', 'PROG_BYTES', 'PROG_FILES',
+                         'CURRENT_PROCESS')
 
-    # tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
-    tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
-    server_check(tiger_server, "tiger")
+            # Create threads for each function
+            t1 = threading.Thread(target=ingest_dropbox_upload, args=(desktop_path, package, db_obj,))
+            t2 = threading.Thread(target=ingest_delivery_transfer, args=(desktop_path, package, delivery_obj,))
+            t3 = threading.Thread(target=ingest_archive_transfer, args=(desktop_path, package, archive_obj,))
+            t4 = threading.Thread(target=mpb.render)
 
-    # path to Iphone temp folder
-    #iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
-    iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
+            mpb.threads = [t1, t2, t3]
 
-    # Detect recently inserted drives, cards, and iphone
-    countdown(5)
-    volume_paths = detectrecentlyinserteddrives.volume_paths()
-    # At the moment, script only works with one iphone at a time
-    # iPhone protocols don't mount iphone as a drive and make it impossible get iphone name from terminal
-    num_iphones = detectiphone.count_connected_iphones()
+            # Start all threads
+            t1.start()
+            t2.start()
+            t3.start()
+            t4.start()
+
+            # Wait for all threads to complete
+            t1.join()
+            t2.join()
+            t3.join()
+            t4.join()
+
+    #ingest_resourcespace()  # Uses archive package since filestore and cc ingests are on the same server
+
+    ingest_log_and_errors(desktop_path)  # Deletes dekstop transfer at this point
+
+def startup(multibatchname=None):
+    global tiger_down, iphone, packages_dict, incomplete_multibatch, package_dict
 
     # Organizes user inputs into dictionary
     if not volume_paths and num_iphones == 0:
         print("No cards detected")
     else:
-        cunymediaids.print_media_dict()
-        print()
+        if not incomplete_multibatch:
+            cunymediaids.print_media_dict()
+            print()
         print(f"{len(volume_paths)} card(s) detected and {num_iphones} iphone(s) detected.")
 
         if num_iphones > 0:
@@ -697,7 +642,14 @@ if __name__ == "__main__":
                 print(f"- {input_path}")
                 print_first_ten_filenames(input_path)
 
-            package_name = validateuserinput.card_package_name(input(f"\tEnter a package name: "))
+            if multibatchname:
+                package_name = multibatchname
+            else:
+                package_name = validateuserinput.card_package_name(input(f"\tEnter a package name: "))
+
+            if input_path == iphone_temp_folder and not package_name.endswith("IPHONE"):
+                package_name += "iPhone"
+
             camera_card_number = validateuserinput.card_subfolder_name(
                 input(f"\tEnter the corresponding card number or name on sticker (serialize from 1 if none): "))
 
@@ -706,20 +658,29 @@ if __name__ == "__main__":
                 packages_dict[package_name]["cards"].append(camera_card_number)
                 packages_dict[package_name]["input_paths"].append(input_path)
 
-            else:
-                package_dict['cards'] = [camera_card_number]
-                package_dict['input_paths'] = [input_path]
+            if package_name not in packages_dict or incomplete_multibatch:
+                new_package_dict = package_dict.copy()
+                new_package_dict['cards'] = [camera_card_number]
+                new_package_dict['input_paths'] = [input_path]
 
-                multibatch = input(
-                    "\tIs this a multi-batch process? (i.e. does the number of cards/drives exceed the number of readers?) y/n: ").lower() == 'y'
+                if not multibatchname:
+                    multibatch = input(
+                        "\tIs this a multi-batch process? (i.e. does the number of cards/drives exceed the number of readers?) y/n: ").lower() == 'y'
+                else:
+                    multibatch = True
                 last_batch = False
                 if multibatch:
                     last_batch = input(
                         "\tIs this the last batch? y/n: ").lower() == 'y'
+                    if not last_batch and package_name not in incomplete_multibatch:
+                        incomplete_multibatch.append(package_name)
+                    else:
+                        if package_name in incomplete_multibatch and last_batch:
+                            incomplete_multibatch.remove(package_name)
 
                 if multibatch and not last_batch:
                     # Create key-value pair using default initialized values
-                    packages_dict[package_name] = package_dict
+                    packages_dict[package_name] = new_package_dict
                 else:
                     do_dropbox = (input(
                         "\tUpload to dropbox? y/n: ")).lower() == 'y'
@@ -727,16 +688,45 @@ if __name__ == "__main__":
                     if do_dropbox:
                         emails = validateuserinput.emails(
                             input("\tList email(s) delimited by space or press enter to continue: "))
-                        emails.extend(["library@tv.cuny.edu"])
-                        #emails.extend(["aida.garrido@tv.cuny.edu"])
+                        #emails.extend(["library@tv.cuny.edu"])
+                        emails.extend(["aida.garrido@tv.cuny.edu"])
                         # Update key-value pair from default
-                        package_dict['do_dropbox'] = True
-                        package_dict['emails'] = emails
+                        new_package_dict['do_dropbox'] = True
+                        new_package_dict['emails'] = emails
 
                     # Update key-value pair from default
-                    package_dict['do_desktop_delete'] = True
-                    package_dict['do_commands'] = True
+                    new_package_dict['do_desktop_delete'] = True
+                    new_package_dict['do_commands'] = True
 
-                    packages_dict[package_name] = package_dict
-        # Begin ingest
+                    packages_dict[package_name] = new_package_dict
+
+if __name__ == "__main__":
+    # Check if connected to servers
+    #archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
+    archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
+    server_check(archive_server, "archive")
+
+    tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
+    #tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
+    server_check(tiger_server, "tiger")
+
+    # path to Iphone temp folder
+    iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
+    #iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
+
+    # Detect recently inserted drives, cards, and iphone
+    countdown(5)
+    volume_paths = detectrecentlyinserteddrives.volume_paths()
+    # At the moment, script only works with one iphone at a time
+    # iPhone protocols don't mount iphone as a drive and make it impossible get iphone name from terminal
+    num_iphones = detectiphone.count_connected_iphones()
+
+    startup()
+    ingest()
+
+    while incomplete_multibatch:
+        for package in incomplete_multibatch:
+            input(f"\033[31m{package} is an incomplete multibatch package. Insert next card(s) and press enter to continue.\033[0m")
+            countdown(5)
+            startup(package)
         ingest()
