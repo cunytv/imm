@@ -429,7 +429,7 @@ def ingest_archive_transfer(desktop_path, package, package_obj):
 
 def ingest_dropbox_upload(desktop_path, package, uploadsession):
     # Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
-    no_error = packages_dict[package]["DESKTOP_transfer_okay"]
+    no_error = packages_dict[package]["DESKTOP_transfer_okay"] and packages_dict[package]["MAKEWINDOW_okay"]
     do_dropbox = packages_dict[package]["do_dropbox"]
 
     desktop_object_directory = os.path.join(desktop_path, package, "objects")
