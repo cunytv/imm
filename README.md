@@ -82,6 +82,14 @@ A helper script that the sanitizes* and/or validates:
 
 *Sanitize = all capitals and spaces replaced by underscores
 
+`filetype.py`
+
+Add info.
+
+`multiprogressbar.py`
+
+Add info.
+
 `sendnetworkmail.py`
 
 A class that simplifies sending network emails. This only works when sending emails to tv.cuny.edu addresses.
