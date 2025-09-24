@@ -3,13 +3,19 @@
 import re
 import os
 
+
+def is_valid_package_name(s):
+    pattern = r'^[A-Za-z]{3,4}\d{4}(0[1-9]|1[0-2])(0[1-9]|[1-2]\d|3[0-1])$'
+    if not re.match(pattern, s.split('_', 1)[0]):
+        return False
+    else:
+        return True
+
 # Validates camera card package name by confirming show code and date pattern, capitalizing all letters, deleting spaces
 def card_package_name(name):
-    # Checks pattern
-    pattern = r'^[A-Za-z]{3,4}\d{4}(0[1-9]|1[0-2])(0[1-9]|[1-2]\d|3[0-1])$'
-    if not re.match(pattern, name.split('_', 1)[0]):
+    if not is_valid_package_name(name):
         new_name = input(f"\033[31mWarning. {name} does not match show code and date pattern, e.g. LTNS20250402. Press enter to continue or type new package name: \033[0m")
-        while new_name and not re.match(pattern, new_name.split('_', 1)[0]):
+        while new_name and not is_valid_package_name(name):
                 new_name = input(
                     f"\033[31mWarning. {new_name} does not match show code and date pattern. Press enter to continue or type new package name: \033[0m")
         if new_name:
