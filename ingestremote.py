@@ -597,7 +597,7 @@ def startup(multibatchname=None):
         print("No cards detected")
         #add mistaken batch process?
     else:
-        if not currentcards:
+        if not currentcards or not multibatchname::
             cunymediaids.print_media_dict()
             print()
         print(f"{len(volume_paths)} card(s) detected and {num_iphones} iphone(s) detected.")
