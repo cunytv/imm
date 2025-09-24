@@ -39,6 +39,9 @@ tiger_down = False
 # iphone flag; proceed accordingly if true
 iphone = False
 
+# Because cards mount generically as Untitled volumes
+currentcards = []
+
 # Create dictionary of packages
 packages_dict = {}
 
@@ -213,6 +216,9 @@ def print_log(log_dest, package):
 
     # Write data to json file
     if old_log_exists:
+        overlap = all(d in new_log_data for d in old_log_data)
+        if overlap:
+            old_log_data["DESKTOP_files_dict"] = []
         merged_data = merge_dicts(old_log_data, new_log_data)
         with open(new_log_path, "w") as file:
             json.dump(merged_data, file, indent=4)
@@ -330,29 +336,22 @@ def empty_iphone_temp():
             os.remove(file_path)
 
 
-def ingest_desktop_transfer(package_obj, package, desktop_path):
+def ingest_desktop_transfer(package_obj, package, desktop_path, input_path, card):
     # Create package object from RestructurePackage class
     # Files are first transferred locally to desktop to quicken file processing (e.g. windowdub)
     # File are transformed into archive package
-    for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
-        if input_path == iphone_temp_folder:
-            ingest_iphone_media()
+    if input_path == iphone_temp_folder:
+        ingest_iphone_media()
 
-        package_obj.create_output_directory(desktop_path, package, card)
-        # Transfer files to Desktop
-        package_obj.restructure_copy("archive", input_path, desktop_path, package, card,
+    package_obj.create_output_directory(desktop_path, package, card)
+    # Transfer files to Desktop
+    package_obj.restructure_copy("archive", input_path, desktop_path, package, card,
                                      packages_dict[package]["do_fixity"],
                                      packages_dict[package]["do_drive_delete"])
-        if input_path == iphone_temp_folder:
-            empty_iphone_temp()
-        else:
-            eject(input_path)
-
-    # Save desktop transfer results and checksums
-    packages_dict[package]["DESKTOP_files_dict"] = package_obj.FILES_DICT
-    packages_dict[package]["DESKTOP_transfer_okay"] = package_obj.TRANSFER_OKAY
-    if package_obj.TRANSFER_ERROR:
-        packages_dict[package]["DESKTOP_transfer_error"] = package_obj.TRANSFER_ERROR
+    if input_path == iphone_temp_folder:
+        empty_iphone_temp()
+    else:
+        eject(input_path)
 
 def ingest_iphone_media():
     # Path to your AppleScript file
@@ -508,27 +507,42 @@ def ingest():
     desktop_path = os.path.join(home_dir, 'Desktop')
 
     for package in packages_dict:
-        print(f"\033[32m-----{package}-----\033[0m")
-        package_obj = restructurepackage.RestructurePackage()
+        for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
 
-        mpb = multiprogressbar.MultiProgressBar()
-        mpb.add_task("Desktop Transfer", package_obj, 'TOTAL_BYTES', 'TOTAL_FILES', 'PROG_BYTES', 'PROG_FILES',
-                         'CURRENT_PROCESS')
+            print(f"\033[32m-----{package}; Card: {card}-----\033[0m")
+            package_obj = restructurepackage.RestructurePackage()
+
+            mpb = multiprogressbar.MultiProgressBar()
+            mpb.add_task("Desktop Transfer", package_obj, 'TOTAL_BYTES', 'TOTAL_FILES', 'PROG_BYTES', 'PROG_FILES',
+                             'CURRENT_PROCESS')
 
 
-        # Create threads for each function
-        t1 = threading.Thread(target=ingest_desktop_transfer, args=(package_obj, package, desktop_path,))
-        stop_event = threading.Event()
-        t2 = threading.Thread(target=mpb.render, args=(stop_event,))
+            # Create threads for each function
+            t1 = threading.Thread(target=ingest_desktop_transfer, args=(package_obj, package, desktop_path,input_path, card,))
+            stop_event = threading.Event()
+            t2 = threading.Thread(target=mpb.render, args=(stop_event,))
 
-        for t in (t1, t2):
-            t.start()
+            for t in (t1, t2):
+                t.start()
 
-        t1.join()
+            t1.join()
 
-        stop_event.set()
+            stop_event.set()
 
-        t2.join()
+            t2.join()
+
+            # Save desktop transfer results and checksums
+            if packages_dict[package]["DESKTOP_files_dict"]:
+                packages_dict[package]["DESKTOP_files_dict"] += package_obj.FILES_DICT
+            else:
+                packages_dict[package]["DESKTOP_files_dict"] = package_obj.FILES_DICT
+            if packages_dict[package]["DESKTOP_transfer_okay"] is not False:
+                packages_dict[package]["DESKTOP_transfer_okay"] = package_obj.TRANSFER_OKAY
+            if package_obj.TRANSFER_ERROR:
+                if packages_dict[package]["DESKTOP_transfer_error"]:
+                    packages_dict[package]["DESKTOP_transfer_error"] += package_obj.TRANSFER_ERROR
+                else:
+                    packages_dict[package]["DESKTOP_transfer_error"] = package_obj.TRANSFER_ERROR
 
     ingest_commands(desktop_path)
 
@@ -576,13 +590,14 @@ def ingest():
     ingest_log_and_errors(desktop_path)  # Deletes dekstop transfer at this point
 
 def startup(multibatchname=None):
-    global tiger_down, iphone, packages_dict, incomplete_multibatch, package_dict
+    global tiger_down, iphone, packages_dict, incomplete_multibatch, package_dict, samebatch, currentcards
 
     # Organizes user inputs into dictionary
     if not volume_paths and num_iphones == 0:
         print("No cards detected")
+        #add mistaken batch process?
     else:
-        if not incomplete_multibatch:
+        if not currentcards:
             cunymediaids.print_media_dict()
             print()
         print(f"{len(volume_paths)} card(s) detected and {num_iphones} iphone(s) detected.")
@@ -599,23 +614,43 @@ def startup(multibatchname=None):
                 print(f"- {input_path}")
                 print_first_ten_filenames(input_path)
 
-            if multibatchname:
+            if multibatchname and len(packages_dict) == 1:
                 package_name = multibatchname
+            elif (not multibatchname and packages_dict) or (multibatchname and len(packages_dict) > 1):
+                packages_string = ''
+                i = 1
+                for p in packages_dict:
+                    packages_string += f"({i}){p} "
+                    i += 1
+                package_name = input(f"\tSpecify package name using integer or enter new package name - {packages_string}: ")
+                while not package_name.isdigit() and not validateuserinput.is_valid_package_name(package_name):
+                    package_name = input("\033[31mInput is neither integer nor valid package name, e.g. LTNS20250919_SHOW_DESCRIPTION. Try again: \033[0m")
+                if package_name.isdigit():
+                    package_name = list(packages_dict.keys())[int(package_name)-1]
+                    multibatchname = package_name
             else:
                 package_name = validateuserinput.card_package_name(input(f"\tEnter a package name: "))
 
             if input_path == iphone_temp_folder and not package_name.endswith("IPHONE"):
-                package_name += "iPhone"
+                package_name += "_IPHONE"
+                print(f"\tPackage renamed to {package_name}")
 
             camera_card_number = validateuserinput.card_subfolder_name(
                 input(f"\tEnter the corresponding card number or name on sticker (serialize from 1 if none): "))
+            currentcards.append(camera_card_number)
 
             if package_name in packages_dict:
                 # Edit existing key-value pair
                 packages_dict[package_name]["cards"].append(camera_card_number)
                 packages_dict[package_name]["input_paths"].append(input_path)
 
-            if package_name not in packages_dict or incomplete_multibatch:
+            # Check if in current batch options have already been run through using existing card
+            if package_name in packages_dict:
+                overlap = bool(set(currentcards[:-1]) & set(packages_dict[package_name]["cards"]))
+            else:
+                overlap = False
+
+            if package_name not in packages_dict or (incomplete_multibatch and not overlap):
                 new_package_dict = package_dict.copy()
                 new_package_dict['cards'] = [camera_card_number]
                 new_package_dict['input_paths'] = [input_path]
@@ -626,6 +661,7 @@ def startup(multibatchname=None):
                 else:
                     multibatch = True
                 last_batch = False
+
                 if multibatch:
                     last_batch = input(
                         "\tIs this the last batch? y/n: ").lower() == 'y'
@@ -682,6 +718,7 @@ if __name__ == "__main__":
     ingest()
 
     while incomplete_multibatch:
+        currentcards = []
         for package in incomplete_multibatch:
             input(f"\033[31m{package} is an incomplete multibatch package. Insert next card(s) and press enter to continue.\033[0m")
             countdown(5)
