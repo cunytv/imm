@@ -1,0 +1,66 @@
+#!/bin/bash
+
+SOURCE_DIR="$HOME/Desktop/Local_recordings"
+DEST_DIR="/Volumes/TElements/Studio"   # e.g. /Volumes/Server/Recordings
+LOCKFILE="/tmp/move_recordings.lock"
+LOGDIR="$HOME/Library/Logs/move_recordings"
+LOG_RETENTION_DAYS=30
+IDLE_MINUTES=2   
+
+mkdir -p "$LOGDIR"
+
+get_logfile() {
+    echo "$LOGDIR/move_failures_$(date '+%Y-%m-%d').log"
+}
+
+log_failure() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | Failed to move: $1" >> "$(get_logfile)"
+}
+
+cleanup_logs() {
+    find "$LOGDIR" -type f -name "move_failures_*.log" -mtime +$LOG_RETENTION_DAYS -exec rm {} \;
+}
+
+is_idle() {
+    local file="$1"
+    find "$(dirname "$file")" -maxdepth 1 -type f -name "$(basename "$file")" -mmin +$IDLE_MINUTES | grep -q .
+}
+
+TEST_MODE=false
+if [[ "$1" == "--test" ]]; then
+    TEST_MODE=true
+    echo "Running in TEST MODE — no files will be moved."
+fi
+
+if ! $TEST_MODE; then
+    if [ -e "$LOCKFILE" ] && kill -0 "$(cat "$LOCKFILE")" 2>/dev/null; then
+        exit 0
+    fi
+    echo $$ > "$LOCKFILE"
+    trap 'rm -f "$LOCKFILE"' EXIT
+fi
+
+if ! $TEST_MODE && [ ! -d "$DEST_DIR" ]; then
+    exit 0
+fi
+
+if ! $TEST_MODE; then
+    cleanup_logs
+fi
+
+find "$SOURCE_DIR" -type f -name "*.mov" | while read -r FILE; do
+    if is_idle "$FILE"; then
+        REL_PATH="${FILE#$SOURCE_DIR/}"   
+        DEST_PATH="$DEST_DIR/$(dirname "$REL_PATH")"
+
+        if $TEST_MODE; then
+            echo "Would move: $FILE → $DEST_PATH/"
+        else
+            mkdir -p "$DEST_PATH"  
+            echo "Moving: $FILE → $DEST_PATH/"
+            if ! rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/" 2>/dev/null; then
+                log_failure "$FILE"
+            fi
+        fi
+    fi
+done
