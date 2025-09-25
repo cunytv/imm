@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SOURCE_DIR="$HOME/Desktop/Local_recordings"
-DEST_DIR="/Volumes/TElements/Studio"   # e.g. /Volumes/Server/Recordings
+DEST_DIR="/Volumes/TElements/Studio"  
 LOCKFILE="/tmp/move_recordings.lock"
 LOGDIR="$HOME/Library/Logs/move_recordings"
 LOG_RETENTION_DAYS=30
