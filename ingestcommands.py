@@ -28,7 +28,7 @@ def makemetadata(directory):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
     for line in process.stdout:
-        if line.endswith(".left") or not line.strip():
+        if line.endswith("left") or not line.strip():
             line = line.rstrip('\n')
             print(line, end='\r', flush=True)
         else:
@@ -44,7 +44,7 @@ def makechecksumpackage(directory):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
     for line in process.stdout:
-        if line.endswith(".left") or not line.strip():
+        if line.endswith("left") or not line.strip():
             line = line.rstrip('\n')
             print(line, end='\r', flush=True)
         else:
