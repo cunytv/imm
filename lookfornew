@@ -37,13 +37,22 @@ _get_chapterlist(){
     CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep='|'" | sed 's/|/\t/g')"
 }
 
+if [[ ! -r "${searchdirectory}" ]]; then
+    echo "$searchdirectory is not readable"
+    exit 1
+fi
+
 filelist="$(find "${searchdirectory}" -type f ! -name ".*" | sort)"
+filecount="$(find "${searchdirectory}" -type f ! -name ".*" | wc -l | sed 's| ||g')"
+
 if [[ -s "${timefile}" ]] ; then
     difflist="$(diff "${timefile}" <(find "${searchdirectory}" -type f ! -name ".*" | sort) | grep "^> " | cut -c 3- | sort)"
 else
     difflist="${filelist}"
 fi
-echo "${filelist}" > "${timefile}"
+if [[ $filecount -gt 0 ]] ; then
+    echo "${filelist}" > "${timefile}"
+fi
 
 message="These new video files showed up in $(basename "${searchdirectory}"):\n\n"
 
