@@ -8,12 +8,12 @@ def print_media_dict():
     for title, abbreviation in shows.items():
         print(f"{title:<40} {abbreviation}")
 
-# Full show name similarity (not between codes)
+# Returns full show name to which string is most similar
 def check_similarity(s):
     match_tuple = (None, 0) # show name, ratio
 
     for key, value in shows.items():
-        similarity = SequenceMatcher(None, s, key).ratio()
+        similarity = SequenceMatcher(None, s.lower(), key.lower()).ratio()
         if similarity > match_tuple[1]:
             match_tuple = (key, similarity)
 
@@ -22,7 +22,7 @@ def check_similarity(s):
     else:
         return 'No Show'
 
-# Takes code and return show name
+# Takes code and returns show name
 def get_full_show_name(s):
     name = None
     for key, value in shows.items():
@@ -30,6 +30,31 @@ def get_full_show_name(s):
             name = key
             return name
     return 'No Show'
+
+# Takes show name and returns code
+def get_show_code(s):
+    show_name = check_similarity(s)
+    if show_name != "No Show":
+        return shows[show_name]
+    else:
+        return "Invalid string. No show name match."
+
+def is_code_in_dict(s):
+    return s.upper() in (code.upper() for code in shows.values())
+
+def codes_string_contains(s):
+    matches = [value for value in shows.values() if value in s.upper()]
+    return matches
+
+def shows_string_contains(s):
+    matches = []
+    s = s.lower()
+    for word in shows:
+        word_lower = word.lower()
+        if word_lower in s:
+            matches.append(word)
+
+    return matches
 
 # Create a dictionary from the provided list
 shows = {
@@ -44,21 +69,24 @@ shows = {
     "City Works":                  "CTWR",
     "Conversations with Jim Zirin": "CNJZ",
     "CUNY Forum":                  "CFOR",
-    "CUNY TV Presents Film":       "CNTVPR",
+    "CUNY TV Presents":       "CNTVPR",
     "CUNY Uncut":                  "CNNT",
     "CUNY Laureates":              "CNLR",
     "CUNY Specials":               "SPEC",
     "EdCast":                      "EDCA",
+    "Frame By Frame":               "FRBF",
     "Graduate Center Presents":    "GCPR",
     "Italics":                     "ITAL",
     "Keeping Relevant":            "KPRL",
     "LATiNAS":                     "LTNS",
+    "Laura Flanders Show":         "LFFR",
     "Let It Rip":                  "LTRP",
     "New York Times Close Up":     "NYTCU",
     "Nueva York":                  "NUEV",
     "One to One":                  "OTOO",
     "Shades of US":                "SHUS",
     "Sustainability Matters":       "STMT",
-    "Theater All the Moving Parts": "THMP",
-    "Urban U":                     "URBN"
+    "Theater All the Moving Parts": "ATMP",
+    "Urban U":                     "URBN",
+    "Special":                      "SPEC"
 }
