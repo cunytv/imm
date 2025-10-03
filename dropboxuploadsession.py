@@ -16,7 +16,7 @@ import filetype
 import subprocess
 
 class DropboxUploadSession:
-    def __init__(self, path, filesdict=None, transfertype=None, checksum=True):
+    def __init__(self, path=None, filesdict=None, transfertype=None, checksum=True):
         # Credentials for creating access token
         self.client_id = 'wjmmemxgpuxh911'
         self.client_secret = 'mynnf0nelu4xahk'
@@ -59,14 +59,16 @@ class DropboxUploadSession:
         total_files = 0
         nondict_file_bytes = 0
 
-        if os.path.isfile(path):
+        if not path:
+            return
+        elif os.path.isfile(path):
             total_size = os.path.getsize(path)
             total_files = 1
 
             if files_dict and all(f["dest"] != path for f in files_dict):
                 nondict_file_bytes += total_size
 
-        else:
+        elif os.path.isdir(path):
             for dirpath, _, filenames in os.walk(path):
                 for f in filenames:
                     fp = os.path.join(dirpath, f)
@@ -188,6 +190,35 @@ class DropboxUploadSession:
         final_hash = hash_object.hexdigest()
 
         return final_hash
+
+    # Creates dropbox folder
+    def create_folder(self, path):
+        url = "https://api.dropboxapi.com/2/files/create_folder_v2"
+        headers = {
+            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "path": path
+        }
+
+        retry_attempt = 0
+        while retry_attempt < 3:
+            try:
+                response = requests.post(url, headers=headers, json=data, timeout=15)
+                if response.status_code == 200:
+                    break  # Successful chunk upload
+            except requests.exceptions.RequestException as e:
+                if retry_attempt == 2:
+                    self.DROPBOX_TRANSFER_OKAY = False
+                    self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
+                        "timestamp": str(datetime.datetime.now()),
+                        "error_type": "Error creating folder",
+                        "message": e
+                    })
+                    return False
+
+            retry_attempt += 1
 
     # Deletes file from dropbox
     def delete_file(self, path):
