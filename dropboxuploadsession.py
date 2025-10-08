@@ -928,9 +928,23 @@ if __name__ == "__main__":
     for tuple in input_emails_output_tuple:
         # Create class instance
         session = DropboxUploadSession(tuple[0])
+        mpb = multiprogressbar.MultiProgressBar()
+        mpb.add_task("Dropbox Upload", session, 'total_size', 'total_files', 'bytes_read', 'files_read',
+                     'current_process')
+        stop_event = threading.Event()
+        t2 = threading.Thread(target=mpb.render, args=(stop_event,))
 
         if os.path.isfile(tuple[0]):
-            session.file (tuple[0], tuple[1], tuple[2])
+            t1 = threading.Thread(target=session.file, args=(tuple[0], tuple[1], tuple[2],))
+        elif os.path.isdir(input_path):
+            t1 = threading.Thread(target=session.folder, args=(tuple[0], tuple[1], tuple[2],))
+        
+        for t in (t1, t2):
+            t.start()
+
+        t1.join()
+        stop_event.set()
+        t2.join()
 
         elif os.path.isdir(input_path):
             session.folder(tuple[0], tuple[1], tuple[2])
