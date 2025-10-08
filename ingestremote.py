@@ -722,5 +722,7 @@ if __name__ == "__main__":
         for package in incomplete_multibatch:
             input(f"\033[31m{package} is an incomplete multibatch package. Insert next card(s) and press enter to continue.\033[0m")
             countdown(5)
+            volume_paths = detectrecentlyinserteddrives.volume_paths()
+            num_iphones = detectiphone.count_connected_iphones()
             startup(package)
         ingest()
