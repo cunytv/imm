@@ -37,8 +37,8 @@ class RestructurePackage:
     # Creates a directory using package and card names from user input
     def create_output_directory(self, output_directory, package, subfolder):
         os.makedirs(output_directory + f'/{package}', exist_ok=True)
-        os.makedirs(self.unique_directory_path(output_directory + f'/{package}' + f'/metadata/logs/{subfolder}'))
-        os.makedirs(self.unique_directory_path(output_directory + f'/{package}' + f'/objects/{subfolder}'))
+        os.makedirs(output_directory + f'/{package}' + f'/metadata/logs/{subfolder}')
+        os.makedirs(output_directory + f'/{package}' + f'/objects/{subfolder}')
 
     def get_directory_stats(self, dir, transfer_type, files_dict=None, checksum=None):
         total_size = 0
