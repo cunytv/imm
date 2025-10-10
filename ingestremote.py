@@ -539,10 +539,10 @@ def ingest():
             if packages_dict[package]["DESKTOP_transfer_okay"] is not False:
                 packages_dict[package]["DESKTOP_transfer_okay"] = package_obj.TRANSFER_OKAY
             if package_obj.TRANSFER_ERROR:
-                if packages_dict[package]["DESKTOP_transfer_error"]:
-                    packages_dict[package]["DESKTOP_transfer_error"] += package_obj.TRANSFER_ERROR
+                if packages_dict[package]["DESKTOP_transfer_not_okay_reason"]:
+                    packages_dict[package]["DESKTOP_transfer_not_okay_reason"] += package_obj.TRANSFER_ERROR
                 else:
-                    packages_dict[package]["DESKTOP_transfer_error"] = package_obj.TRANSFER_ERROR
+                    packages_dict[package]["DESKTOP_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
 
     ingest_commands(desktop_path)
 
