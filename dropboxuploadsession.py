@@ -675,6 +675,8 @@ class DropboxUploadSession:
         notification.html_content(html_content)
         notification.send()
 
+        self.bytes_read += self.email_increment
+
     # Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
     def get_file_hash(self, file_path):
         # Define the endpoint URL
