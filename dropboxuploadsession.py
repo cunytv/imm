@@ -947,6 +947,3 @@ if __name__ == "__main__":
         t1.join()
         stop_event.set()
         t2.join()
-
-        elif os.path.isdir(input_path):
-            session.folder(tuple[0], tuple[1], tuple[2])
