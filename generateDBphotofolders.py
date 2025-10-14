@@ -53,7 +53,7 @@ def get_todays_calendar_events(url, calendar_type):
             show_name_matches = cunymediaids.shows_string_contains(show)
 
             if show_code_matches and len(show_code_matches) == 1:
-                showcode = show_name_matches[0]
+                showcode = show_code_matches[0]
                 showname = cunymediaids.get_full_show_name(showcode)
             elif show_name_matches and len(show_name_matches) == 1:
                 showcode = cunymediaids.shows[show_name_matches[0]]
