@@ -9,6 +9,7 @@ import sendnetworkmail
 db_main_dir = "/►CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)"
 email_recipients = ["library@tv.cuny.edu", "Laura.fuchs@tv.cuny.edu", "vincent.verdi@tv.cuny.edu"]
 db_folder_paths = []
+db_share_links = []
 db_request_links = []
 
 def get_todays_calendar_events(url, calendar_type):
@@ -79,6 +80,10 @@ def create_db_folders():
     db.refresh_access_token()
     for p in db_folder_paths:
         db.create_folder(p)
+        link = db.get_shared_link(p)
+        if isinstance(link, (list, tuple)):
+            link = link[0]
+        db_share_links.append(link)
 
 def create_request_links():
     db = dropboxuploadsession.DropboxUploadSession()
@@ -95,9 +100,10 @@ def send_notification():
 
     notification.html_content("<p>Hello, </p><p>The following folders were created:</p>")
 
-    for p, l in zip(db_folder_paths, db_request_links):
+    for p, l, l2 in zip(db_folder_paths, db_request_links, db_share_links):
         notification.html_content(f"<p></p>{p}<br>")
-        notification.html_content(f"""<a href="{l}">{l}</a><p></p>""")
+        notification.html_content(f"""Upload link: <a href="{l}">{l}</a><p></p>""")
+        notification.html_content(f"""Share link: <a href="{l2}">{l2}</a><p></p>""")
 
     notification.html_content("Best<br>Library Bot<p></p>")
     notification.send()
