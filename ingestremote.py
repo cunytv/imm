@@ -700,7 +700,8 @@ if __name__ == "__main__":
     server_check(archive_server, "archive")
 
     #tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
-    tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
+    #tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
+    tiger_server = "/Volumes/TElements/Camera Card Delivery"
     server_check(tiger_server, "tiger")
 
     # path to Iphone temp folder
