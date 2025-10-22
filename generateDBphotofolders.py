@@ -7,8 +7,9 @@ import dropboxuploadsession
 import sendnetworkmail
 
 db_main_dir = "/►CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)"
+email_recipients = ["library@tv.cuny.edu", "Laura.fuchs@tv.cuny.edu", "vincent.verdi@tv.cuny.edu"]
 db_folder_paths = []
-db_folder_links = []
+db_request_links = []
 
 def get_todays_calendar_events(url, calendar_type):
     response = requests.get(url)
@@ -42,6 +43,7 @@ def get_todays_calendar_events(url, calendar_type):
     for e in events:
         date = e.get("start")
         date = date.split("T")[0]
+        date_f = f"{date[:4]}.{date[4:6]}.{date[6:]}" # formatted date with periods
         show = e.get("summary", "No title")
         show = show.strip()
 
@@ -60,13 +62,13 @@ def get_todays_calendar_events(url, calendar_type):
                 showname = show_name_matches[0]
 
             if showcode:
-                folder_string = f"{showcode}{date}{calendar_type}"
+                folder_string = f"{date_f}-{showcode}-{calendar_type}-SELECTS"
                 folder_string = folder_string.upper()
                 db_path = f"{db_main_dir}/►{showname.upper()}/PHOTOS/{folder_string}"
                 db_folder_paths.append(db_path)
             else:
-                description = show.upper().replace(" ", "-")
-                folder_string = f"{date}{calendar_type}_{description}"
+                description = show.upper().replace(" ", "")
+                folder_string = f"{date_f}-{calendar_type}-{description}-SELECTS"
                 folder_string = folder_string.upper()
                 db_path = f"{db_main_dir}/►NO SHOW/PHOTOS/{folder_string}"
                 db_folder_paths.append(db_path)
@@ -77,20 +79,23 @@ def create_db_folders():
     db.refresh_access_token()
     for p in db_folder_paths:
         db.create_folder(p)
-        link = db.get_shared_link(p)
-        if isinstance(link, (list, tuple)):
-            link = link[0]
-        db_folder_links.append(link)
+
+def create_request_links():
+    db = dropboxuploadsession.DropboxUploadSession()
+    db.refresh_access_token()
+    for p in db_folder_paths:
+        url = db.file_request(p)
+        db_request_links.append(url)
 
 def send_notification():
     notification = sendnetworkmail.SendNetworkEmail()
     notification.sender("library@tv.cuny.edu")
-    notification.recipients(["aida.garrido@tv.cuny.edu"])
+    notification.recipients(email_recipients)
     notification.subject(f"Dropbox folders for photos: {date.today()}")
 
     notification.html_content("<p>Hello, </p><p>The following folders were created:</p>")
 
-    for p, l in zip(db_folder_paths, db_folder_links):
+    for p, l in zip(db_folder_paths, db_request_links):
         notification.html_content(f"<p></p>{p}<br>")
         notification.html_content(f"""<a href="{l}">{l}</a><p></p>""")
 
@@ -108,4 +113,5 @@ for u, t in zip(urls, types):
     get_todays_calendar_events(u, t)
 
 create_db_folders()
+create_request_links()
 send_notification()
