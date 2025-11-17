@@ -4,6 +4,7 @@ import json
 import time
 import os
 import sendnetworkmail
+import re
 import sys
 import atexit
 
@@ -19,18 +20,24 @@ class LongPoll:
             "bpg", "jxr", "wdp", "xif", "fif"
         ]
 
+        self.photo_pattern = re.compile(
+            r"►CUNY TV REMOTE FOOTAGE \(for DELIVERY & COPY from\)/►[^/]+/PHOTOS"
+        )
+
+        self.remote_pattern = re.compile(r"_CUNY TV CAMERA CARD DELIVERY/[^/]+/([A-Z]+)(\d{4})(\d{2})(\d{2})_(.+)")
+
         # Credentials for creating access token
         ## AG's personal dropbox
-        #self.client_id = 'bsp8x2pbkklqbz8'
-        #self.client_secret = 'c3po7io03u5zgtt'
-        #self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
-        #self.ACCESS_TOKEN = ''
+        self.client_id = 'bsp8x2pbkklqbz8'
+        self.client_secret = 'c3po7io03u5zgtt'
+        self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
+        self.ACCESS_TOKEN = ''
 
         ## CS's personal dropbox
-        self.client_id = 'wjmmemxgpuxh911'
-        self.client_secret = 'mynnf0nelu4xahk'
-        self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
-        self.ACCESS_TOKEN = ''
+        #self.client_id = 'wjmmemxgpuxh911'
+        #self.client_secret = 'mynnf0nelu4xahk'
+        #self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
+        #self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
         self.time_now = ''
@@ -39,9 +46,11 @@ class LongPoll:
         # Local directory for downloads
         self.local_directory = ''
 
-        # Array of detects images
+        # Array of detected images
         self.images_detected = []
 
+        # Dictionary of detected folders (remote) and their share links
+        self.folders_detected = {}
 
     # Timer
     def timer(self, timeout):
@@ -186,7 +195,7 @@ class LongPoll:
                 if response.status_code == 200:
                     # If response contains entries, process them
                     if response.json().get('entries'):
-                        self.image_detect(response.json())
+                        return response.json()
                     else:
                         print("No entries found.")
                     return  # Exit method if successful
@@ -209,7 +218,8 @@ class LongPoll:
         print("Max retries reached. Failed to process the request.")
         return None
 
-    def image_detect(self, response):
+    def photo_file_detect(self, response):
+        print(response)
         # Check if token is expired
         if self.token_expired():
             self.refresh_access_token()
@@ -218,14 +228,36 @@ class LongPoll:
         for entry in response['entries']:
             if entry['.tag'] != 'file':
                 continue
-            elif '.' in entry['path_display']:
+            elif self.photo_pattern.search(entry['path_display']):
                 extension = entry['path_display'].rsplit('.', 1)[1]
                 if extension in self.image_extensions:
                     print(f"- Detected new image upload: {entry['path_display']}")
                     self.images_detected.append(entry['path_display'])
-                    self.download(entry['path_display'])
+                    pd_edit = entry['path_display'].replace("►", "").replace("/PHOTOS", "").replace("/CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)/", "")
+                    self.download(entry['path_display'], pd_edit)
 
-    def download(self, dropbox_path):
+    def remote_folder_detect(self, response):
+        # Check if token is expired
+        if self.token_expired():
+            self.refresh_access_token()
+
+        # Loop through the entries and self_files
+        for entry in response['entries']:
+            if entry['.tag'] != 'folder':
+                continue
+            elif self.remote_pattern.search(entry['path_display']):
+                share_link = self.get_shared_link(entry['path_display'])
+                folder_name = entry['path_display'].split("/")[-1]
+                self.folders_detected[folder_name] = share_link.split("&")[0]
+                print(f"Share link for {folder_name}: {share_link}")
+
+        # Save dictionary as json
+        if self.folders_detected:
+            json_path = os.path.join(home_dir, 'Documents', 'remote_share_links.json')
+            with open(json_path, "w") as f:
+                json.dump(self.folders_detected, f)
+
+    def download(self, dropbox_path, dropbox_path_edited=None):
         # Maximum retry attempts
         max_retries = 5
         retries = 0
@@ -255,7 +287,10 @@ class LongPoll:
                     binary_data = response.content
 
                     # Construct the local path (stripping leading '/' from dropbox_path for file name)
-                    download_path = os.path.join(self.local_directory, dropbox_path.lstrip('/'))
+                    if dropbox_path_edited:
+                        download_path = os.path.join(self.local_directory, dropbox_path_edited.lstrip('/'))
+                    else:
+                        download_path = os.path.join(self.local_directory, dropbox_path.lstrip('/'))
 
                     # Ensure the directory exists locally
                     os.makedirs(os.path.dirname(download_path), exist_ok=True)
@@ -284,6 +319,61 @@ class LongPoll:
 
         print("Max retries reached. Failed to download the file.")
         return None
+
+    # Get shared link
+    def get_shared_link(self, path):
+        # Define the endpoint URL
+        url = "https://api.dropboxapi.com/2/sharing/list_shared_links"
+
+        # Define request headers
+        headers = {
+            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+
+        # Define request body data
+        data = {
+            "direct_only": True,
+            "path": path
+        }
+
+        # Send the POST request
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            if response.json()['links']:
+                return response.json()['links'][0]['url']
+            else:
+                return self.create_shared_link_with_settings(path)
+        else:
+            return self.create_shared_link_with_settings(path)
+
+    # Creates share link that anyone can use to access
+    def create_shared_link_with_settings(self, path):
+        url = 'https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings'
+        headers = {
+            'Authorization': 'Bearer ' + self.ACCESS_TOKEN,
+            'Content-Type': 'application/json',
+        }
+
+        settings = {
+            'access': "viewer",
+            'allow_download': True,
+            'audience': "public",
+            'requested_visibility': 'public'
+        }
+
+        data = {
+            'path': path,
+            'settings': settings
+        }
+        response = requests.post(url, headers=headers, json=data)
+
+        # Check Response
+        try:
+            response.raise_for_status()
+            return response.json()['url']
+        except requests.exceptions.HTTPError as e:
+            return None
 
     def email_notification(self, unexpected_quit=False):
         time_stamp = datetime.datetime.now()
@@ -376,17 +466,32 @@ class LongPoll:
 
 
 if __name__ == "__main__":
+    try:
+        process = sys.argv[1]
+    except:
+        print("Process not specified.")
+        sys.exit()
+
     # Create class instance
     lp = LongPoll()
     lp.refresh_access_token()
 
-    # Specify dropbox path, if blank this means the entire dropbox
-    db_path = ""
+    # Specify local directory for downloads
+    lp.local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+    #lp.local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+    os.makedirs(lp.local_directory, exist_ok=True)
 
     # Specify default txt file, where cursor is stored
     home_dir = os.path.expanduser('~')
-    desktop_path = os.path.join(home_dir, 'Desktop')
-    cursor_txt_path = os.path.join(desktop_path, "dropbox_longpoll_cursor.txt")
+    documents_path = os.path.join(home_dir, 'Documents', 'longpoll')
+    os.makedirs(documents_path, exist_ok=True)
+    cursor_txt_path = os.path.join(documents_path, f"dropbox_longpoll_cursor_{process}.txt")
+
+    # DB path to traverse
+    if process == 'remote':
+        db_path = "/_CUNY TV CAMERA CARD DELIVERY"
+    elif process == 'photo':
+        db_path = "/►CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)"
 
     # Get cursor
     cursor = ''
@@ -394,6 +499,7 @@ if __name__ == "__main__":
         with open(cursor_txt_path, 'r') as file:
             cursor = file.readline().strip()
     else:
+        print("Creating cursor")
         cursor = lp.latest_cursor(db_path)
         with open(cursor_txt_path, 'w') as file:
             file.write(cursor)
@@ -401,17 +507,15 @@ if __name__ == "__main__":
     # Specify timeout
     timeout = 30
 
-    # Specify local directory for downloads
-    lp.local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
-    # lp.local_directory = input("Local directory for download: ")
-    # while not os.path.isdir(local_directory):
-    #    lp.local_directory = input("Directory does not exist. Try again: ")
-
-
     changes = lp.longpoll(cursor, timeout)
     if changes:
         new_cursor = lp.latest_cursor(db_path)
-        lp.list_changes(cursor)
+        response = lp.list_changes(cursor)
+
+        if process == 'remote':
+            lp.remote_folder_detect(response)
+        elif process == 'photo':
+            lp.photo_file_detect(response)
 
         with open(cursor_txt_path, 'w') as file:
             file.write(new_cursor)
