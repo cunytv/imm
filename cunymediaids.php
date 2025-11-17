@@ -43,8 +43,8 @@ function check_similarity($input, $shows) {
     $bestMatch = null;
     $highestRatio = 0;
 
-    foreach ($shows as $title => $abbr && mb_strtolower($input) !== 'latinas') {
-        if (strlen($input) <= 6) {
+    foreach ($shows as $title => $abbr) {
+        if (strlen($input) <= 6 && mb_strtolower($input) !== 'latinas') {
             similar_text($input, $abbr, $percent);
         } else {
             similar_text($input, $title, $percent);
