@@ -1,6 +1,6 @@
 <?php
-
-$shows = [
+global $shows_dict;
+$shows_dict = [
     "A Slice of NY" => "SLNY",
     "Arts in the City" => "AITC",
     "Asian American Life" => "AALF",
@@ -15,7 +15,7 @@ $shows = [
     "CUNY TV Presents Film" => "CNTVPR",
     "CUNY Uncut" => "CNNT",
     "CUNY Laureates" => "CNLR",
-    "CUNY Specials" => "SPEC",
+	"CUNY Specials" => "SPEC",
     "EdCast" => "EDCA",
     "Graduate Center Presents" => "GCPR",
     "Italics" => "ITAL",
@@ -32,7 +32,6 @@ $shows = [
 ];
 
 function print_media_dict($shows) {
-    global $shows;
     echo "Media ID Dictionary\n";
     echo str_repeat('-', 50) . "\n";
     foreach ($shows as $title => $abbreviation) {
@@ -40,29 +39,30 @@ function print_media_dict($shows) {
     }
 }
 
-function check_similarity($input) {
-    global $shows;
+function check_similarity($input, $shows) {
     $bestMatch = null;
     $highestRatio = 0;
 
-    foreach ($shows as $title => $abbr) {
-        similar_text($input, $title, $percent);
+    foreach ($shows as $title => $abbr && mb_strtolower($input) !== 'latinas') {
+        if (strlen($input) <= 6) {
+            similar_text($input, $abbr, $percent);
+        } else {
+            similar_text($input, $title, $percent);
+        }
         if ($percent > $highestRatio) {
             $highestRatio = $percent;
             $bestMatch = $title;
         }
     }
-    echo $highestRatio;
 
-    if ($highestRatio > 0.5){
+    if ($highestRatio > 50){
         return $bestMatch;
     } else {
         return 'No Show';
     }
 }
 
-function get_full_show_name($code) {
-    global $shows;
+function get_full_show_name($code, $shows) {
     foreach ($shows as $title => $abbr) {
         if ($abbr === $code) {
             return $title;
@@ -72,6 +72,6 @@ function get_full_show_name($code) {
 }
 
 // Example usage
-// print_media_dict($shows);
-// echo check_similarity("One_To_One") . "\n";
+// print_media_dict();
+//echo check_similarity("American Life") . "\n";
 // echo get_full_show_name($shows, "AITC") . "\n";
