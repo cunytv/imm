@@ -1,3 +1,5 @@
+#!/usr/bin/env php
+
 <?php
 global $shows_dict;
 $shows_dict = [
