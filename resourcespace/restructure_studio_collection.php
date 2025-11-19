@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 $private_key = "61f7477d9cdad97ad99295ca7a2de2967172f866f1b21e1ee83ee570da999e87";
