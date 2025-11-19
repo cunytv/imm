@@ -1,5 +1,8 @@
 <?php
 
+// DEPRECATED SCRIPT; 
+// USED TO BE PART OF ingestremote.py process; remote resourcespace ingests now a part of the staticsync process
+
 include 'cunymediaids.php';
 
 // global vars
