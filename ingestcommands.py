@@ -8,8 +8,7 @@ import validateuserinput
 
 # Performs CUNY TV bash scripts makewindow, makemetadata, and checksumpackage
 def makewindow(directory):
-    command = f"makewindow {directory}"
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    process = subprocess.Popen(["makewindow", directory], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
     for line in process.stdout:
         if 'time=' in line and 'bitrate=' in line:
@@ -24,11 +23,10 @@ def makewindow(directory):
     else:
         return False, process.returncode
 def makemetadata(directory):
-    command = f"makemetadata {directory}"
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    process = subprocess.Popen(["makemetadata", directory], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
     for line in process.stdout:
-        if line.endswith("left") or not line.strip():
+        if line.endswith(".left") or not line.strip():
             line = line.rstrip('\n')
             print(line, end='\r', flush=True)
         else:
@@ -40,11 +38,10 @@ def makemetadata(directory):
         return False, process.returncode
 
 def makechecksumpackage(directory):
-    command = f"checksumpackage {directory}"
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    process = subprocess.Popen(["checksumpackage", directory], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True)
     for line in process.stdout:
-        if line.endswith("left") or not line.strip():
+        if line.endswith(".left") or not line.strip():
             line = line.rstrip('\n')
             print(line, end='\r', flush=True)
         else:
