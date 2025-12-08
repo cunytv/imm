@@ -35,24 +35,21 @@ class DropboxUploadSession:
         self.current_process = ''
         self.email_increment = 0
 
-        self.get_path_stats(path, transfertype, filesdict, checksum)
-
-        # Dropbox access token and expiration
-        self.refresh_access_token()
-
-        # Dropbox errors
+        # Dropbox logging
         self.DROPBOX_FILES_DICT = []
         self.DROPBOX_TRANSFER_OKAY = True
         self.DROPBOX_TRANSFER_NOT_OKAY_REASON = []
 
-        # Share link
+        # DB sharelink        
         self.share_link = ''
 
-        # Create lock
+        # Multi-threading variables for upload
         self.lock = threading.Lock()
-
-        # Create queue
         self.q = queue.Queue()
+
+        # Initializing functions
+        self.get_path_stats(path, transfertype, filesdict, checksum)
+        self.refresh_access_token()
 
     def get_path_stats(self, path, transfer_type=None, files_dict=None, checksum=True):
         total_size = 0
@@ -142,14 +139,12 @@ class DropboxUploadSession:
         if '.' not in file or file.startswith('.'):
             return True
 
-    # Creates dropbox output paths for each file in a folder and calculates total size
+    # Creates dropbox output paths for each file in a folder
     def list_files(self, directory, split_s, prefix):
         file_paths = []
         dropbox_paths = []
 
-        # Walk through all files and directories recursively
         for root, directories, files in os.walk(directory):
-            # Append file paths to the list
             for filename in files:
                 if not self.mac_system_metadata(filename):
                     file_paths.append(os.path.join(root, filename))
@@ -158,7 +153,7 @@ class DropboxUploadSession:
                     dropbox_paths.append(dropbox_path)
         return file_paths, dropbox_paths
 
-    # Creates checksum
+    # Creates checksum as per DB documentation
     def calculate_sha256_checksum(self, file_path, block_size=4 * 1024 * 1024):
         self.current_process = f"Calculating checksum {os.path.basename(file_path)}"
 
@@ -166,27 +161,18 @@ class DropboxUploadSession:
         bytes_read = 0
         block_hashes = []
 
-        # Open the file for reading in binary mode
         with open(file_path, 'rb') as f:
             while True:
-                # Read a block of data
                 block = f.read(block_size)
                 if not block:
                     break  # End of file
 
-                # Compute the hash of the block and store it
                 block_hash = hashlib.sha256(block).digest()
                 block_hashes.append(block_hash)
-
-                # Update the total bytes read
                 bytes_read += len(block)
-
-                # Update the main hash with the current block hash
                 hash_object.update(block_hash)
-
                 self.bytes_read += len(block)
 
-        # Compute the final hash of the concatenated block hashes
         final_hash = hash_object.hexdigest()
 
         return final_hash
@@ -305,7 +291,7 @@ class DropboxUploadSession:
                     break
 
             upload_url = 'https://content.dropboxapi.com/2/files/upload_session/append_v2'
-            # Prepare the Dropbox-API-Arg payload
+            
             dropbox_api_arg = {
                 "close": close_bool,
                 "cursor": {
@@ -314,7 +300,6 @@ class DropboxUploadSession:
                 }
             }
 
-            # Convert to JSON string
             dropbox_api_arg_json = json.dumps(dropbox_api_arg)
 
             headers = {
@@ -398,7 +383,7 @@ class DropboxUploadSession:
 
         return True
 
-    # Uploads file to dropbox
+    # Uploads file to dropbox, by calling the appropriate endpoints 
     def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5, num_threads=8):
         self.files_read += 1
         for attempt in range(max_retries):
@@ -496,22 +481,16 @@ class DropboxUploadSession:
 
     # Get shared link
     def get_shared_link(self, path):
-        # Define the endpoint URL
         url = "https://api.dropboxapi.com/2/sharing/list_shared_links"
-
-        # Define request headers
         headers = {
             "Authorization": f"Bearer {self.ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
-
-        # Define request body data
         data = {
             "direct_only": True,
             "path": path
         }
 
-        # Send the POST request
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             if response.json()['links']:
@@ -542,7 +521,6 @@ class DropboxUploadSession:
         }
         response = requests.post(url, headers=headers, json=data)
 
-        # Check Response
         try:
             response.raise_for_status()
             return response.json()['url'], response.json()['id']
@@ -572,7 +550,6 @@ class DropboxUploadSession:
 
 
     def make_gif_summary(self, directory):
-        # Get the path to the user's home directory
         home_dir = os.path.expanduser('~')
         desktop_path = os.path.join(home_dir, 'Desktop')
         name = directory.rsplit('/', 1)[1] + '.gif'
@@ -580,24 +557,19 @@ class DropboxUploadSession:
         gif_output_filepath = os.path.join(desktop_path, name)
         command = f"makegifsummary -o {gif_output_filepath} {directory}"
 
-        # Open /dev/null for writing
         devnull_fd = os.open(os.devnull, os.O_WRONLY)
 
-        # Save the original stdout/stderr file descriptors
         old_stdout_fd = os.dup(1)
         old_stderr_fd = os.dup(2)
 
-        # Redirect stdout/stderr to /dev/null
         os.dup2(devnull_fd, 1)
         os.dup2(devnull_fd, 2)
         os.close(devnull_fd)
 
         try:
-            # Run the subprocess
             process = subprocess.Popen(command, shell=True)
             process.wait()
         finally:
-            # Restore original stdout/stderr
             os.dup2(old_stdout_fd, 1)
             os.dup2(old_stderr_fd, 2)
             os.close(old_stdout_fd)
@@ -629,7 +601,6 @@ class DropboxUploadSession:
         notification.recipients(cuny_emails)
         notification.subject(f"Dropbox Upload: {package}")
 
-        # Write text content with HTML formatting
         html_content = f"""
             <html>
                 <body>
@@ -680,7 +651,6 @@ class DropboxUploadSession:
         notification.recipients(emails)
         notification.subject(f"Dropbox Upload: {filename}")
 
-        # Write text content with HTML formatting
         html_content = f"""
         <html>
           <body>
@@ -699,19 +669,14 @@ class DropboxUploadSession:
 
     # Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
     def get_file_hash(self, file_path):
-        # Define the endpoint URL
         url = "https://api.dropboxapi.com/2/files/get_metadata"
-
-        # Replace '<get access token>' with your actual access token
         access_token = self.ACCESS_TOKEN
 
-        # Define the headers
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
 
-        # Define the data payload
         data = {
             "include_deleted": True,
             "include_has_explicit_shared_members": True,
@@ -719,10 +684,8 @@ class DropboxUploadSession:
             "path": file_path  # Removed curly braces
         }
 
-        # Make the POST request
         response = requests.post(url, headers=headers, json=data)
 
-        # Check the response
         if response.status_code == 200:
             return response.json()["content_hash"]
         else:
@@ -730,19 +693,14 @@ class DropboxUploadSession:
 
     # Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
     def get_shared_folder_id(self, path):
-        # Define the endpoint URL
         url = "https://api.dropboxapi.com/2/files/get_metadata"
-
-        # Replace '<get access token>' with your actual access token
         access_token = self.ACCESS_TOKEN
-
-        # Define the headers
+        
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
 
-        # Define the data payload
         data = {
             "include_deleted": True,
             "include_has_explicit_shared_members": True,
@@ -750,10 +708,8 @@ class DropboxUploadSession:
             "path": path  # Removed curly braces
         }
 
-        # Make the POST request
         response = requests.post(url, headers=headers, json=data)
 
-        # Check the response
         if response.status_code == 200:
             if 'sharing_info' in response.json():
                 return response.json()["sharing_info"]["parent_shared_folder_id"]
@@ -780,7 +736,6 @@ class DropboxUploadSession:
 
         response = requests.post(url, headers=headers, json=data)
 
-        # Check the response
         if response.status_code == 200:
             return response.json()["shared_folder_id"]
         else:
@@ -812,7 +767,6 @@ class DropboxUploadSession:
 
         response = requests.post(url, headers=headers, json=data)
 
-        # Check the response
         if response.status_code != 200:
             self.DROPBOX_TRANSFER_NOT_OKAY_REASON.append({
                                                                 "timestamp": str(datetime.datetime.now()),
