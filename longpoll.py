@@ -10,20 +10,29 @@ import atexit
 
 
 class LongPoll:
-    def __init__(self):
-        # Library of image extensions
-        self.image_extensions = [
-            "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp", "svg", "heif", "heic", "ico",
-            "raw", "exr", "apng", "pdf", "psd", "ai", "eps", "indd", "heif", "jpe", "jfif", "wdp", "dng",
-            "fpx", "pcx", "pgm", "ppm", "tga", "xcf", "cur", "webm", "3fr", "arw", "bay", "cr2", "crw", "dcr",
-            "mef", "mrw", "nef", "orf", "pef", "raf", "sr2", "srw", "tiff", "xpm", "yuv", "kdc", "sct", "pict",
-            "bpg", "jxr", "wdp", "xif", "fif"
-        ]
+    # Two types of processes, specify by string: 'remote' and 'photo'
+    def __init__(self, process):
+        # Specify local directory for downloads
+        local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+        #local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+        os.makedirs(local_directory, exist_ok=True)
 
+        # Specify default txt file, where cursor is stored
+        self.home_dir = os.path.expanduser('~')
+        documents_path = os.path.join(self.home_dir, 'Documents', 'longpoll')
+        os.makedirs(documents_path, exist_ok=True)
+        cursor_txt_path = os.path.join(documents_path, f"dropbox_longpoll_cursor_{process}.txt")
+
+        # DB path to traverse
+        if process == 'remote':
+            self.db_path = "/_CUNY TV CAMERA CARD DELIVERY"
+        elif process == 'photo':
+            self.db_path = "/►CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)"
+
+        # Patterns
         self.photo_pattern = re.compile(
             r"►CUNY TV REMOTE FOOTAGE \(for DELIVERY & COPY from\)/►[^/]+/PHOTOS"
         )
-
         self.remote_pattern = re.compile(r"_CUNY TV CAMERA CARD DELIVERY/[^/]+/([A-Z]+)(\d{4})(\d{2})(\d{2})_(.+)")
 
         # Credentials for creating access token
@@ -46,13 +55,48 @@ class LongPoll:
         # Local directory for downloads
         self.local_directory = ''
 
-        # Array of detected images
+        # Array of detected images (for photo process)
         self.images_detected = []
 
-        # Dictionary of detected folders (remote) and their share links
+        # Dictionary of detected folders and their share links (for remote and photo process)
         self.folders_detected = {}
 
-    # Timer
+        # Activate API variables
+        self.refresh_access_token()
+
+        # Get cursor
+        cursor = ''
+        if os.path.exists(cursor_txt_path):
+            with open(cursor_txt_path, 'r') as file:
+                cursor = file.readline().strip()
+        else:
+            print("Creating cursor")
+            cursor = self.latest_cursor(self.db_path)
+            with open(cursor_txt_path, 'w') as file:
+                file.write(cursor)
+
+        # Specify timeout
+        timeout = 30
+
+        changes = self.longpoll(cursor, timeout)
+        if changes:
+            new_cursor = self.latest_cursor(self.db_path)
+            response = self.list_changes(cursor)
+
+            if response:
+                if process == 'remote':
+                    self.remote_folder_detect(response)
+                elif process == 'photo':
+                    self.photo_file_detect(response)
+
+                with open(cursor_txt_path, 'w') as file:
+                    file.write(new_cursor)
+            else:
+                print('No changes')
+
+        else:
+            print('No changes')
+
     def timer(self, timeout):
         for remaining in range(timeout, 0, -1):
             time.sleep(1)
@@ -219,7 +263,6 @@ class LongPoll:
         return None
 
     def photo_file_detect(self, response):
-        print(response)
         # Check if token is expired
         if self.token_expired():
             self.refresh_access_token()
@@ -229,31 +272,34 @@ class LongPoll:
             if entry['.tag'] != 'file':
                 continue
             elif self.photo_pattern.search(entry['path_display']):
-                extension = entry['path_display'].rsplit('.', 1)[1]
-                if extension in self.image_extensions:
-                    print(f"- Detected new image upload: {entry['path_display']}")
-                    self.images_detected.append(entry['path_display'])
-                    pd_edit = entry['path_display'].replace("►", "").replace("/PHOTOS", "").replace("/CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)/", "")
-                    self.download(entry['path_display'], pd_edit)
+                print(f"- Detected new image upload: {entry['path_display']}")
+                self.images_detected.append(entry['path_display'])
+                pd_edit = entry['path_display'].replace("►", "").replace("/PHOTOS", "").replace("/CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)/", "")
+                self.download(entry['path_display'], pd_edit)
 
     def remote_folder_detect(self, response):
         # Check if token is expired
         if self.token_expired():
             self.refresh_access_token()
 
-        # Loop through the entries and self_files
+        print(response['entries'])
         for entry in response['entries']:
-            if entry['.tag'] != 'folder':
+            if "." in entry['name'] or (entry['.tag'] != 'folder' and entry['.tag'] != 'deleted'):
                 continue
             elif self.remote_pattern.search(entry['path_display']):
-                share_link = self.get_shared_link(entry['path_display'])
-                folder_name = entry['path_display'].split("/")[-1]
-                self.folders_detected[folder_name] = share_link.split("&")[0]
-                print(f"Share link for {folder_name}: {share_link}")
+                if entry['.tag'] == 'deleted' and entry['name'] in self.folders_detected:
+                    continue
+                elif entry['.tag'] == 'deleted':
+                    share_link = None
+                else:
+                    share_link = self.get_shared_link(entry['path_display'])
+                    share_link = share_link.split("&")[0]
+                self.folders_detected[entry['name']] = share_link
+                print(f"Share link for {entry['name']}: {share_link}")
 
         # Save dictionary as json
         if self.folders_detected:
-            json_path = os.path.join(home_dir, 'Documents', 'remote_share_links.json')
+            json_path = os.path.join(self.home_dir, 'Documents', 'remote_share_links.json')
             with open(json_path, "w") as f:
                 json.dump(self.folders_detected, f)
 
@@ -447,6 +493,7 @@ class LongPoll:
                 # Check the response status
                 if response.status_code == 200:
                     return response.json()['changes']
+
                 else:
                     print(f"Error: {response.status_code} - {response.text}")
 
@@ -466,58 +513,12 @@ class LongPoll:
 
 
 if __name__ == "__main__":
-    try:
-        process = sys.argv[1]
-    except:
-        print("Process not specified.")
-        sys.exit()
+    #try:
+    #    p = sys.argv[1]
+    #except:
+    #    print("Process not specified.")
+        #sys.exit()
+   #     p = "remote"
 
     # Create class instance
-    lp = LongPoll()
-    lp.refresh_access_token()
-
-    # Specify local directory for downloads
-    lp.local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
-    #lp.local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
-    os.makedirs(lp.local_directory, exist_ok=True)
-
-    # Specify default txt file, where cursor is stored
-    home_dir = os.path.expanduser('~')
-    documents_path = os.path.join(home_dir, 'Documents', 'longpoll')
-    os.makedirs(documents_path, exist_ok=True)
-    cursor_txt_path = os.path.join(documents_path, f"dropbox_longpoll_cursor_{process}.txt")
-
-    # DB path to traverse
-    if process == 'remote':
-        db_path = "/_CUNY TV CAMERA CARD DELIVERY"
-    elif process == 'photo':
-        db_path = "/►CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)"
-
-    # Get cursor
-    cursor = ''
-    if os.path.exists(cursor_txt_path):
-        with open(cursor_txt_path, 'r') as file:
-            cursor = file.readline().strip()
-    else:
-        print("Creating cursor")
-        cursor = lp.latest_cursor(db_path)
-        with open(cursor_txt_path, 'w') as file:
-            file.write(cursor)
-
-    # Specify timeout
-    timeout = 30
-
-    changes = lp.longpoll(cursor, timeout)
-    if changes:
-        new_cursor = lp.latest_cursor(db_path)
-        response = lp.list_changes(cursor)
-
-        if process == 'remote':
-            lp.remote_folder_detect(response)
-        elif process == 'photo':
-            lp.photo_file_detect(response)
-
-        with open(cursor_txt_path, 'w') as file:
-            file.write(new_cursor)
-    else:
-        print('No changes')
+    lp = LongPoll("remote")
