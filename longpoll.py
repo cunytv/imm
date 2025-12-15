@@ -4,38 +4,26 @@ import json
 import time
 import os
 import sendnetworkmail
-import re
-import sys
-import subprocess
-
 
 class LongPoll:
     # Two types of processes, specify by string: 'remote' and 'photo'
     def __init__(self):
-        # Specify local directory for downloads
-        # local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/dropbox_photos"
-        # local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
-        # os.makedirs(local_directory, exist_ok=True)
-
         # Credentials for creating access token
         ## AG's personal dropbox
-        self.client_id = 'bsp8x2pbkklqbz8'
-        self.client_secret = 'c3po7io03u5zgtt'
-        self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
-        self.ACCESS_TOKEN = ''
+        #self.client_id = 'bsp8x2pbkklqbz8'
+        #self.client_secret = 'c3po7io03u5zgtt'
+        #self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
+        #self.ACCESS_TOKEN = ''
 
         ## CS's personal dropbox
-        # self.client_id = 'wjmmemxgpuxh911'
-        # self.client_secret = 'mynnf0nelu4xahk'
-        # self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
-        # self.ACCESS_TOKEN = ''
+        self.client_id = 'wjmmemxgpuxh911'
+        self.client_secret = 'mynnf0nelu4xahk'
+        self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
+        self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
         self.time_now = ''
         self.time_expire = ''
-
-        # Local directory for downloads
-        self.local_directory = ''
 
         # Nested dictionary
         self.folders_files_detected = {}
@@ -71,8 +59,8 @@ class LongPoll:
 
                     time_now = datetime.datetime.now()
                     self.time_expire = time_now + datetime.timedelta(
-                        seconds=expires_in - 1000) 
-                    return 
+                        seconds=expires_in - 1000)
+                    return
                 else:
                     print(f"Failed to refresh access token. Status code: {response.status_code}")
                     print(response.text)
@@ -153,7 +141,7 @@ class LongPoll:
         }
 
         data = {
-            "cursor": cursor 
+            "cursor": cursor
         }
 
         while retries < max_retries:
@@ -216,7 +204,7 @@ class LongPoll:
                         self.folders_files_detected[folder]['old_names'].append(folder2)
                         del self.folders_files_detected[folder2]
 
-    def download(self, dropbox_path, dropbox_path_edited=None):
+    def download(self, dropbox_path, download_path):
         max_retries = 5
         retries = 0
 
@@ -238,13 +226,6 @@ class LongPoll:
 
                 if response.status_code == 200:
                     binary_data = response.content
-
-                    # Construct the local path (stripping leading '/' from dropbox_path for file name)
-                    if dropbox_path_edited:
-                        download_path = os.path.join(self.local_directory, dropbox_path_edited.lstrip('/'))
-                    else:
-                        download_path = os.path.join(self.local_directory, dropbox_path.lstrip('/'))
-
                     os.makedirs(os.path.dirname(download_path), exist_ok=True)
 
                     with open(download_path, "wb") as file:
