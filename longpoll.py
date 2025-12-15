@@ -6,34 +6,16 @@ import os
 import sendnetworkmail
 import re
 import sys
-import atexit
+import subprocess
 
 
 class LongPoll:
     # Two types of processes, specify by string: 'remote' and 'photo'
-    def __init__(self, process):
+    def __init__(self):
         # Specify local directory for downloads
-        local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
-        #local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
-        os.makedirs(local_directory, exist_ok=True)
-
-        # Specify default txt file, where cursor is stored
-        self.home_dir = os.path.expanduser('~')
-        documents_path = os.path.join(self.home_dir, 'Documents', 'longpoll')
-        os.makedirs(documents_path, exist_ok=True)
-        cursor_txt_path = os.path.join(documents_path, f"dropbox_longpoll_cursor_{process}.txt")
-
-        # DB path to traverse
-        if process == 'remote':
-            self.db_path = "/_CUNY TV CAMERA CARD DELIVERY"
-        elif process == 'photo':
-            self.db_path = "/►CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)"
-
-        # Patterns
-        self.photo_pattern = re.compile(
-            r"►CUNY TV REMOTE FOOTAGE \(for DELIVERY & COPY from\)/►[^/]+/PHOTOS"
-        )
-        self.remote_pattern = re.compile(r"_CUNY TV CAMERA CARD DELIVERY/[^/]+/([A-Z]+)(\d{4})(\d{2})(\d{2})_(.+)")
+        # local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/dropbox_photos"
+        # local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+        # os.makedirs(local_directory, exist_ok=True)
 
         # Credentials for creating access token
         ## AG's personal dropbox
@@ -43,10 +25,10 @@ class LongPoll:
         self.ACCESS_TOKEN = ''
 
         ## CS's personal dropbox
-        #self.client_id = 'wjmmemxgpuxh911'
-        #self.client_secret = 'mynnf0nelu4xahk'
-        #self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
-        #self.ACCESS_TOKEN = ''
+        # self.client_id = 'wjmmemxgpuxh911'
+        # self.client_secret = 'mynnf0nelu4xahk'
+        # self.refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
+        # self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
         self.time_now = ''
@@ -55,54 +37,18 @@ class LongPoll:
         # Local directory for downloads
         self.local_directory = ''
 
-        # Array of detected images (for photo process)
-        self.images_detected = []
-
-        # Dictionary of detected folders and their share links (for remote and photo process)
-        self.folders_detected = {}
+        # Nested dictionary
+        self.folders_files_detected = {}
+        self.folder_files = {"old_names": [], "share_link": None, "files": []}
 
         # Activate API variables
         self.refresh_access_token()
-
-        # Get cursor
-        cursor = ''
-        if os.path.exists(cursor_txt_path):
-            with open(cursor_txt_path, 'r') as file:
-                cursor = file.readline().strip()
-        else:
-            print("Creating cursor")
-            cursor = self.latest_cursor(self.db_path)
-            with open(cursor_txt_path, 'w') as file:
-                file.write(cursor)
-
-        # Specify timeout
-        timeout = 30
-
-        changes = self.longpoll(cursor, timeout)
-        if changes:
-            new_cursor = self.latest_cursor(self.db_path)
-            response = self.list_changes(cursor)
-
-            if response:
-                if process == 'remote':
-                    self.remote_folder_detect(response)
-                elif process == 'photo':
-                    self.photo_file_detect(response)
-
-                with open(cursor_txt_path, 'w') as file:
-                    file.write(new_cursor)
-            else:
-                print('No changes')
-
-        else:
-            print('No changes')
 
     def timer(self, timeout):
         for remaining in range(timeout, 0, -1):
             time.sleep(1)
 
     def refresh_access_token(self):
-        # Maximum retry attempts
         max_retries = 5
         retries = 0
 
@@ -116,35 +62,29 @@ class LongPoll:
 
         while retries < max_retries:
             try:
-                # Send the POST request
                 response = requests.post(url, data=data)
 
-                # Check if the request was successful
                 if response.status_code == 200:
-                    # Parse the response JSON and update the access token and expiration time
                     response_data = response.json()
                     self.ACCESS_TOKEN = response_data['access_token']
                     expires_in = response_data['expires_in']
 
-                    # Calculate the expiration time
                     time_now = datetime.datetime.now()
-                    self.time_expire = time_now + datetime.timedelta(seconds=expires_in - 1000)  # Subtract a buffer (1000 seconds)
-                    return  # Exit method if successful
+                    self.time_expire = time_now + datetime.timedelta(
+                        seconds=expires_in - 1000) 
+                    return 
                 else:
                     print(f"Failed to refresh access token. Status code: {response.status_code}")
                     print(response.text)
 
             except requests.RequestException as e:
-                # Handle network or request-related errors
                 print(f"Request failed: {e}")
 
-            # Increment the retry counter
             retries += 1
 
-            # Wait before retrying
             if retries < max_retries:
                 print(f"Retrying... ({retries}/{max_retries})")
-                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+                time.sleep(2)
 
         print("Max retries reached. Failed to refresh access token.")
         return None
@@ -159,20 +99,16 @@ class LongPoll:
             return False
 
     def latest_cursor(self, path):
-        # Maximum retry attempts
         max_retries = 5
         retries = 0
 
-        # Define the URL and the access token
         url = "https://api.dropboxapi.com/2/files/list_folder/get_latest_cursor"
 
-        # Define the headers
         headers = {
             "Authorization": f"Bearer {self.ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
 
-        # Define the data payload
         data = {
             "include_deleted": False,
             "include_has_explicit_shared_members": False,
@@ -185,150 +121,121 @@ class LongPoll:
 
         while retries < max_retries:
             try:
-                # Send the POST request
                 response = requests.post(url, headers=headers, json=data)
 
-                # Check if the request was successful
                 if response.status_code == 200:
-                    # Return the cursor from the response JSON
                     return response.json()['cursor']
                 else:
                     print(f"Failed to get cursor. Status code: {response.status_code}")
                     print(response.text)
 
             except requests.RequestException as e:
-                # Handle network or request-related errors
                 print(f"Request failed: {e}")
 
-            # Increment the retry counter
             retries += 1
 
-            # Wait before retrying
             if retries < max_retries:
                 print(f"Retrying... ({retries}/{max_retries})")
-                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+                time.sleep(2)
 
         print("Max retries reached. Failed to get the cursor.")
         return None
 
     def list_changes(self, cursor):
-        # Maximum retry attempts
         max_retries = 5
         retries = 0
 
-        # Define the Dropbox API endpoint
         url = "https://api.dropboxapi.com/2/files/list_folder/continue"
 
-        # Define the headers
         headers = {
-            "Authorization": f"Bearer {self.ACCESS_TOKEN}",  # Replace with actual authorization header
+            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
 
-        # Define the data for the request
         data = {
-            "cursor": cursor  # Your cursor value
+            "cursor": cursor 
         }
 
         while retries < max_retries:
             try:
-                # Send the POST request
                 response = requests.post(url, headers=headers, data=json.dumps(data))
 
-                # Check if the request was successful
                 if response.status_code == 200:
-                    # If response contains entries, process them
                     if response.json().get('entries'):
                         return response.json()
                     else:
                         print("No entries found.")
-                    return  # Exit method if successful
+                    return
                 else:
                     print(f"Failed to retrieve data. Status code: {response.status_code}")
                     print(response.text)
 
             except requests.RequestException as e:
-                # Handle network or request-related errors
                 print(f"Request failed: {e}")
 
-            # Increment the retry counter
             retries += 1
 
-            # Wait before retrying
             if retries < max_retries:
                 print(f"Retrying... ({retries}/{max_retries})")
-                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+                time.sleep(2)
 
         print("Max retries reached. Failed to process the request.")
         return None
 
-    def photo_file_detect(self, response):
-        # Check if token is expired
-        if self.token_expired():
-            self.refresh_access_token()
-
-        # Loop through the entries and self_files
+    def folders_files_detect(self, response, pattern):
         for entry in response['entries']:
-            if entry['.tag'] != 'file':
-                continue
-            elif self.photo_pattern.search(entry['path_display']):
-                print(f"- Detected new image upload: {entry['path_display']}")
-                self.images_detected.append(entry['path_display'])
-                pd_edit = entry['path_display'].replace("►", "").replace("/PHOTOS", "").replace("/CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)/", "")
-                self.download(entry['path_display'], pd_edit)
+            if '.' in entry['name']:  # if file
+                path = entry['path_display'].rsplit('/', 1)[0]
+                folder_name = path.rsplit('/', 1)[1]
+            else:
+                path = entry['path_display']
+                folder_name = entry['name']
 
-    def remote_folder_detect(self, response):
-        # Check if token is expired
-        if self.token_expired():
-            self.refresh_access_token()
+            if pattern.fullmatch(path):
+                if path not in self.folders_files_detected:
+                    new_dict = {k: [] for k in self.folder_files.keys()}
+                    self.folders_files_detected[path] = new_dict
+                    if entry['.tag'] == 'deleted':
+                        self.folders_files_detected[path]['share_link'] = None
+                    else:
+                        share_link = self.get_shared_link(entry['path_display'])
+                        share_link = share_link.split("&")[0]
+                        self.folders_files_detected[path]['share_link'] = share_link
 
-        print(response['entries'])
-        for entry in response['entries']:
-            if "." in entry['name'] or (entry['.tag'] != 'folder' and entry['.tag'] != 'deleted'):
-                continue
-            elif self.remote_pattern.search(entry['path_display']):
-                if entry['.tag'] == 'deleted' and entry['name'] in self.folders_detected:
-                    continue
-                elif entry['.tag'] == 'deleted':
-                    share_link = None
-                else:
-                    share_link = self.get_shared_link(entry['path_display'])
-                    share_link = share_link.split("&")[0]
-                self.folders_detected[entry['name']] = share_link
-                print(f"Share link for {entry['name']}: {share_link}")
+                if folder_name != entry['name']:  # if file
+                    self.folders_files_detected[path]['files'].append(entry['name'])
 
-        # Save dictionary as json
-        if self.folders_detected:
-            json_path = os.path.join(self.home_dir, 'Documents', 'remote_share_links.json')
-            with open(json_path, "w") as f:
-                json.dump(self.folders_detected, f)
+        # concatenate dictionaries with the same files[],
+        # to distinguish new and deleted entries from entries that were renamed or moved
+        for folder in list(self.folders_files_detected.keys()):
+            if self.folders_files_detected[folder]['share_link']:
+                for folder2 in list(self.folders_files_detected.keys()):
+                    if folder != folder2 and not self.folders_files_detected[folder2]['share_link'] and sorted(
+                            self.folders_files_detected[folder]['files']) == sorted(
+                            self.folders_files_detected[folder2]['files']):
+                        self.folders_files_detected[folder]['old_names'].append(folder2)
+                        del self.folders_files_detected[folder2]
 
     def download(self, dropbox_path, dropbox_path_edited=None):
-        # Maximum retry attempts
         max_retries = 5
         retries = 0
 
-        # Check if token is expired
         if self.token_expired():
             self.refresh_access_token()
 
-        # Define the Dropbox API endpoint
         url = "https://content.dropboxapi.com/2/files/download"
 
-        # Define the headers, including the authorization and Dropbox-API-Arg
         headers = {
             "Authorization": f"Bearer {self.ACCESS_TOKEN}",
             "Dropbox-API-Arg": json.dumps({
-                "path": dropbox_path  # No need to encode here, only encode when sending the URL
+                "path": dropbox_path
             })
         }
 
         while retries < max_retries:
             try:
-                # Send the POST request
                 response = requests.post(url, headers=headers)
 
-                # Check if the request was successful
                 if response.status_code == 200:
                     binary_data = response.content
 
@@ -338,52 +245,42 @@ class LongPoll:
                     else:
                         download_path = os.path.join(self.local_directory, dropbox_path.lstrip('/'))
 
-                    # Ensure the directory exists locally
                     os.makedirs(os.path.dirname(download_path), exist_ok=True)
 
-                    # Save the binary data to a file
                     with open(download_path, "wb") as file:
                         file.write(binary_data)
 
                     print(f"File downloaded successfully to: {download_path}")
-                    return  # Exit the method if successful
+                    return
                 else:
                     print(f"Failed to download file. Status code: {response.status_code}")
                     print(response.text)
 
             except requests.RequestException as e:
-                # Handle network or request-related errors
                 print(f"Request failed: {e}")
 
-            # Increment the retry counter
             retries += 1
-
-            # Wait before retrying
             if retries < max_retries:
                 print(f"Retrying... ({retries}/{max_retries})")
-                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+                time.sleep(2)
 
         print("Max retries reached. Failed to download the file.")
         return None
 
     # Get shared link
     def get_shared_link(self, path):
-        # Define the endpoint URL
         url = "https://api.dropboxapi.com/2/sharing/list_shared_links"
 
-        # Define request headers
         headers = {
             "Authorization": f"Bearer {self.ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
 
-        # Define request body data
         data = {
             "direct_only": True,
             "path": path
         }
 
-        # Send the POST request
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             if response.json()['links']:
@@ -414,7 +311,6 @@ class LongPoll:
         }
         response = requests.post(url, headers=headers, json=data)
 
-        # Check Response
         try:
             response.raise_for_status()
             return response.json()['url']
@@ -432,10 +328,9 @@ class LongPoll:
         if not unexpected_quit:
             notification.subject(f"Dropbox images digest: {time_stamp}")
 
-            # Initialize an HTML formatted string for key-value pairs
             html_output = ""
 
-            for file in self.images_detected:
+            for file in self.folders_files_detected:
                 html_output += f"{file}<br>\n"
 
             html_content = f"""
@@ -451,46 +346,34 @@ class LongPoll:
                     </html>
                     """
 
-            # Set notification content
             notification.html_content(html_content)
-
-            # Send the notification
             notification.send()
         else:
             notification.subject(f"ERROR: {os.path.basename(__file__)} unexpectedly quit")
 
             html_content = f"""<p>{os.path.basename(__file__)}, the program which detects new dropbox image uploads unexpectedly quit.</p>"""
 
-            # Set notification content
-            notification.content(html_content)
-
-            # Send the notification
+            notification.html_content(html_content)
             notification.send()
 
-
     def longpoll(self, cursor, timeout):
-        # Set the Dropbox API endpoint and the headers
         url = "https://notify.dropboxapi.com/2/files/list_folder/longpoll"
         headers = {
             "Content-Type": "application/json"
         }
 
-        # Define the data for the request
         data = {
             "cursor": cursor,
             "timeout": timeout
         }
 
-        # Maximum retry attempts
         max_retries = 5
         retries = 0
 
         while retries < max_retries:
             try:
-                # Make the POST request
                 response = requests.post(url, headers=headers, data=json.dumps(data))
 
-                # Check the response status
                 if response.status_code == 200:
                     return response.json()['changes']
 
@@ -500,25 +383,23 @@ class LongPoll:
             except requests.RequestException as e:
                 print(f"Request failed: {e}")
 
-            # Increment the retry counter
             retries += 1
 
-            # Wait before retrying
             if retries < max_retries:
                 print(f"Retrying... ({retries}/{max_retries})")
-                time.sleep(2)  # Wait 2 seconds before retrying (you can adjust this)
+                time.sleep(2)
 
         print("Max retries reached. No successful response received.")
         return None
 
 
 if __name__ == "__main__":
-    #try:
+    # try:
     #    p = sys.argv[1]
-    #except:
+    # except:
     #    print("Process not specified.")
-        #sys.exit()
-   #     p = "remote"
+    # sys.exit()
+    #     p = "remote"
 
     # Create class instance
-    lp = LongPoll("remote")
+    lp = LongPoll()
