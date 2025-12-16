@@ -1,6 +1,6 @@
 <?php
 
-include '/opt/homebrew/var/www_test/include/boot.php';
+include '/opt/homebrew/var/www/include/boot.php';
 
 $db_link_field = 103;
 $file = $argv[1];
