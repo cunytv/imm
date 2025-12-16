@@ -27,8 +27,8 @@ photo_pattern = re.compile(r"/►CUNY TV REMOTE FOOTAGE \(for DELIVERY & COPY fr
 
 # Server folder path for downloads
 # Specify local directory for downloads
-local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/dropbox_photos"
-#local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+# local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/dropbox_photos"
+local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
 os.makedirs(local_directory, exist_ok=True)
 
 # Get cursor
@@ -51,6 +51,7 @@ def get_folder_download_path(f):
     selected_parts = [parts[1], parts[3]]
     relative_path = os.path.join(*selected_parts)
     full_path = os.path.join(local_directory, relative_path)
+    full_path = full_path.replace('►', '')
 
     return full_path
 
