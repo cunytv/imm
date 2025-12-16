@@ -18,9 +18,9 @@ import subprocess
 class DropboxUploadSession:
     def __init__(self, path=None, filesdict=None, transfertype=None, checksum=True):
         # Credentials for creating access token
-        self.client_id = 'wjmmemxgpuxh911'
-        self.client_secret = 'mynnf0nelu4xahk'
-        self.refresh_token = 'O79bKkFZZ-EAAAAAAAAAAdPfz-sAO2q30riP2pcNxH8BFYB8QgkmIxKVc9rORehv'
+        self.client_id = 'zxka9wntib7t1nn'
+        self.client_secret = '3oag5msq6eslynv'
+        self.refresh_token = 'BeoDf-HCH5wAAAAAAAAAAZngRU1m49sJglEOh1-5VdRq_Qg0EJy80Mso7YluLNzl'
         self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
