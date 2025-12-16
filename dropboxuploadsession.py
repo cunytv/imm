@@ -385,6 +385,10 @@ class DropboxUploadSession:
 
     # Uploads file to dropbox, by calling the appropriate endpoints 
     def upload_file_to_dropbox(self, file_path, dropbox_path, do_fixity, files_dict, max_retries=5, num_threads=8):
+        # Create db folder immediately
+        db_dir = os.path.dirname(dropbox_path)
+        self.create_folder(db_dir)
+        
         self.files_read += 1
         for attempt in range(max_retries):
             try:
