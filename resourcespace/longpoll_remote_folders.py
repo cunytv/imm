@@ -4,11 +4,7 @@ import os
 import re
 import subprocess
 import json
-import sys
-
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import longpoll
+from imm import longpoll
 
 process = "remote"
 lp = longpoll.LongPoll()
@@ -25,6 +21,9 @@ db_path = "/_CUNY TV CAMERA CARD DELIVERY"
 # DB path folder pattern
 remote_pattern = re.compile(r"/_CUNY TV CAMERA CARD DELIVERY/[^/]+/([A-Z]+)(\d{4})(\d{2})(\d{2})_(.+)")
 
+# Path for storing share links
+link_json_path = os.path.join(home_dir, 'Documents', 'remote_share_links.json')
+
 # Get cursor
 cursor = ''
 if os.path.exists(cursor_txt_path):
@@ -39,6 +38,21 @@ else:
 # Specify timeout
 timeout = 30
 
+def update_db_link_by_folder():
+    result = subprocess.run(["php", "update_db_link_by_title.php", link_json_path], capture_output=True, text=True)
+    data = json.loads(result.stdout)
+
+    if data:
+        with open(link_json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+    else:
+        os.remove(link_json_path)
+
+
+# Consider unprocessed folder names
+if os.path.exists(link_json_path):
+    update_db_link_by_folder()
+
 # Begin longpoll
 changes = lp.longpoll(cursor, timeout)
 if changes:
@@ -50,21 +64,16 @@ if changes:
 
         # Save detected folders as json
         if lp.folders_files_detected:
-            print(lp.folders_files_detected)
-            json_path = os.path.join(home_dir, 'Documents', 'remote_share_links.json')
-            with open(json_path, "w") as f:
+            if os.path.exists(link_json_path):
+                with open(link_json_path, "r", encoding="utf-8") as f:
+                    unprocessed_folders = json.load(f)
+                lp.folders_files_detected.update(unprocessed_folders)
+
+            with open(link_json_path, "w") as f:
                 json.dump(lp.folders_files_detected, f)
 
             # Call php script to update links in Resourcespace
-            if lp.folders_files_detected:
-                php_script = os.path.join(
-                    os.path.dirname(__file__),  "update_db_link_by_title.php"
-                )
-
-                result = subprocess.run(["php", php_script, json_path], capture_output=True, text=True)
-                print(result.stdout)
-
-            os.remove(json_path)
+            update_db_link_by_folder()
 
         # Update cursor
         with open(cursor_txt_path, 'w') as file:

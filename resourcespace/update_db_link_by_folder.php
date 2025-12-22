@@ -17,6 +17,7 @@ $file          = $argv[1];
 
 $json    = file_get_contents($file);
 $folders = json_decode($json, true);
+$unmatched_folders = [];
 
 foreach ($folders as $folder_path => $info)
 {
@@ -72,6 +73,10 @@ foreach ($folders as $folder_path => $info)
             break;
         }
     }
+
+    if (empty($resource_refs)) {
+        $unmatched_folders[$folder_path] = $info;
+    }
 }
 
-unlink($file);
+echo json_encode($unmatched_folders);

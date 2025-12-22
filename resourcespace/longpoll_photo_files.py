@@ -4,11 +4,8 @@ import os
 import re
 import shutil
 import json
-import sys
-
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import longpoll
+from imm import longpoll
+import subprocess
 
 process = "photo"
 lp = longpoll.LongPoll()
@@ -18,6 +15,9 @@ home_dir = os.path.expanduser('~')
 documents_path = os.path.join(home_dir, 'Documents', 'longpoll')
 os.makedirs(documents_path, exist_ok=True)
 cursor_txt_path = os.path.join(documents_path, f"dropbox_longpoll_cursor_{process}.txt")
+
+# Path to save share links
+link_json_path = os.path.join(home_dir, 'Documents', 'photo_share_links.json')
 
 # DB path to traverse
 db_path = "/►CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)"
@@ -67,24 +67,28 @@ def transfer_files(src_folder, dst_folder):
         os.rmdir(src_folder)
         os.rmdir(src_folder)
 
+def update_db_link_by_folder():
+    result = subprocess.run(["php", "update_db_link_by_title.php", link_json_path], capture_output=True, text=True)
+    data = json.loads(result.stdout)
+
+    if data:
+        with open(link_json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+    else:
+        os.remove(link_json_path)
+
 # Begin longpoll
 changes = lp.longpoll(cursor, timeout)
 if changes:
+    # Update cursor
     new_cursor = lp.latest_cursor(db_path)
+    with open(cursor_txt_path, 'w') as file:
+        file.write(new_cursor)
+
     response = lp.list_changes(cursor)
 
     if response:
         lp.folders_files_detect(response, photo_pattern)
-
-        # Save detected folders as json
-        if lp.folders_files_detected:
-            json_path = os.path.join(home_dir, 'Documents', 'photo_share_links.json')
-            with open(json_path, "w") as f:
-                json.dump(lp.folders_files_detected, f)
-
-        # Update cursor
-        with open(cursor_txt_path, 'w') as file:
-            file.write(new_cursor)
 
         # Download or transfer files
         for folder in lp.folders_files_detected:
@@ -118,3 +122,16 @@ if changes:
         print('No changes')
 else:
     print('No changes')
+
+# Save detected folders as json
+if os.path.exists(link_json_path):
+    with open(link_json_path, "r", encoding="utf-8") as f:
+        unprocessed_folders = json.load(f)
+    lp.folders_files_detected.update(unprocessed_folders)
+
+with open(link_json_path, "w") as f:
+    json.dump(lp.folders_files_detected, f)
+
+# Update RS assets with links
+if lp.folders_files_detected:
+    update_db_link_by_folder()

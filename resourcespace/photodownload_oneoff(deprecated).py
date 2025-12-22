@@ -47,27 +47,28 @@ r = lp.list_folder(db_path)
 while r["has_more"]:
     cursor = (r['cursor'])
     r = lp.list_changes(cursor)
-    for entry in r['entries']:
-        if entry['.tag'] == 'file':
-            db_dir = os.path.dirname(entry['path_display'])
-            if photo_pattern.fullmatch(db_dir):
-                download_path = get_file_download_path(entry['path_display'])
-                print(f"Downloading file: {entry['path_display']}")
-                lp.download(entry['path_display'], download_path)
-                if db_dir not in folders_dict:
-                    s_link = lp.get_shared_link(db_dir)
-                    
-                    while not s_link:
+    if not r:
+        break;
+    if r and 'entries' in r and r['entries']:
+        for entry in r['entries']:
+            if entry['.tag'] == 'file':
+                db_dir = os.path.dirname(entry['path_display'])
+                if photo_pattern.fullmatch(db_dir):
+                    download_path = get_file_download_path(entry['path_display'])
+                    print(f"Downloading file: {entry['path_display']}")
+                    if not os.path.exists(download_path):
+                        lp.download(entry['path_display'], download_path)
+                    if db_dir not in folders_dict:
                         s_link = lp.get_shared_link(db_dir)
-                        
-                    s_link = s_link.split("&")[0]
-                    folders_dict[db_dir] = {"old_names": [], "share_link": s_link, "files": [entry['path_display']]}
-                else:
-                    folders_dict[db_dir]['files'].append(entry['path_display'])
+                        if s_link:
+                            s_link = s_link.split("&")[0]
+                            print(s_link)
+                            folders_dict[db_dir] = {"old_names": [], "share_link": s_link, "files": [entry['path_display']]}
+                    else:
+                        folders_dict[db_dir]['files'].append(entry['path_display'])
 
 home_dir = os.path.expanduser('~')
 
 json_path = os.path.join(home_dir, 'Documents', 'photo_share_links.json')
 with open(json_path, "w") as f:
     json.dump(folders_dict, f)
-

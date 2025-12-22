@@ -14,6 +14,7 @@ $file = $argv[1];
 
 $json = file_get_contents($file);
 $folders = json_decode($json, true);
+$unmatched_titles = [];
 
 foreach ($folders as $folder_path => $info) {
 	echo $folder_path . "\n";
@@ -56,4 +57,10 @@ foreach ($folders as $folder_path => $info) {
 		    break;
 		}
 	}
+
+    if ($resource_ref != 0) {
+        $unmatched_titles[$folder_path] = $info;
+    }
 }
+
+echo json_encode($unmatched_titles);
