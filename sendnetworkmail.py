@@ -7,7 +7,7 @@ from email.mime.text import MIMEText
 from email import encoders
 import os
 import re
-import validateuserinput
+from imm import validateuserinput
 
 
 class SendNetworkEmail:

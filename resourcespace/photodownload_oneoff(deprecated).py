@@ -48,7 +48,7 @@ while r["has_more"]:
     cursor = (r['cursor'])
     r = lp.list_changes(cursor)
     if not r:
-        break;
+        break
     if r and 'entries' in r and r['entries']:
         for entry in r['entries']:
             if entry['.tag'] == 'file':

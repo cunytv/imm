@@ -38,7 +38,7 @@ else:
 # Specify timeout
 timeout = 30
 
-def update_db_link_by_folder():
+def update_db_link_by_title():
     result = subprocess.run(["php", "update_db_link_by_title.php", link_json_path], capture_output=True, text=True)
     data = json.loads(result.stdout)
 
@@ -51,34 +51,36 @@ def update_db_link_by_folder():
 
 # Consider unprocessed folder names
 if os.path.exists(link_json_path):
-    update_db_link_by_folder()
+    update_db_link_by_title()
 
 # Begin longpoll
 changes = lp.longpoll(cursor, timeout)
 if changes:
     new_cursor = lp.latest_cursor(db_path)
-    response = lp.list_changes(cursor)
+    has_more = True
+    while has_more:
+        response = lp.list_changes(cursor)
 
-    if response:
-        lp.folders_files_detect(response, remote_pattern)
+        if response and 'entries' in response and response['entries']:
+            lp.folders_files_detect(response, remote_pattern)
+            # Save detected folders as json
+            if lp.folders_files_detected:
+                if os.path.exists(link_json_path):
+                    with open(link_json_path, "r", encoding="utf-8") as f:
+                        unprocessed_folders = json.load(f)
+                    lp.folders_files_detected.update(unprocessed_folders)
 
-        # Save detected folders as json
-        if lp.folders_files_detected:
-            if os.path.exists(link_json_path):
-                with open(link_json_path, "r", encoding="utf-8") as f:
-                    unprocessed_folders = json.load(f)
-                lp.folders_files_detected.update(unprocessed_folders)
+                with open(link_json_path, "w") as f:
+                    json.dump(lp.folders_files_detected, f)
+        else:
+            break
+        has_more = response['has_more']
 
-            with open(link_json_path, "w") as f:
-                json.dump(lp.folders_files_detected, f)
+    # Update cursor
+    with open(cursor_txt_path, 'w') as file:
+        file.write(new_cursor)
 
-            # Call php script to update links in Resourcespace
-            update_db_link_by_folder()
-
-        # Update cursor
-        with open(cursor_txt_path, 'w') as file:
-            file.write(new_cursor)
-    else:
-        print('No changes')
+    # Call php script to update links in Resourcespace
+    update_db_link_by_title()
 else:
     print('No changes')
