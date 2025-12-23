@@ -3,7 +3,7 @@ import requests
 import json
 import time
 import os
-from imm import sendnetworkmail
+import sendnetworkmail
 
 class LongPoll:
     # Two types of processes, specify by string: 'remote' and 'photo'
