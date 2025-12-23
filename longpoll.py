@@ -170,9 +170,15 @@ class LongPoll:
         print("Max retries reached. Failed to process the request.")
         return None
 
+    def guess_type(self, name, max_ext_len=5):
+        for i in range(1, max_ext_len + 1):
+            if len(name) > i and name[-(i + 1)] == '.':
+                return "file"
+        return "folder"
+
     def folders_files_detect(self, response, pattern):
         for entry in response['entries']:
-            if '.' in entry['name']:  # if file
+            if self.guess_type(entry['name']) == 'file':  # if file
                 path = entry['path_display'].rsplit('/', 1)[0]
                 folder_name = path.rsplit('/', 1)[1]
             else:
