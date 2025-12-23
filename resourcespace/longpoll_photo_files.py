@@ -4,8 +4,13 @@ import os
 import re
 import shutil
 import json
-from imm import longpoll
+
 import subprocess
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import longpoll
 
 process = "photo"
 lp = longpoll.LongPoll()

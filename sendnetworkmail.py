@@ -7,11 +7,7 @@ from email.mime.text import MIMEText
 from email import encoders
 import os
 import re
-
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from imm import validateuserinput
+import validateuserinput
 
 
 class SendNetworkEmail:
