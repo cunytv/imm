@@ -10,16 +10,16 @@ class LongPoll:
     def __init__(self):
         # Credentials for creating access token
         ## AG's personal dropbox
-        self.client_id = 'bsp8x2pbkklqbz8'
-        self.client_secret = 'c3po7io03u5zgtt'
-        self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
-        self.ACCESS_TOKEN = ''
+        #self.client_id = 'bsp8x2pbkklqbz8'
+        #self.client_secret = 'c3po7io03u5zgtt'
+        #self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
+        #self.ACCESS_TOKEN = ''
 
         ## ag's dropbox
-        #self.client_id = 'wmub6kuvhq3xviy'
-        #self.client_secret = '9blokt7f8ac0v9c'
-        #self.refresh_token = '04OpIpx9TukAAAAAAAAAAcI1CpMvfrjlRkpUzG9hTdOFY5Be-R6unYHdLBcnR8No'
-        #self.ACCESS_TOKEN = ''
+        self.client_id = 'wmub6kuvhq3xviy'
+        self.client_secret = '9blokt7f8ac0v9c'
+        self.refresh_token = '04OpIpx9TukAAAAAAAAAAcI1CpMvfrjlRkpUzG9hTdOFY5Be-R6unYHdLBcnR8No'
+        self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
         self.time_now = ''
