@@ -102,6 +102,8 @@ if changes:
                         print(f"Downloading files from {folder} to {new_download_path}")
                         for file in lp.folders_files_detected[folder]['files']:
                             db_file_path = os.path.join(folder, file)
+                            print(folder)
+                            print(file)
                             print(db_file_path)
                             file_path_for_download = os.path.join(new_download_path, file)
                             lp.download(db_file_path, file_path_for_download)
