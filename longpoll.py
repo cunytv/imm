@@ -187,7 +187,8 @@ class LongPoll:
                         self.folders_files_detected[path]['share_link'] = None
                     else:
                         share_link = self.get_shared_link(entry['path_display'])
-                        share_link = share_link.split("&")[0]
+                        if share_link:
+                            share_link = share_link.split("&")[0]
                         self.folders_files_detected[path]['share_link'] = share_link
 
                 if folder_name != entry['name']:  # if file
