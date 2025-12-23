@@ -200,6 +200,7 @@ class LongPoll:
                 if folder_name != entry['name']:  # if file
                     self.folders_files_detected[path]['files'].append(entry['name'])
 
+        print(self.folders_files_detected)
         # concatenate dictionaries with the same files[],
         # to distinguish new and deleted entries from entries that were renamed or moved
         for folder in list(self.folders_files_detected.keys()):
