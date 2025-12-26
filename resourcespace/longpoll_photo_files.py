@@ -135,8 +135,6 @@ if changes:
 else:
     print('No changes')
 
-
-
 # Save detected folders as json
 if os.path.exists(link_json_path):
     with open(link_json_path, "r", encoding="utf-8") as f:
