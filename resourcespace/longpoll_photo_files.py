@@ -76,6 +76,8 @@ def update_db_link_by_folder():
     result = subprocess.run(["php", "update_db_link_by_title.php", link_json_path], capture_output=True, text=True)
     data = json.loads(result.stdout)
 
+    print(data)
+
     if data:
         with open(link_json_path, "w", encoding="utf-8") as f:
             json.dump(data, f)
