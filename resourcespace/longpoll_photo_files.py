@@ -32,8 +32,8 @@ photo_pattern = re.compile(r"/►CUNY TV REMOTE FOOTAGE \(for DELIVERY & COPY fr
 
 # Server folder path for downloads
 # Specify local directory for downloads
-local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/Photos"
-#local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+#local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/Photos"
+local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
 os.makedirs(local_directory, exist_ok=True)
 
 # Get cursor
@@ -92,47 +92,49 @@ if changes:
 
         if response and 'entries' in response and response['entries']:
             lp.folders_files_detect(response, photo_pattern)
-
-            # Download or transfer files
-            for folder in lp.folders_files_detected:
-                if lp.folders_files_detected[folder]['share_link']:
-                    new_download_path = get_folder_download_path(folder)
-
-                    if not lp.folders_files_detected[folder]['old_names']:
-                        print(f"Downloading files from {folder} to {new_download_path}")
-                        for file in lp.folders_files_detected[folder]['files']:
-                            db_file_path = os.path.join(folder, file)
-                            print(folder)
-                            print(file)
-                            print(db_file_path)
-                            file_path_for_download = os.path.join(new_download_path, file)
-                            lp.download(db_file_path, file_path_for_download)
-
-                    if lp.folders_files_detected[folder]['old_names']:
-                        already_on_server = False
-                        for oldfolder in lp.folders_files_detected[folder]['old_names']:
-                            old_download_path = get_folder_download_path(oldfolder)
-
-                            if os.path.exists(old_download_path):
-                                print(f"Transfering files from {old_download_path} to {new_download_path}")
-                                already_on_server = True
-                                transfer_files(old_download_path, new_download_path)
-
-                        if not already_on_server:
-                            print(f"Downloading files from {folder} to {new_download_path}")
-                            for file in lp.folders_files_detected[folder]['files']:
-                                db_file_path = os.path.join(folder, file)
-                                file_path_for_download = os.path.join(new_download_path, file)
-                                lp.download(db_file_path, file_path_for_download)
             has_more = response['has_more']
-            print(has_more)
+            cursor = response['cursor']
         else:
             break
+
+    # Download or transfer files
+    for folder in lp.folders_files_detected:
+        if lp.folders_files_detected[folder]['share_link']:
+            new_download_path = get_folder_download_path(folder)
+
+            if not lp.folders_files_detected[folder]['old_names']:
+                print(f"Downloading files from {folder} to {new_download_path}")
+                for file in lp.folders_files_detected[folder]['files']:
+                    db_file_path = os.path.join(folder, file)
+                    print(folder)
+                    print(file)
+                    print(db_file_path)
+                    file_path_for_download = os.path.join(new_download_path, file)
+                    lp.download(db_file_path, file_path_for_download)
+
+            if lp.folders_files_detected[folder]['old_names']:
+                already_on_server = False
+                for oldfolder in lp.folders_files_detected[folder]['old_names']:
+                    old_download_path = get_folder_download_path(oldfolder)
+
+                    if os.path.exists(old_download_path):
+                        print(f"Transfering files from {old_download_path} to {new_download_path}")
+                        already_on_server = True
+                        transfer_files(old_download_path, new_download_path)
+
+                if not already_on_server:
+                    print(f"Downloading files from {folder} to {new_download_path}")
+                    for file in lp.folders_files_detected[folder]['files']:
+                        db_file_path = os.path.join(folder, file)
+                        file_path_for_download = os.path.join(new_download_path, file)
+                        lp.download(db_file_path, file_path_for_download)
+
     # Update cursor
     with open(cursor_txt_path, 'w') as file:
         file.write(new_cursor)
 else:
     print('No changes')
+
 
 
 # Save detected folders as json
