@@ -42,16 +42,31 @@ else:
 # Specify timeout
 timeout = 30
 
+def merge_folder_dicts(dict1, dict2):
+    merged = dict1.copy()  # start with a copy of dict1
+
+    for folder, info2 in dict2.items():
+        if folder in merged:
+            info1 = merged[folder]
+
+            # Merge lists without duplicates
+            info1["old_names"] = list(set(info1.get("old_names", []) + info2.get("old_names", [])))
+            info1["files"] = list(set(info1.get("files", []) + info2.get("files", [])))
+
+            # Keep share_link from dict1 if exists, otherwise use dict2
+            if not info1.get("share_link"):
+                info1["share_link"] = info2.get("share_link")
+
+            merged[folder] = info1
+        else:
+            merged[folder] = info2
+
+    return merged
+
 def update_db_link_by_title():
     result = subprocess.run(["php", "update_db_link_by_title.php", link_json_path], capture_output=True, text=True)
-    data = json.loads(result.stdout)
-
-    if data:
-        with open(link_json_path, "w", encoding="utf-8") as f:
-            json.dump(data, f)
-    else:
-        os.remove(link_json_path)
-
+    print(result.stdout)
+    print(result.stderr)
 
 # Consider unprocessed folder names
 if os.path.exists(link_json_path):
@@ -64,21 +79,23 @@ if changes:
     has_more = True
     while has_more:
         response = lp.list_changes(cursor)
+        cursor = response['cursor']
 
         if response and 'entries' in response and response['entries']:
             lp.folders_files_detect(response, remote_pattern)
-            # Save detected folders as json
-            if lp.folders_files_detected:
-                if os.path.exists(link_json_path):
-                    with open(link_json_path, "r", encoding="utf-8") as f:
-                        unprocessed_folders = json.load(f)
-                    lp.folders_files_detected.update(unprocessed_folders)
-
-                with open(link_json_path, "w") as f:
-                    json.dump(lp.folders_files_detected, f)
         else:
             break
         has_more = response['has_more']
+
+    # Save detected folders as json
+    if lp.folders_files_detected:
+        if os.path.exists(link_json_path):
+            with open(link_json_path, "r", encoding="utf-8") as f:
+                unprocessed_folders = json.load(f)
+            lp.folders_files_detected = merge_folder_dicts(lp.folders_files_detected, unprocessed_folders)
+
+        with open(link_json_path, "w", encoding="utf-8") as f:
+            json.dump(lp.folders_files_detected, f, indent=2, sort_keys=True)
 
     # Update cursor
     with open(cursor_txt_path, 'w') as file:

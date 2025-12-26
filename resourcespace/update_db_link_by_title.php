@@ -63,4 +63,11 @@ foreach ($folders as $folder_path => $info) {
     }
 }
 
-echo json_encode($unmatched_titles);
+if (!empty($unmatched_folders)) {
+    file_put_contents(
+        $file,
+        json_encode($unmatched_folders, JSON_PRETTY_PRINT)
+    );
+} else {
+    unlink($file);
+}

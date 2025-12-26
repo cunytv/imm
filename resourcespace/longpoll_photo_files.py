@@ -72,17 +72,33 @@ def transfer_files(src_folder, dst_folder):
         os.rmdir(src_folder)
         os.rmdir(src_folder)
 
+
+def merge_folder_dicts(dict1, dict2):
+    merged = dict1.copy()  # start with a copy of dict1
+
+    for folder, info2 in dict2.items():
+        if folder in merged:
+            info1 = merged[folder]
+
+            # Merge lists without duplicates
+            info1["old_names"] = list(set(info1.get("old_names", []) + info2.get("old_names", [])))
+            info1["files"] = list(set(info1.get("files", []) + info2.get("files", [])))
+
+            # Keep share_link from dict1 if exists, otherwise use dict2
+            if not info1.get("share_link"):
+                info1["share_link"] = info2.get("share_link")
+
+            merged[folder] = info1
+        else:
+            merged[folder] = info2
+
+    return merged
+
+
 def update_db_link_by_folder():
     result = subprocess.run(["php", "update_db_link_by_title.php", link_json_path], capture_output=True, text=True)
-    data = json.loads(result.stdout)
-
-    print(data)
-
-    if data:
-        with open(link_json_path, "w", encoding="utf-8") as f:
-            json.dump(data, f)
-    else:
-        os.remove(link_json_path)
+    print(result.stdout)
+    print(result.stderr)
 
 # Begin longpoll
 changes = lp.longpoll(cursor, timeout)
@@ -108,9 +124,6 @@ if changes:
                 print(f"Downloading files from {folder} to {new_download_path}")
                 for file in lp.folders_files_detected[folder]['files']:
                     db_file_path = os.path.join(folder, file)
-                    print(folder)
-                    print(file)
-                    print(db_file_path)
                     file_path_for_download = os.path.join(new_download_path, file)
                     lp.download(db_file_path, file_path_for_download)
 
@@ -130,22 +143,21 @@ if changes:
                         db_file_path = os.path.join(folder, file)
                         file_path_for_download = os.path.join(new_download_path, file)
                         lp.download(db_file_path, file_path_for_download)
-
     # Update cursor
     with open(cursor_txt_path, 'w') as file:
         file.write(new_cursor)
 else:
     print('No changes')
 
-# Save detected folders as json
+# Process unmatched values
 if os.path.exists(link_json_path):
     with open(link_json_path, "r", encoding="utf-8") as f:
         unprocessed_folders = json.load(f)
-    lp.folders_files_detected.update(unprocessed_folders)
+    lp.folders_files_detected = merge_folder_dicts(lp.folders_files_detected, unprocessed_folders)
 
-with open(link_json_path, "w") as f:
-    json.dump(lp.folders_files_detected, f)
-
-# Update RS assets with links
 if lp.folders_files_detected:
+    with open(link_json_path, "w", encoding="utf-8") as f:
+        json.dump(lp.folders_files_detected, f, indent=2, sort_keys=True)
+
+    # Update RS assets with links
     update_db_link_by_folder()
