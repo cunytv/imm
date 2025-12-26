@@ -96,7 +96,7 @@ def merge_folder_dicts(dict1, dict2):
 
 
 def update_db_link_by_folder():
-    result = subprocess.run(["php", "update_db_link_by_title.php", link_json_path], capture_output=True, text=True)
+    result = subprocess.run(["php", "/Users/libraryad/Documents/GitHub/imm/resourcespace/update_db_link_by_folder.php", link_json_path], capture_output=True, text=True)
     print(result.stdout)
     print(result.stderr)
 
