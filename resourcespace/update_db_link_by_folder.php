@@ -9,7 +9,7 @@ $file          = $argv[1];
  JSON structure (passed as argument):
 
  "/DB/FOLDER/PATH" : {
-     old_names  : [FOLDERNAME],
+     old_names  : [/FOLDER/PATH/NAME],
      share_link: "https://...",
      files     : ["file.jpg"]
  }
@@ -33,44 +33,34 @@ foreach ($folders as $folder_path => $info)
     $names[] = $name;
 
     // Add old folder names (deduplicated)
-    foreach ($info['old_names'] as $old_path)
-    {
+    foreach ($info['old_names'] as $old_path) {
         $parts = explode('/', trim($old_path, '/'));
         $name  = end($parts);
 
-        if (!in_array($name, $names, true))
-        {
+        if (!in_array($name, $names, true)) {
             $names[] = $name;
         }
     }
 
     // Get resource refs for assets in folder
-    foreach ($names as $name)
-    {
+    foreach ($names as $name){
         $query = "SELECT resource AS value FROM collection_resource WHERE collection IN (SELECT ref FROM collection WHERE name = ?);";
         $resource_refs = ps_query($query, ['s', $name], 0);
 
-        if (!empty($resource_refs))
-        {
-            foreach ($resource_refs as $resource_ref)
-            {
+        if (!empty($resource_refs)) {
+            foreach ($resource_refs as $resource_ref) {
                 // Create or delete resource_node entry
-                if ($link !== null && $link !== '')
-                {					
+                if ($link !== null && $link !== '') {
                     $node_ref = set_node(null, $db_link_field, $link, null, null);
 					
                     add_resource_nodes($resource_ref['value'], [$node_ref]);
                     echo "Created dropbox link node for resource {$resource_ref['value']}\n";
-                }
-                else
-                {
+                } else {
                     $delete_query = "DELETE FROM resource_node WHERE node IN (SELECT ref FROM node WHERE resource_type_field = ?) AND resource = ?;";
                     ps_query($delete_query, ['i', $db_link_field, 'i', $resource_ref['value']]);
                     echo "Deleted dropbox link node for resource {$resource_ref['value']}\n";
                 }
-            }
-
-            break;
+            } break;
         }
     }
 

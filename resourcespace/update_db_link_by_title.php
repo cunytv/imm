@@ -7,7 +7,7 @@ $file = $argv[1];
 
 // json structure, passed as argument, is
 // "/DB/FOLDER/PATH" : {
-//							old_names: [FOLDERNAME],
+//							old_names: [/FOLDER/PATH/NAME],
 //							share_link: $https://,
 //							files: [file.jpg]	
 //						}

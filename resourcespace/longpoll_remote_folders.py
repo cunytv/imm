@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-import os
 import re
 import subprocess
 import json
-
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import longpoll
 
@@ -64,7 +63,7 @@ def merge_folder_dicts(dict1, dict2):
     return merged
 
 def update_db_link_by_title():
-    result = subprocess.run(["php", "/Users/libraryad/Documents/GitHub/imm/resourcespace/update_db_link_by_title.php", link_json_path], capture_output=True, text=True)
+    result = subprocess.run(["php", "/Users/libraryad/Documents/GitHub/imm/resourcespace/update_db_link_by_title.php", link_json_path], capture_output=True, text=True, start_new_session=True)
     print(result.stdout)
     print(result.stderr)
 
