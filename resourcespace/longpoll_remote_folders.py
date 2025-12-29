@@ -79,9 +79,8 @@ if changes:
     has_more = True
     while has_more:
         response = lp.list_changes(cursor)
-        cursor = response['cursor']
-
         if response and 'entries' in response and response['entries']:
+            cursor = response['cursor']
             lp.folders_files_detect(response, remote_pattern)
         else:
             break
