@@ -67,8 +67,12 @@ def transfer_files(src_folder, dst_folder):
         if os.path.isfile(src_path):
             shutil.move(src_path, dst_path)
 
-        os.rmdir(src_folder)
-        os.rmdir(src_folder)
+    os.rmdir(src_folder)
+
+def update_db_link_by_folder():
+    result = subprocess.run(["php", "/Users/libraryad/Documents/GitHub/imm/resourcespace/update_db_link_by_folder.php", link_json_path], capture_output=True, text=True, start_new_session=True)
+    print(result.stdout)
+    print(result.stderr)
 
 
 def merge_folder_dicts(dict1, dict2):
@@ -92,12 +96,6 @@ def merge_folder_dicts(dict1, dict2):
 
     return merged
 
-
-def update_db_link_by_folder():
-    result = subprocess.run(["php", "/Users/libraryad/Documents/GitHub/imm/resourcespace/update_db_link_by_folder.php", link_json_path], capture_output=True, text=True, start_new_session=True)
-    print(result.stdout)
-    print(result.stderr)
-
 # Begin longpoll
 changes = lp.longpoll(cursor, timeout)
 if changes:
@@ -114,6 +112,7 @@ if changes:
             break
 
     # Download or transfer files
+    print(lp.folders_files_detected)
     for folder in lp.folders_files_detected:
         if lp.folders_files_detected[folder]['share_link']:
             new_download_path = get_folder_download_path(folder)
@@ -143,7 +142,7 @@ if changes:
                         lp.download(db_file_path, file_path_for_download)
     # Update cursor
     with open(cursor_txt_path, 'w') as file:
-        file.write(new_cursor)
+        file.write(cursor)
 else:
     print('No changes')
 
@@ -157,5 +156,6 @@ if lp.folders_files_detected:
     with open(link_json_path, "w", encoding="utf-8") as f:
         json.dump(lp.folders_files_detected, f, indent=2, sort_keys=True)
 
-    # Update RS assets with links
+# Run folder update
+if (os.path.exists(link_json_path)):
     update_db_link_by_folder()
