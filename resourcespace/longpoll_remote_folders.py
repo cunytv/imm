@@ -66,15 +66,10 @@ def update_db_link_by_title():
     result = subprocess.run(["php", "/Users/libraryad/Documents/GitHub/imm/resourcespace/update_db_link_by_title.php", link_json_path], capture_output=True, text=True, start_new_session=True)
     print(result.stdout)
     print(result.stderr)
-
-# Consider unprocessed folder names
-if os.path.exists(link_json_path):
-    update_db_link_by_title()
-
+    
 # Begin longpoll
 changes = lp.longpoll(cursor, timeout)
 if changes:
-    new_cursor = lp.latest_cursor(db_path)
     has_more = True
     while has_more:
         response = lp.list_changes(cursor)
@@ -97,9 +92,10 @@ if changes:
 
     # Update cursor
     with open(cursor_txt_path, 'w') as file:
-        file.write(new_cursor)
-
-    # Call php script to update links in Resourcespace
-    update_db_link_by_title()
+        file.write(cursor)
 else:
     print('No changes')
+
+# Run title update
+if (os.path.exists(link_json_path)):
+    update_db_link_by_title()
