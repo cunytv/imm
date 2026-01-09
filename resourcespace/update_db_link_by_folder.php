@@ -66,6 +66,7 @@ foreach ($folders as $folder_path => $info)
 
     if (empty($resource_refs)) {
         $unmatched_folders[$folder_path] = $info;
+		echo "Resources not found under folder " . $names[0] . "\n";
     }
 }
 
