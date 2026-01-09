@@ -192,24 +192,32 @@ class LongPoll:
                     if entry['.tag'] == 'deleted':
                         self.folders_files_detected[path]['share_link'] = None
                     else:
-                        share_link = self.get_shared_link(entry['path_display'])
+                        share_link = self.get_shared_link(path)
                         if share_link:
                             share_link = share_link.split("&")[0]
                         self.folders_files_detected[path]['share_link'] = share_link
 
                 if folder_name != entry['name']:  # if file
                     self.folders_files_detected[path]['files'].append(entry['name'])
-
+        
         # concatenate dictionaries with the same files[],
         # to distinguish new and deleted entries from entries that were renamed or moved
         for folder in list(self.folders_files_detected.keys()):
-            if self.folders_files_detected[folder]['share_link']:
-                for folder2 in list(self.folders_files_detected.keys()):
-                    if folder != folder2 and not self.folders_files_detected[folder2]['share_link'] and sorted(
-                            self.folders_files_detected[folder]['files']) == sorted(
-                            self.folders_files_detected[folder2]['files']):
-                        self.folders_files_detected[folder]['old_names'].append(folder2)
-                        del self.folders_files_detected[folder2]
+           if folder not in self.folders_files_detected:
+               continue
+           if self.folders_files_detected[folder]['share_link']:
+               for folder2 in list(self.folders_files_detected.keys()):
+                   if folder2 not in self.folders_files_detected:
+                       continue
+                   if (
+                       folder != folder2
+                       and not self.folders_files_detected[folder2]['share_link']
+                       and sorted(self.folders_files_detected[folder]['files'])
+                          == sorted(self.folders_files_detected[folder2]['files'])
+                   ):
+                       self.folders_files_detected[folder]['old_names'].append(folder2)
+                       del self.folders_files_detected[folder2]
+       
 
     def download(self, dropbox_path, download_path):
         max_retries = 5
