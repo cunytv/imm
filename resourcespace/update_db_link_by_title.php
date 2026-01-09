@@ -58,15 +58,16 @@ foreach ($folders as $folder_path => $info) {
 		}
 	}
 
-    if ($resource_ref != 0) {
+    if ($resource_ref == 0) {
+		echo "Resource not found with title " . $names[0] . "\n";
         $unmatched_titles[$folder_path] = $info;
     }
 }
 
-if (!empty($unmatched_folders)) {
+if (!empty($unmatched_titles)) {
     file_put_contents(
         $file,
-        json_encode($unmatched_folders, JSON_PRETTY_PRINT)
+        json_encode($unmatched_titles, JSON_PRETTY_PRINT)
     );
 } else {
     unlink($file);
