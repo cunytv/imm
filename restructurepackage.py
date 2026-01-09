@@ -79,10 +79,6 @@ class RestructurePackage:
     def mac_system_metadata(self, file):
         if "uuid" in file.lower() or file.startswith('.'):
             return True
-        if any(pattern in file.lower() for pattern in
-               ['tmp', 'spotlight', 'map', 'index', 'dbStr', '0.directory', '0.index', 'indexState', 'live.', 'reverse',
-                'shutdown', 'store', 'plist', 'cab', 'psid.db', 'Exclusion', 'Lion']):
-            return True
 
     # Checks if folder is empty
     def empty_folder(self, folder):
