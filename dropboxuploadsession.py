@@ -14,6 +14,7 @@ import validateuserinput
 import sendnetworkmail
 import filetype
 import subprocess
+import multiprogressbar
 
 class DropboxUploadSession:
     def __init__(self, path=None, filesdict=None, transfertype=None, checksum=True):
@@ -48,7 +49,13 @@ class DropboxUploadSession:
         self.q = queue.Queue()
 
         # Initializing functions
-        self.get_path_stats(path, transfertype, filesdict, checksum)
+        if isinstance(path, list):
+            for p in path:
+                print(p)
+                self.get_path_stats(p, transfertype, filesdict, checksum)
+        else:
+            self.get_path_stats(path, transfertype, filesdict, checksum)
+
         self.refresh_access_token()
 
     def get_path_stats(self, path, transfer_type=None, files_dict=None, checksum=True):
@@ -66,14 +73,14 @@ class DropboxUploadSession:
                 nondict_file_bytes += total_size
 
         elif os.path.isdir(path):
-            for dirpath, _, filenames in os.walk(path):
+            for dirpath, dirs, filenames in os.walk(path):
+                dirs[:] = [d for d in dirs if not d.startswith('.')]
                 for f in filenames:
                     fp = os.path.join(dirpath, f)
-
-                    if transfer_type == 'delivery' and filetype.is_av(fp) != 'objects':
+                    if self.mac_system_metadata(f) or os.path.getsize(fp) == 0:
                         continue
 
-                    if self.mac_system_metadata(fp) or os.path.getsize(fp) == 0:
+                    if transfer_type == 'delivery' and filetype.is_av(fp) != 'objects':
                         continue
 
                     try:
@@ -86,15 +93,16 @@ class DropboxUploadSession:
                         pass
 
         if checksum and not files_dict:
-            self.total_size = total_size * 2
+            self.total_size += total_size * 2
         else:
-            self.total_size = total_size + nondict_file_bytes
+            self.total_size += total_size + nondict_file_bytes
 
-        self.total_files = total_files
+        self.total_files += total_files
 
         # add bytes to account for sending notifcation
-        self.email_increment = round(self.total_size/100)
-        self.total_size += self.email_increment
+        email_increment = round(self.total_size/100)
+        self.email_increment += email_increment
+        self.total_size += email_increment
 
     # Generates access tokens to make API calls
     def refresh_access_token(self):
@@ -144,7 +152,8 @@ class DropboxUploadSession:
         file_paths = []
         dropbox_paths = []
 
-        for root, directories, files in os.walk(directory):
+        for root, dirs, files in os.walk(directory):
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
             for filename in files:
                 if not self.mac_system_metadata(filename):
                     file_paths.append(os.path.join(root, filename))
@@ -650,6 +659,8 @@ class DropboxUploadSession:
         self.bytes_read += self.email_increment
 
     def email(self, emails, filename, link):
+        self.current_process = "Sending notification email to recipients"
+
         notification = sendnetworkmail.SendNetworkEmail()
         notification.sender("library@tv.cuny.edu")
         notification.recipients(emails)
@@ -669,7 +680,18 @@ class DropboxUploadSession:
         """
 
         notification.html_content(html_content)
-        notification.send()
+
+        with open(os.devnull, "w") as devnull:
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            sys.stdout = devnull
+            sys.stderr = devnull
+            try:
+                notification.send()
+            finally:
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+
 
     # Gets shared folder id if it does not already exist. Necessary for the API call to add member(s) to folder
     def get_file_hash(self, file_path):
@@ -812,7 +834,7 @@ class DropboxUploadSession:
              return False
 
     # Handles folder uploads
-    def folder (self, folder_path, emails, dropbox_path_prefix):
+    def folder (self, folder_path, dropbox_path_prefix, emails):
         # Dropbox root folder where you want to upload files
         # /Users/archivesx/Desktop/Test => /Test
         ROOT_PATH = '/' + folder_path.rsplit('/', 1)[1]
@@ -853,8 +875,10 @@ class DropboxUploadSession:
             if other_emails:
                 self.add_folder_member(other_emails, id, False, None)
 
+            self.bytes_read += self.email_increment
+
     # Handles file uploads
-    def file (self, file_path, emails, dropbox_path_prefix):
+    def file (self, file_path, dropbox_path_prefix, emails, link=None):
         # Dropbox file path where you want to upload the file
         # /Users/archivesx/Desktop/test.png => /test.png
         ROOT_PATH = '/' + file_path.rsplit('/', 1)[1]
@@ -875,7 +899,10 @@ class DropboxUploadSession:
                     other_emails.append(email)
 
             # Create shared link (do you want to create shared link for the file or for the folder??, test and figure out
-            self.share_link, id = self.get_shared_link(ROOT_PATH)
+            if link == "file":
+                self.share_link, id = self.get_shared_link(ROOT_PATH)
+            elif link == "folder":
+                self.share_link, id = self.get_shared_link(dropbox_path_prefix)
 
             # Email notification
             if cuny_emails:
@@ -885,42 +912,72 @@ class DropboxUploadSession:
             if other_emails:
                 self.add_file_member(other_emails, id, False)
 
+            self.bytes_read += self.email_increment
+
 if __name__ == "__main__":
+    input("This script uploads a folder or file(s) to one dropbox directory. Press enter to continue.")
 
-    # (Input, Emails, Output), ...
-    input_emails_output_tuple = []
+    input_path = input("Input folder or file path(s): ")
+    paths = []
+    current = ""
 
-    cont = True
-    while cont:
-        input_path = validateuserinput.path(input("Input folder or file path: "))
-        emails = validateuserinput.emails(input("List email(s) delimited by space or press enter to continue: "))
-        emails.extend(["library@tv.cuny.edu"])
-        #emails.extend(["aida.garrido@tv.cuny.edu"])
+    for path in input_path.split():
+        # If previous part was continuing
+        if current:
+            current += " " + path.replace("\\", "")
+            if not path.endswith("\\"):
+                paths.append(current)
+                current = ""
+        else:
+            if path.endswith("\\"):
+                current = path.replace("\\", "")
+            else:
+                paths.append(path.replace("\\", ""))
 
-        # Custom dropbox parent folder path, otherwise defaults to root dropbox folder in the case of a file
-        # and show code workflow in the case of a folder
-        custom_prefix = input('Specify dropbox path (/Example/Example) or press enter for default /_AD_HOC_REQUESTS: ') or "/_AD_HOC_REQUESTS"
 
-        input_emails_output_tuple.append([input_path, emails, custom_prefix])
-        cont = (input("\tQueue more dropbox uploads? y/n: ")).lower() == 'y'
+    emails = validateuserinput.emails(input("List email(s) delimited by space or press enter to continue: "))
+    emails.extend(["library@tv.cuny.edu"])
+    #emails.extend(["aida.garrido@tv.cuny.edu"])
 
-    for tuple in input_emails_output_tuple:
-        # Create class instance
-        session = DropboxUploadSession(tuple[0])
-        mpb = multiprogressbar.MultiProgressBar()
-        mpb.add_task("Dropbox Upload", session, 'total_size', 'total_files', 'bytes_read', 'files_read',
+    # Custom dropbox parent folder path, otherwise defaults to root dropbox folder in the case of a file
+    # and show code workflow in the case of a folder
+    dbfolder = None
+    if len(paths) > 1:
+        dbfolder = input("Specify dropbox folder name: ")
+    custom_prefix = input(
+        "Specify dropbox directory (/Example/Example) or press enter for default /_AD_HOC_REQUESTS: "
+    ).strip() or "/_AD_HOC_REQUESTS"
+
+    if dbfolder:
+        custom_prefix = custom_prefix + "/" + dbfolder
+
+    # Create class instance
+    session = DropboxUploadSession(paths)
+
+    mpb = multiprogressbar.MultiProgressBar()
+    mpb.add_task("Dropbox Upload", session, 'total_size', 'total_files', 'bytes_read', 'files_read',
                      'current_process')
-        stop_event = threading.Event()
-        t2 = threading.Thread(target=mpb.render, args=(stop_event,))
+    stop_event = threading.Event()
+    t2 = threading.Thread(target=mpb.render, args=(stop_event,))
+    t2.start()
 
-        if os.path.isfile(tuple[0]):
-            t1 = threading.Thread(target=session.file, args=(tuple[0], tuple[1], tuple[2],))
-        elif os.path.isdir(input_path):
-            t1 = threading.Thread(target=session.folder, args=(tuple[0], tuple[1], tuple[2],))
-        
-        for t in (t1, t2):
-            t.start()
+    for i, p in enumerate(paths):
+        if os.path.isfile(p):
+            if  len(paths) == 1:
+                t1 = threading.Thread(target=session.file, args=(p, custom_prefix, emails, 'file',))
+            elif i == len(paths) - 1:
+                t1 = threading.Thread(target=session.file, args=(p, custom_prefix, emails, 'folder',))
+            else:
+                t1 = threading.Thread(target=session.file, args=(p, custom_prefix, None,))
 
+        else:
+            if i == len(paths) - 1:
+                t1 = threading.Thread(target=session.folder, args=(p, custom_prefix, emails,))
+            else:
+                t1 = threading.Thread(target=session.folder, args=(p, custom_prefix, None,))
+
+        t1.start()
         t1.join()
-        stop_event.set()
-        t2.join()
+
+    stop_event.set()
+    t2.join()
