@@ -46,14 +46,15 @@ class RestructurePackage:
 
         archive_nondict_file_bytes = 0
 
-        for dirpath, _, filenames in os.walk(dir):
+        for dirpath, dirs, filenames in os.walk(dir):
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
             for f in filenames:
                 fp = os.path.join(dirpath, f)
 
                 if transfer_type == 'delivery' and self.file_type(fp) != 'objects':
                     continue
 
-                if self.mac_system_metadata(fp) or os.path.getsize(fp) == 0:
+                if self.mac_system_metadata(f) or os.path.getsize(fp) == 0:
                     continue
 
                 try:
@@ -77,7 +78,7 @@ class RestructurePackage:
 
     # Checks if file is mac system metadata, e.g. .DS_STORE
     def mac_system_metadata(self, file):
-        if "uuid" in file.lower() or file.startswith('.'):
+        if '.' not in file or file.startswith('.'):
             return True
 
     # Checks if folder is empty
