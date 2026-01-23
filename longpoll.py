@@ -5,6 +5,7 @@ import time
 import os
 import sendnetworkmail
 
+
 class LongPoll:
     # Two types of processes, specify by string: 'remote' and 'photo'
     def __init__(self):
@@ -26,8 +27,9 @@ class LongPoll:
         self.time_expire = ''
 
         # Nested dictionary
-        self.folders_files_detected = {}
-        self.folder_files = {"old_names": [], "share_link": None, "files": []}
+        self.folders_files_detected = {} # key in dictionary is tuple (id, folder_name)
+        self.folder_files = {"old_names": [], "share_link": None, "files": {}}
+        self.file = {"name": None, "deleted": None}
 
         # Activate API variables
         self.refresh_access_token()
@@ -129,6 +131,47 @@ class LongPoll:
         print("Max retries reached. Failed to get the cursor.")
         return None
 
+    def get_folder_id(self, path):
+        max_retries = 5
+        retries = 0
+
+        url = "https://api.dropboxapi.com/2/files/get_metadata"
+
+        headers = {
+            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "include_deleted": False,
+            "include_has_explicit_shared_members": False,
+            "include_media_info": False,
+            "path": path
+        }
+
+        while retries < max_retries:
+            try:
+                response = requests.post(url, headers=headers, data=json.dumps(data))
+
+                if response.status_code == 200:
+                    return response.json()['id']
+                else:
+                    print(f"Failed to retrieve data. Status code: {response.status_code}")
+                    print(response.text)
+
+            except requests.RequestException as e:
+                print(f"Request failed: {e}")
+
+            retries += 1
+
+            if retries < max_retries:
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(2)
+
+        print("Max retries reached. Failed to process the request.")
+        return None
+
+
     def list_changes(self, cursor):
         max_retries = 5
         retries = 0
@@ -170,6 +213,88 @@ class LongPoll:
         print("Max retries reached. Failed to process the request.")
         return None
 
+    def get_file_id(self, mode, val):
+        max_retries = 5
+        retries = 0
+
+        url = "https://api.dropboxapi.com/2/files/list_revisions"
+
+        headers = {
+            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "limit": 100,
+            "mode": mode,
+            "path": val
+        }
+
+        while retries < max_retries:
+            try:
+                response = requests.post(url, headers=headers, data=json.dumps(data))
+
+                if response.status_code == 200:
+                    if response.json().get('entries'):
+                        return response.json()['entries'][0]['id']
+                    else:
+                        print("No entries found.")
+                    return
+                else:
+                    print(f"Failed to retrieve data. Status code: {response.status_code}")
+                    print(response.text)
+
+            except requests.RequestException as e:
+                print(f"Request failed: {e}")
+
+            retries += 1
+
+            if retries < max_retries:
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(2)
+
+        print("Max retries reached. Failed to process the request.")
+        return None
+
+    def get_folder_id(self, path):
+        max_retries = 5
+        retries = 0
+
+        url = "https://api.dropboxapi.com/2/files/get_metadata"
+
+        headers = {
+            "Authorization": f"Bearer {self.ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "include_deleted": True,
+            "include_has_explicit_shared_members": False,
+            "include_media_info": False,
+            "path": path
+        }
+
+        while retries < max_retries:
+            try:
+                response = requests.post(url, headers=headers, data=json.dumps(data))
+                if response.status_code == 200:
+                    return response.json().get('id')
+                else:
+                    print(f"Failed to retrieve data. Status code: {response.status_code}")
+                    print(response.text)
+            except requests.RequestException as e:
+                print(f"Request failed: {e}")
+
+            retries += 1
+
+            if retries < max_retries:
+                print(f"Retrying... ({retries}/{max_retries})")
+                time.sleep(2)
+
+        print("Max retries reached. Failed to process the request.")
+        return None
+
+
     def guess_type(self, name, max_ext_len=5):
         for i in range(1, max_ext_len + 1):
             if len(name) > i and name[-(i + 1)] == '.':
@@ -186,30 +311,51 @@ class LongPoll:
                 folder_name = entry['name']
 
             if pattern.fullmatch(path):
-                if path not in self.folders_files_detected:
-                    new_dict = {k: [] for k in self.folder_files.keys()}
-                    self.folders_files_detected[path] = new_dict
-                    if entry['.tag'] == 'deleted':
-                        self.folders_files_detected[path]['share_link'] = None
-                    else:
-                        share_link = self.get_shared_link(entry['path_display'])
-                        if share_link:
-                            share_link = share_link.split("&")[0]
-                        self.folders_files_detected[path]['share_link'] = share_link
+                folder_id = self.get_folder_id(path)
+                if not folder_id:
+                    share_link = None
+                    dict_key = (folder_id, path)
+                else:
+                    share_link = self.get_shared_link(path)
+                    share_link = share_link.split("&")[0]
+                    dict_key = (folder_id, path)
+
+                if dict_key not in self.folders_files_detected:
+                    new_dict = {k: ({} if isinstance(v, dict) else None if v is None else [])
+                                for k, v in self.folder_files.items()}
+                    self.folders_files_detected[dict_key] = new_dict
+                    self.folders_files_detected[dict_key]['share_link'] = share_link
 
                 if folder_name != entry['name']:  # if file
-                    self.folders_files_detected[path]['files'].append(entry['name'])
+                    if entry['.tag'] == 'deleted':
+                        f_id = self.get_file_id("path", entry['path_display'])
+                        deleted = True
+                    else:
+                        f_id = entry['id']
+                        deleted = False
+
+                    if f_id not in self.folders_files_detected[dict_key]['files']:
+                        self.folders_files_detected[dict_key]['files'][f_id] = {'name': entry['name'], 'deleted': deleted, 'old_names': []}
+                    else:
+                        self.folders_files_detected[dict_key]['files'][f_id]['old_names'].append(self.folders_files_detected[dict_key]['files'][f_id]['name'])
+                        self.folders_files_detected[dict_key]['files'][f_id]['name'] = entry['name']
+                        self.folders_files_detected[dict_key]['files'][f_id]['deleted'] = deleted
 
         # concatenate dictionaries with the same files[],
-        # to distinguish new and deleted entries from entries that were renamed or moved
-        for folder in list(self.folders_files_detected.keys()):
-            if self.folders_files_detected[folder]['share_link']:
-                for folder2 in list(self.folders_files_detected.keys()):
-                    if folder != folder2 and not self.folders_files_detected[folder2]['share_link'] and sorted(
-                            self.folders_files_detected[folder]['files']) == sorted(
-                            self.folders_files_detected[folder2]['files']):
-                        self.folders_files_detected[folder]['old_names'].append(folder2)
-                        del self.folders_files_detected[folder2]
+        # to distinguish new and deleted folder entries from folder entries that were renamed or moved
+        for d in list(self.folders_files_detected.keys()):
+            for d2 in list(self.folders_files_detected.keys()):
+                if d == d2:
+                    continue
+                if d not in self.folders_files_detected or d2 not in self.folders_files_detected:
+                    continue
+                else:
+                    # renamed folder
+                    if not d[0] and self.folders_files_detected[d]['files'] and self.folders_files_detected[d2][
+                        'files'] and self.folders_files_detected[d]['files'].keys() == \
+                            self.folders_files_detected[d2]['files'].keys():
+                        self.folders_files_detected[d2]['old_names'].append(d[1])
+                        del self.folders_files_detected[d]
 
     def download(self, dropbox_path, download_path):
         max_retries = 5
