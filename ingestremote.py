@@ -207,7 +207,7 @@ def print_log(log_dest, package):
     now = datetime.now()
     time_str = now.strftime("%H%M%S")
 
-    new_log_path = os.path.join(archive_server, package, "metadata", f"ingestlog{package}_{time_str}.json")
+    new_log_path = os.path.join(archive_server, package, "metadata", "logs", f"ingestlog{package}_{time_str}.json")
 
     new_log_data = {
         "package": package,
@@ -460,7 +460,7 @@ def ingest_dropbox_upload(desktop_path, package, uploadsession):
 
 def ingest_log_and_errors(desktop_path):
     for package in packages_dict:
-        log_dest = os.path.join(archive_server, package, "metadata")
+        log_dest = os.path.join(archive_server, package, "logs", "metadata")
         # Check if the log exists, if not, create it
         if not os.path.exists(log_dest):
             os.makedirs(log_dest)
