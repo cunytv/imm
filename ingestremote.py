@@ -437,7 +437,9 @@ def ingest_dropbox_upload(desktop_path, package, uploadsession):
     emails = packages_dict[package]["emails"]
 
     if no_error and do_dropbox:
-        for root, _, files in os.walk(desktop_object_directory, topdown=False):
+        for root, dirs, files in os.walk(desktop_object_directory, topdown=False):
+            # remove hidden directories (starting with '.')
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
             for filename in files:
                 if not mac_system_metadata(filename):
                     filepath = os.path.join(root, filename)
