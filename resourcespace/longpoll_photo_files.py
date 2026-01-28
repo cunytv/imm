@@ -213,51 +213,27 @@ if changes:
         if lp.folders_files_detected[folder]['share_link']:
             new_download_path = get_folder_download_path(folder)
 
-            if not lp.folders_files_detected[folder]['old_names']:
-                for file in lp.folders_files_detected[folder]['files']:
-                    if not lp.folders_files_detected[folder]['files'][file]['deleted']:
-                        file_already_on_server = False
+            folder_already_on_server = False
+            folder_csums = []
 
-                        # Check through old names
-                        for name in lp.folders_files_detected[folder]['files'][file]['old_names']:
-                            file_path_for_download = os.path.join(new_download_path, name)
-                            if os.path.exists(file_path_for_download):
-                                file_already_on_server = True
-                                break
-                        if not file_already_on_server:
-                            db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
-                            file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
-                            lp.download(db_file_path, file_path_for_download)
-            else:
-                folder_already_on_server = False
+            if os.path.exists(new_download_path):  # Check if folder on server
+                folder_already_on_server = True
+                folder_csums = get_folder_checksum_array(new_download_path)
+            elif lp.folders_files_detected[folder]['old_names']: # Or check for older names
                 for oldfolder in lp.folders_files_detected[folder]['old_names']:
                     old_download_path = get_folder_download_path(oldfolder)
-
                     if os.path.exists(old_download_path):
                         print(f"Transfering files from {old_download_path} to {new_download_path}")
                         folder_already_on_server = True
                         transfer_files(old_download_path, new_download_path)
+                        folder_csums = get_folder_checksum_array(new_download_path)
 
-                        for file in lp.folders_files_detected[folder]['files']:
-                            if not lp.folders_files_detected[folder]['files'][file]['deleted']:
-                                file_already_on_server = False
-                                # Check through old names
-                                for name in lp.folders_files_detected[folder]['files'][file]['old_names']:
-                                    file_path_for_download = os.path.join(new_download_path, name)
-                                    if os.path.exists(file_path_for_download):
-                                        file_already_on_server = True
-                                        break
-                                if not file_already_on_server:
-                                    db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
-                                    file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
-                                    lp.download(db_file_path, file_path_for_download)
+            for file in lp.folders_files_detected[folder]['files']:
+                if not lp.folders_files_detected[folder]['files'][file]['deleted'] and file not in folder_csums:
+                    db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
+                    file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
+                    lp.download(db_file_path, file_path_for_download)
 
-                if not folder_already_on_server:
-                    for file in lp.folders_files_detected[folder]['files']:
-                        if not lp.folders_files_detected[folder]['files'][file]['deleted']:
-                            db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
-                            file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
-                            lp.download(db_file_path, file_path_for_download)
     # Update cursor
     with open(cursor_txt_path, 'w') as file:
         file.write(cursor)
