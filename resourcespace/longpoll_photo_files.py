@@ -102,7 +102,7 @@ def merge_folder_dicts(up_dict, new_dict):
 
     for folder, info2 in new_dict.items():
         only_id_match = next((key for key in merged if new_dict[folder]['id'] == merged[key]['id'] and folder != key), None)
-        only_name_match = next((key for key in merged if new_dict[folder]['id'] == merged[key]['id'] and folder == key), None)
+        only_name_match = next((key for key in merged if new_dict[folder]['id'] != merged[key]['id'] and folder == key), None)
         if folder in merged and merged[folder]['id'] == new_dict[folder]['id']:
             info1 = merged[folder]
 
@@ -132,7 +132,7 @@ def merge_folder_dicts(up_dict, new_dict):
             info1["old_names"] = list(set(info1.get("old_names", []) + info2.get("old_names", [])))
 
             # Update name
-            info1["old_names"].append(only_id_match[1])
+            info1["old_names"].append(only_id_match)
 
             # Merge file dictionaries
             files1 = info1.get("files")
