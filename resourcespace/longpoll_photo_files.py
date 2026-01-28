@@ -6,9 +6,10 @@ import json
 import subprocess
 import sys
 import os
+import hashlib
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import longpoll
+from imm import longpoll
 
 process = "photo"
 lp = longpoll.LongPoll()
@@ -30,8 +31,8 @@ photo_pattern = re.compile(r"/►CUNY TV REMOTE FOOTAGE \(for DELIVERY & COPY fr
 
 # Server folder path for downloads
 # Specify local directory for downloads
-local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/Photos"
-#local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+#local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/Photos"
+local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
 os.makedirs(local_directory, exist_ok=True)
 
 # Get cursor
@@ -74,27 +75,119 @@ def update_db_link_by_folder():
     print(result.stdout)
     print(result.stderr)
 
+def calculate_sha256_checksum(file_path, block_size=4 * 1024 * 1024):
+    hash_object = hashlib.sha256()
+    block_hashes = []
 
-def merge_folder_dicts(dict1, dict2):
-    merged = dict1.copy()  # start with a copy of dict1
+    with open(file_path, 'rb') as f:
+        while True:
+            block = f.read(block_size)
+            if not block:
+                break  # End of file
 
-    for folder, info2 in dict2.items():
-        if folder in merged:
+            block_hash = hashlib.sha256(block).digest()
+            block_hashes.append(block_hash)
+
+    final_hash = hash_object.hexdigest()
+
+    return final_hash
+
+def merge_folder_dicts(up_dict, new_dict):
+    merged = up_dict.copy()  # start with json saved dicts
+
+    for folder, info2 in new_dict.items():
+        only_id_match = next((key for key in merged if new_dict[folder]['id'] == merged[key]['id'] and folder != key), None)
+        only_name_match = next((key for key in merged if new_dict[folder]['id'] == merged[key]['id'] and folder == key), None)
+        if folder in merged and merged[folder]['id'] == new_dict[folder]['id']:
             info1 = merged[folder]
 
-            # Merge lists without duplicates
+            # Merge old_names without duplicates
             info1["old_names"] = list(set(info1.get("old_names", []) + info2.get("old_names", [])))
-            info1["files"] = list(set(info1.get("files", []) + info2.get("files", [])))
 
-            # Keep share_link from dict1 if exists, otherwise use dict2
-            if not info1.get("share_link"):
-                info1["share_link"] = info2.get("share_link")
+            # Merge file dictionaries
+            files1 = info1.get("files")
+            files2 = info2.get("files")
+
+            for f in files2:
+                if f in files1:
+                    files2[f]["old_names"] = list(set(files2[f].get("old_names", []) + files1[f].get("old_names", [])))
+                    if files1[f]['name'] != files2[f]['name'] and files1[f]['name'] not in files2[f]['old_names']:
+                        files2[f]['old_names'].append(files1[f]['name'])
+
+            info1["files"] = files2
+
+            # Use dict 2 share link
+            info1["share_link"] = info2.get("share_link")
 
             merged[folder] = info1
+        elif only_id_match:
+            info1 = merged[only_id_match]
+
+            # Merge old_names without duplicates
+            info1["old_names"] = list(set(info1.get("old_names", []) + info2.get("old_names", [])))
+
+            # Update name
+            info1["old_names"].append(only_id_match[1])
+
+            # Merge file dictionaries
+            files1 = info1.get("files")
+            files2 = info2.get("files")
+
+            for f in files2:
+                if f in files1:
+                    files2[f]["old_names"] = list(set(files2[f].get("old_names", []) + files1[f].get("old_names", [])))
+                    if files1[f]['name'] != files2[f]['name'] and files1[f]['name'] not in files2[f]['old_names']:
+                        files2[f]['old_names'].append(files1[f]['name'])
+
+            info1["files"] = files2
+
+            # Use dict 2 share link
+            info1["share_link"] = info2.get("share_link")
+
+            merged[folder] = info1
+
+            del merged[only_id_match]
+
+        elif only_name_match and merged[only_name_match]['files'].keys() == new_dict[only_name_match]['files'].keys():
+            info1 = merged[only_name_match]
+
+            # Merge old_names without duplicates
+            info1["old_names"] = list(set(info1.get("old_names", []) + info2.get("old_names", [])))
+
+            # Merge file dictionaries
+            files1 = info1.get("files")
+            files2 = info2.get("files")
+
+            for f in files2:
+                if f in files1:
+                    files2[f]["old_names"] = list(set(files2[f].get("old_names", []) + files1[f].get("old_names", [])))
+                    if files1[f]['name'] != files2[f]['name'] and files1[f]['name'] not in files2[f]['old_names']:
+                        files2[f]['old_names'].append(files1[f]['name'])
+
+            info1["files"] = files2
+
+            # Use dict 2 share link
+            info1["share_link"] = info2.get("share_link")
+
+            merged[folder] = info1
+
+            del merged[only_name_match]
+
         else:
             merged[folder] = info2
 
     return merged
+
+def get_folder_checksum_array(path):
+    csums = []
+
+    for root, dirs, files in os.walk(path):
+        for n in files:
+            path = os.path.join(root, n)
+            csum = calculate_sha256_checksum(path)
+            csums.append(csum)
+
+    return csums
 
 # Begin longpoll
 changes = lp.longpoll(cursor, timeout)
@@ -112,45 +205,71 @@ if changes:
             break
 
     # Download or transfer files
-    print(lp.folders_files_detected)
+    # Update cursor
+    with open(cursor_txt_path, 'w') as file:
+        file.write(cursor)
+
     for folder in lp.folders_files_detected:
         if lp.folders_files_detected[folder]['share_link']:
             new_download_path = get_folder_download_path(folder)
 
             if not lp.folders_files_detected[folder]['old_names']:
-                print(f"Downloading files from {folder} to {new_download_path}")
                 for file in lp.folders_files_detected[folder]['files']:
-                    db_file_path = os.path.join(folder, file)
-                    file_path_for_download = os.path.join(new_download_path, file)
-                    lp.download(db_file_path, file_path_for_download)
+                    if not lp.folders_files_detected[folder]['files'][file]['deleted']:
+                        file_already_on_server = False
 
-            if lp.folders_files_detected[folder]['old_names']:
-                already_on_server = False
+                        # Check through old names
+                        for name in lp.folders_files_detected[folder]['files'][file]['old_names']:
+                            file_path_for_download = os.path.join(new_download_path, name)
+                            if os.path.exists(file_path_for_download):
+                                file_already_on_server = True
+                                break
+                        if not file_already_on_server:
+                            db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
+                            file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
+                            lp.download(db_file_path, file_path_for_download)
+            else:
+                folder_already_on_server = False
                 for oldfolder in lp.folders_files_detected[folder]['old_names']:
                     old_download_path = get_folder_download_path(oldfolder)
 
                     if os.path.exists(old_download_path):
                         print(f"Transfering files from {old_download_path} to {new_download_path}")
-                        already_on_server = True
+                        folder_already_on_server = True
                         transfer_files(old_download_path, new_download_path)
 
-                if not already_on_server:
-                    print(f"Downloading files from {folder} to {new_download_path}")
+                        for file in lp.folders_files_detected[folder]['files']:
+                            if not lp.folders_files_detected[folder]['files'][file]['deleted']:
+                                file_already_on_server = False
+                                # Check through old names
+                                for name in lp.folders_files_detected[folder]['files'][file]['old_names']:
+                                    file_path_for_download = os.path.join(new_download_path, name)
+                                    if os.path.exists(file_path_for_download):
+                                        file_already_on_server = True
+                                        break
+                                if not file_already_on_server:
+                                    db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
+                                    file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
+                                    lp.download(db_file_path, file_path_for_download)
+
+                if not folder_already_on_server:
                     for file in lp.folders_files_detected[folder]['files']:
-                        db_file_path = os.path.join(folder, file)
-                        file_path_for_download = os.path.join(new_download_path, file)
-                        lp.download(db_file_path, file_path_for_download)
+                        if not lp.folders_files_detected[folder]['files'][file]['deleted']:
+                            db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
+                            file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
+                            lp.download(db_file_path, file_path_for_download)
     # Update cursor
     with open(cursor_txt_path, 'w') as file:
         file.write(cursor)
 else:
     print('No changes')
 
+
 # Process unmatched values
 if os.path.exists(link_json_path):
     with open(link_json_path, "r", encoding="utf-8") as f:
         unprocessed_folders = json.load(f)
-    lp.folders_files_detected = merge_folder_dicts(lp.folders_files_detected, unprocessed_folders)
+    lp.folders_files_detected = merge_folder_dicts(unprocessed_folders, lp.folders_files_detected)
 
 if lp.folders_files_detected:
     with open(link_json_path, "w", encoding="utf-8") as f:

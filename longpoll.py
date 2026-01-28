@@ -11,16 +11,16 @@ class LongPoll:
     def __init__(self):
         # Credentials for creating access token
         ## AG's personal dropbox
-        #self.client_id = 'bsp8x2pbkklqbz8'
-        #self.client_secret = 'c3po7io03u5zgtt'
-        #self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
-        #self.ACCESS_TOKEN = ''
+        self.client_id = 'bsp8x2pbkklqbz8'
+        self.client_secret = 'c3po7io03u5zgtt'
+        self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
+        self.ACCESS_TOKEN = ''
 
         ## ag's dropbox
-        self.client_id = 'wmub6kuvhq3xviy'
-        self.client_secret = '9blokt7f8ac0v9c'
-        self.refresh_token = '04OpIpx9TukAAAAAAAAAAcI1CpMvfrjlRkpUzG9hTdOFY5Be-R6unYHdLBcnR8No'
-        self.ACCESS_TOKEN = ''
+        #self.client_id = 'wmub6kuvhq3xviy'
+        #self.client_secret = '9blokt7f8ac0v9c'
+        #self.refresh_token = '04OpIpx9TukAAAAAAAAAAcI1CpMvfrjlRkpUzG9hTdOFY5Be-R6unYHdLBcnR8No'
+        #self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
         self.time_now = ''
@@ -28,7 +28,7 @@ class LongPoll:
 
         # Nested dictionary
         self.folders_files_detected = {} # key in dictionary is tuple (id, folder_name)
-        self.folder_files = {"old_names": [], "share_link": None, "files": {}}
+        self.folder_files = {"id": None, "old_names": [], "share_link": None, "files": {}}
         self.file = {"name": None, "deleted": None}
 
         # Activate API variables
@@ -213,7 +213,7 @@ class LongPoll:
         print("Max retries reached. Failed to process the request.")
         return None
 
-    def get_file_id(self, mode, val):
+    def get_file_hash(self, mode, val):
         max_retries = 5
         retries = 0
 
@@ -235,8 +235,9 @@ class LongPoll:
                 response = requests.post(url, headers=headers, data=json.dumps(data))
 
                 if response.status_code == 200:
+                    print(response.json())
                     if response.json().get('entries'):
-                        return response.json()['entries'][0]['id']
+                        return response.json()['entries'][0]['content_hash']
                     else:
                         print("No entries found.")
                     return
@@ -314,32 +315,31 @@ class LongPoll:
                 folder_id = self.get_folder_id(path)
                 if not folder_id:
                     share_link = None
-                    dict_key = (folder_id, path)
                 else:
                     share_link = self.get_shared_link(path)
                     share_link = share_link.split("&")[0]
-                    dict_key = (folder_id, path)
 
-                if dict_key not in self.folders_files_detected:
+                if path not in self.folders_files_detected:
                     new_dict = {k: ({} if isinstance(v, dict) else None if v is None else [])
                                 for k, v in self.folder_files.items()}
-                    self.folders_files_detected[dict_key] = new_dict
-                    self.folders_files_detected[dict_key]['share_link'] = share_link
+                    self.folders_files_detected[path] = new_dict
+                    self.folders_files_detected[path]['id'] = folder_id
+                    self.folders_files_detected[path]['share_link'] = share_link
 
                 if folder_name != entry['name']:  # if file
                     if entry['.tag'] == 'deleted':
-                        f_id = self.get_file_id("path", entry['path_display'])
+                        f_hash = self.get_file_hash("path", entry['path_display'])
                         deleted = True
                     else:
-                        f_id = entry['id']
+                        f_hash = entry['content_hash']
                         deleted = False
 
-                    if f_id not in self.folders_files_detected[dict_key]['files']:
-                        self.folders_files_detected[dict_key]['files'][f_id] = {'name': entry['name'], 'deleted': deleted, 'old_names': []}
+                    if f_hash not in self.folders_files_detected[path]['files']:
+                        self.folders_files_detected[path]['files'][f_hash] = {'name': entry['name'], 'deleted': deleted, 'old_names': []}
                     else:
-                        self.folders_files_detected[dict_key]['files'][f_id]['old_names'].append(self.folders_files_detected[dict_key]['files'][f_id]['name'])
-                        self.folders_files_detected[dict_key]['files'][f_id]['name'] = entry['name']
-                        self.folders_files_detected[dict_key]['files'][f_id]['deleted'] = deleted
+                        self.folders_files_detected[path]['files'][f_hash]['old_names'].append(self.folders_files_detected[path]['files'][f_hash]['name'])
+                        self.folders_files_detected[path]['files'][f_hash]['name'] = entry['name']
+                        self.folders_files_detected[path]['files'][f_hash]['deleted'] = deleted
 
         # concatenate dictionaries with the same files[],
         # to distinguish new and deleted folder entries from folder entries that were renamed or moved
@@ -351,10 +351,9 @@ class LongPoll:
                     continue
                 else:
                     # renamed folder
-                    if not d[0] and self.folders_files_detected[d]['files'] and self.folders_files_detected[d2][
-                        'files'] and self.folders_files_detected[d]['files'].keys() == \
-                            self.folders_files_detected[d2]['files'].keys():
-                        self.folders_files_detected[d2]['old_names'].append(d[1])
+                    if not self.folders_files_detected[d]['id'] and self.folders_files_detected[d]['files'] and self.folders_files_detected[d2][
+                        'files'] and self.folders_files_detected[d]['files'].keys() == self.folders_files_detected[d2]['files'].keys():
+                        self.folders_files_detected[d2]['old_names'].append(d)
                         del self.folders_files_detected[d]
 
     def download(self, dropbox_path, download_path):
