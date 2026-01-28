@@ -235,7 +235,6 @@ class LongPoll:
                 response = requests.post(url, headers=headers, data=json.dumps(data))
 
                 if response.status_code == 200:
-                    print(response.json())
                     if response.json().get('entries'):
                         return response.json()['entries'][0]['content_hash']
                     else:

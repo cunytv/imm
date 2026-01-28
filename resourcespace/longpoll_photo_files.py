@@ -75,8 +75,11 @@ def update_db_link_by_folder():
     print(result.stdout)
     print(result.stderr)
 
+# Creates checksum as per DB documentation
 def calculate_sha256_checksum(file_path, block_size=4 * 1024 * 1024):
+
     hash_object = hashlib.sha256()
+    bytes_read = 0
     block_hashes = []
 
     with open(file_path, 'rb') as f:
@@ -87,6 +90,8 @@ def calculate_sha256_checksum(file_path, block_size=4 * 1024 * 1024):
 
             block_hash = hashlib.sha256(block).digest()
             block_hashes.append(block_hash)
+            bytes_read += len(block)
+            hash_object.update(block_hash)
 
     final_hash = hash_object.hexdigest()
 
@@ -178,10 +183,10 @@ def merge_folder_dicts(up_dict, new_dict):
 
     return merged
 
-def get_folder_checksum_array(path):
+def get_folder_checksum_array(p):
     csums = []
 
-    for root, dirs, files in os.walk(path):
+    for root, dirs, files in os.walk(p):
         for n in files:
             path = os.path.join(root, n)
             csum = calculate_sha256_checksum(path)
@@ -239,7 +244,6 @@ if changes:
         file.write(cursor)
 else:
     print('No changes')
-
 
 # Process unmatched values
 if os.path.exists(link_json_path):
