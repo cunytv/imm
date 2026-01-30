@@ -9,7 +9,7 @@ import os
 import hashlib
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from imm import longpoll
+import longpoll
 
 process = "photo"
 lp = longpoll.LongPoll()
@@ -117,11 +117,6 @@ def merge_folder_dicts(up_dict, new_dict):
 
         info1 = merged[target_key]
 
-        # old names merge
-        info1["old_names"] = list(set(info1.get("old_names", [])) | set(info2.get("old_names", [])))
-        if only_id_match:
-            info1["old_names"].append(target_key)
-
         # files merge
         files1 = info1.get("files", {})
         files2 = info2.get("files", {})
@@ -143,6 +138,12 @@ def merge_folder_dicts(up_dict, new_dict):
 
         # share link merge
         info1["share_link"] = info2.get("share_link")
+
+        # old names merge
+        info1["old_names"] = list(set(info1.get("old_names", [])) | set(info2.get("old_names", [])))
+
+        # id merge
+        info1['id'] = info2.get('id')
 
         # if not simple merge
         if target_key != folder:
