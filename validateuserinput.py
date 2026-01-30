@@ -2,28 +2,49 @@
 
 import re
 import os
+import cunymediaids
+from datetime import datetime
 
 
 def is_valid_package_name(s):
-    pattern = r'^[A-Za-z]{3,4}\d{4}(0[1-9]|1[0-2])(0[1-9]|[1-2]\d|3[0-1])$'
-    if not re.match(pattern, s.split('_', 1)[0]):
-        return False
+    pattern = r'^[A-Za-z]+\d{4}(0[1-9]|1[0-2])(0[1-9]|[1-2]\d|3[0-1])_[A-Za-z0-9_]+$'
+
+    if not re.match(pattern, s):
+        warning = f"{s} does not match show code and date pattern. Package name must include SHOWCODEYYYMMDD_DESCRIPTION. "
+        return False, warning
     else:
-        return True
+        bool = True
+        warning = ""
+        show_code = re.match(r"[A-Za-z]+", s).group() if re.match(r"[A-Za-z]+", s) else None
+        date = re.match(r".*?(\d+)_", s).group(1) if re.match(r".*?(\d+)_", s) else None
+        today_str = datetime.now().strftime("%Y%m%d")
+
+        if not cunymediaids.is_code_in_dict(show_code):
+            warning += f"Show code {show_code} is not in dictionary. "
+            bool = False
+        if date != today_str:
+            warning += f"Date {date} is not today's date {today_str}. "
+            bool = False
+
+        return bool, warning
 
 # Validates camera card package name by confirming show code and date pattern, capitalizing all letters, deleting spaces
 def card_package_name(name):
-    if not is_valid_package_name(name):
-        new_name = input(f"\033[31mWarning. {name} does not match show code and date pattern, e.g. LTNS20250402. Press enter to continue or type new package name: \033[0m")
-        while new_name and not is_valid_package_name(name):
-                new_name = input(
-                    f"\033[31mWarning. {new_name} does not match show code and date pattern. Press enter to continue or type new package name: \033[0m")
-        if new_name:
-            name = new_name
+    valid_name, error = is_valid_package_name(name)
+    while not valid_name:
+        name = input(f"\033[31mWarning. {error}Press enter to continue or type new package name: \033[0m")
+        valid_name, error = is_valid_package_name(name)
 
     # Eliminates spaces and capitalizes letters
     name = name.replace(" ", "")
     name = name.upper()
+
+    # Remove characters which aren't underscores and alphanumerics
+    name = re.sub(r'[^A-Za-z0-9_]', '', name)
+
+    # Replace underscores with underscore
+    re.sub(r'_+', '_', name)
+
     return name
 
 # Validates camera card subfolder name by replacing spaces with underscores, capitalizing all letters

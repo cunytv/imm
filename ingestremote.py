@@ -81,6 +81,19 @@ package_dict = {
 
 DESKTOP_obj = ''
 
+# Archive server path
+archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
+#archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
+
+# Delivery server path
+#tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
+#tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
+tiger_server = "/Volumes/TElements/Camera Card Delivery"
+
+# Iphone temp folder path
+#iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
+iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
+
 # Checks if user is connected to server
 def server_check(s, s_type):
     global tiger_down
@@ -697,18 +710,8 @@ def startup(multibatchname=None):
 
 if __name__ == "__main__":
     # Check if connected to servers
-    archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
-    #archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
     server_check(archive_server, "archive")
-
-    #tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
-    #tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
-    tiger_server = "/Volumes/TElements/Camera Card Delivery"
     server_check(tiger_server, "tiger")
-
-    # path to Iphone temp folder
-    #iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
-    iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
 
     # Detect recently inserted drives, cards, and iphone
     countdown(5)
