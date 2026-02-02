@@ -644,7 +644,7 @@ def startup(multibatchname=None):
                     package_name = list(packages_dict.keys())[int(package_name)-1]
                     multibatchname = package_name
             else:
-                package_name = validateuserinput.card_package_name(input(f"\tEnter a package name: "))
+                package_name = validateuserinput.card_package_name(input(f"\tEnter a package name, e.g. SHOWCODEYYYMMDD_DESCRIPTION: "))
 
             if input_path == iphone_temp_folder and not package_name.endswith("IPHONE"):
                 package_name += "_IPHONE"
