@@ -41,7 +41,7 @@ def card_package_name(name):
     while not valid_name:
         name = input(f"\033[31mWarning. {error}Press enter to continue or type new package name: \033[0m")
         if not name:
-            continue
+            break
         else:
             valid_name, error = is_valid_package_name(name)
 
