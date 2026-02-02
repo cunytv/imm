@@ -39,10 +39,11 @@ def is_valid_package_name(s):
 def card_package_name(name):
     valid_name, error = is_valid_package_name(name)
     while not valid_name:
-        name = input(f"\033[31mWarning. {error}Press enter to continue or type new package name: \033[0m")
-        if not name:
+        new_name = input(f"\033[31mWarning. {error}Press enter to continue or type new package name: \033[0m")
+        if not new_name:
             break
         else:
+            name = new_name
             valid_name, error = is_valid_package_name(name)
 
     # Eliminates spaces and capitalizes letters
