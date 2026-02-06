@@ -475,7 +475,7 @@ def ingest_dropbox_upload(desktop_path, package, uploadsession):
 
 def ingest_log_and_errors(desktop_path):
     for package in packages_dict:
-        log_dest = os.path.join(archive_server, package, "logs", "metadata")
+        log_dest = os.path.join(archive_server, package, "metadata", "logs")
         # Check if the log exists, if not, create it
         if not os.path.exists(log_dest):
             os.makedirs(log_dest)
