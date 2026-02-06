@@ -915,41 +915,16 @@ class DropboxUploadSession:
             self.bytes_read += self.email_increment
 
 if __name__ == "__main__":
-    input("This script uploads a folder or file(s) to one dropbox directory. Press enter to continue.")
-
-    input_path = input("Input folder or file path(s): ")
-    paths = []
-    current = ""
-
-    for path in input_path.split():
-        # If previous part was continuing
-        if current:
-            current += " " + path.replace("\\", "")
-            if not path.endswith("\\"):
-                paths.append(current)
-                current = ""
-        else:
-            if path.endswith("\\"):
-                current = path.replace("\\", "")
-            else:
-                paths.append(path.replace("\\", ""))
-
+    paths = input_path = sys.argv[1:]
 
     emails = validateuserinput.emails(input("List email(s) delimited by space or press enter to continue: "))
     emails.extend(["library@tv.cuny.edu"])
     #emails.extend(["aida.garrido@tv.cuny.edu"])
 
-    # Custom dropbox parent folder path, otherwise defaults to root dropbox folder in the case of a file
-    # and show code workflow in the case of a folder
-    dbfolder = None
-    if len(paths) > 1:
-        dbfolder = input("Specify dropbox folder name: ")
+    # Custom dropbox parent folder path,
     custom_prefix = input(
         "Specify dropbox directory (/Example/Example) or press enter for default /_AD_HOC_REQUESTS: "
     ).strip() or "/_AD_HOC_REQUESTS"
-
-    if dbfolder:
-        custom_prefix = custom_prefix + "/" + dbfolder
 
     # Create class instance
     session = DropboxUploadSession(paths)
