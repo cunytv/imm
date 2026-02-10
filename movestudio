@@ -5,9 +5,11 @@ DEST_DIR="/Volumes/TElements/Studio"   # e.g. /Volumes/Server/Recordings
 LOCKFILE="/tmp/move_recordings.lock"
 LOGDIR="$HOME/Library/Logs/move_recordings"
 LOG_RETENTION_DAYS=30
-IDLE_MINUTES=2   
+IDLE_MINUTES=1
+FILES_MOVED=false
+FILES_WAITING=false   
 
-mkdir -p "$LOGDIR"
+mkdir -p "$LOGDIR"  
 
 get_logfile() {
     echo "$LOGDIR/move_failures_$(date '+%Y-%m-%d').log"
@@ -48,7 +50,8 @@ if ! $TEST_MODE; then
     cleanup_logs
 fi
 
-find "$SOURCE_DIR" -type f -name "*.mov" | while read -r FILE; do
+while read -r FILE; do
+
     if is_idle "$FILE"; then
         REL_PATH="${FILE#$SOURCE_DIR/}"   
         DEST_PATH="$DEST_DIR/$(dirname "$REL_PATH")"
@@ -58,9 +61,35 @@ find "$SOURCE_DIR" -type f -name "*.mov" | while read -r FILE; do
         else
             mkdir -p "$DEST_PATH"  
             echo "Moving: $FILE → $DEST_PATH/"
-            if ! rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/" 2>/dev/null; then
+            if rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/" 2>/dev/null; then
+                FILES_MOVED=true
+            else    
                 log_failure "$FILE"
             fi
         fi
+    
+    else
+        FILES_WAITING=true
     fi
-done
+done < <(find "$SOURCE_DIR" -type f -name "*.mov")
+
+if $FILES_MOVED && [ -t 1 ]; then
+cat <<'EOF'
+
+========================================
+ 🎉  All the files finished transferring!
+========================================
+
+EOF
+fi
+
+if ! $FILES_MOVED && $FILES_WAITING && [ -t 1 ]; then
+cat <<'EOF'
+
+Some recordings are still in progress.
+
+If you know files were just recorded, please wait a couple of minutes
+and run the script again.
+
+EOF
+fi
