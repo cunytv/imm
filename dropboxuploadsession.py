@@ -377,7 +377,7 @@ class DropboxUploadSession:
             try:
                 response = requests.post(session_finish_url, headers=headers, timeout=30)
                 if response.status_code == 200:
-                    break  # Successful chunk upload
+                    return response.json()['path_display']
             except requests.exceptions.RequestException as e:
                 if retry_attempt == 2:
                     self.DROPBOX_TRANSFER_OKAY = False
@@ -431,10 +431,9 @@ class DropboxUploadSession:
                     thread.join()
 
                 # Step 3: Complete the upload session
-                complete = self.complete_upload_session(session_id, os.path.getsize(file_path), dropbox_path)
-                if not complete:  # if session completion fails exit method
+                dropbox_path = self.complete_upload_session(session_id, os.path.getsize(file_path), dropbox_path)
+                if not dropbox_path:  # if session completion fails exit method
                     return
-
 
                 # Step 4 (optional): Fixity check
                 if do_fixity:
@@ -491,6 +490,7 @@ class DropboxUploadSession:
                                                                 "message": str(e)
                                                             })
                     return False
+
 
     # Get shared link
     def get_shared_link(self, path):
