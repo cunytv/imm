@@ -5,15 +5,14 @@ include '/opt/homebrew/var/www/include/boot.php';
 $db_link_field = 103;
 $file          = $argv[1];
 
-/*
- JSON structure (passed as argument):
+// json structure, passed as argument, is
+// "/DB/FOLDER/PATH" : {
+//							id:
+//                          old_names: [/FOLDER/PATH/NAME],
+//							share_link: $https://,
+//							files: {filehash: {"name": file.jpg, "old_names": [file.jpg], "deleted": bool}}
+//						}
 
- "/DB/FOLDER/PATH" : {
-     old_names  : [/FOLDER/PATH/NAME],
-     share_link: "https://...",
-     files     : ["file.jpg"]
- }
-*/
 
 $json    = file_get_contents($file);
 $folders = json_decode($json, true);

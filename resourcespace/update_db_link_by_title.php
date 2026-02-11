@@ -7,9 +7,10 @@ $file = $argv[1];
 
 // json structure, passed as argument, is
 // "/DB/FOLDER/PATH" : {
-//							old_names: [/FOLDER/PATH/NAME],
+//							id:
+//                          old_names: [/FOLDER/PATH/NAME],
 //							share_link: $https://,
-//							files: [file.jpg]	
+//							files: {filehash: {"name": file.jpg, "old_names": [file.jpg], "deleted": bool}}
 //						}
 
 $json = file_get_contents($file);
@@ -24,14 +25,14 @@ foreach ($folders as $folder_path => $info) {
 	// Get potential names
 	$parts = explode('/', $folder_path);
 	$name = end($parts);
-	
+
 	$names = []; 
 	$names[] = $name;
 	
 	foreach ($info['old_names'] as $old_path) {
 	    $parts   = explode('/', trim($old_path, '/'));
 	    $name = $parts[count($parts) - 1];
-		
+
 		if (!in_array($name, $names, true)) {
 		    $names[] = $name;
 		}
