@@ -1,0 +1,23 @@
+#!/bin/bash
+DISK="$(diskutil list | grep "external, physical" -A 10 | grep "0:" | head -n 1 | awk '{print $5}')"
+DISK_INFO="$(diskutil info /dev/disk2)"
+ID="$(echo "${DISK_INFO}" | grep "Volume Name:" | cut -d : -f2 | xargs)"
+if [[ -n "${ID}" ]] ; then
+    echo "Found ${ID} at $(date +%Y%m%d-%H%M%S)"
+    echo "Enter an ID: "
+    read IDVALUE
+    echo "Enter a title: "
+    read TITLE
+    echo "Enter a distributor: "
+    read DIST
+    echo "ID: ${IDVALUE}" > "${ID}_info.txt"
+    echo "TITLE: ${TITLE}" >> "${ID}_info.txt"
+    echo "DISTRIBUTOR: ${DIST}" >> "${ID}_info.txt"
+    echo "SCANNED_AT: $(date +%Y%m%d-%H%M%S)" >> "${ID}_info.txt"
+    echo "${DISK_INFO}" > "${ID}_diskutil_info.txt"
+    dvdbackup --mirror --verbose --progress -i "/Volumes/${ID}/" -n "${ID}" 2>&1 | tee > "${ID}_dvdauthor.txt"
+    echo "Ejecting ${ID} at $(date +%Y%m%d-%H%M%S)"
+    diskutil eject "/Volumes/${ID}"
+else
+    echo "No dvd found"
+fi
