@@ -6,6 +6,7 @@ shows = {
     "A Slice of NY":              "SLNY",
     "Arts in the City":           "AITC",
     "Asian American Life":         "AALF",
+    "Board of Trustees":            "BOT",
     "Black America":               "BLAM",
     "Bob Herbert’s OP-ED":        "OPED",
     "Book It":                     "BKIT",
