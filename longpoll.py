@@ -312,18 +312,23 @@ class LongPoll:
 
             if pattern.fullmatch(path):
                 folder_id = self.get_folder_id(path)
-                if not folder_id:
-                    share_link = None
-                else:
-                    share_link = self.get_shared_link(path)
-                    share_link = share_link.split("&")[0]
 
                 if path not in self.folders_files_detected:
                     new_dict = {k: ({} if isinstance(v, dict) else None if v is None else [])
                                 for k, v in self.folder_files.items()}
                     self.folders_files_detected[path] = new_dict
                     self.folders_files_detected[path]['id'] = folder_id
+                
+                if not folder_id:
+                    self.folders_files_detected[path]['share_link'] = None
+                    print(path)
+                    print(None)
+                elif not self.folders_files_detected[path]['share_link']:
+                    share_link = self.get_shared_link(path)
+                    share_link = share_link.split("&")[0]
                     self.folders_files_detected[path]['share_link'] = share_link
+                    print(path)
+                    print(share_link)
 
                 if folder_name != entry['name']:  # if file
                     if entry['.tag'] == 'deleted':
