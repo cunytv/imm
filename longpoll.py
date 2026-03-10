@@ -19,7 +19,7 @@ class LongPoll:
         ## ag's dropbox
         self.client_id = 'wmub6kuvhq3xviy'
         self.client_secret = '9blokt7f8ac0v9c'
-        self.refresh_token = '04OpIpx9TukAAAAAAAAAAcI1CpMvfrjlRkpUzG9hTdOFY5Be-R6unYHdLBcnR8No'
+        self.refresh_token = '-Nge1IcRsd4AAAAAAAAAAePwq4IlQJ2vvR9EjOIJZK8vB2XwOUwx0iqjyUuETkjG'
         self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
