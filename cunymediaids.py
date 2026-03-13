@@ -6,8 +6,8 @@ shows = {
     "A Slice of NY":              "SLNY",
     "Arts in the City":           "AITC",
     "Asian American Life":         "AALF",
-    "Board of Trustees":            "BOT",
     "Black America":               "BLAM",
+    "Board of Trustees":           "BOT",
     "Bob Herbert’s OP-ED":        "OPED",
     "Book It":                     "BKIT",
     "Cafe con Felo":               "CFFL",
@@ -37,6 +37,10 @@ shows = {
     "Special":                      "SPEC"
 }
 
+aliases = {
+    "Conversations w/ Jim Zirin": "Conversations with Jim Zirin",
+}
+
 def print_media_dict():
     # Print the titles and their abbreviations
     print(f"Media ID Dictionary")  # Header
@@ -44,7 +48,7 @@ def print_media_dict():
     for title, abbreviation in shows.items():
         print(f"{title:<40} {abbreviation}")
 
-# Returns full show name to which string is most similar
+# Full show name similarity (not between codes)
 def check_similarity(s):
     match_tuple = (None, 0) # show name, ratio
 
@@ -53,6 +57,11 @@ def check_similarity(s):
         if similarity > match_tuple[1]:
             match_tuple = (key, similarity)
 
+    for key, value in aliases.items():
+        similarity = SequenceMatcher(None, s.lower(), key.lower()).ratio()
+        if similarity > match_tuple[1]:
+            match_tuple = (value, similarity)
+
     if match_tuple[1] > 0.5:
         return match_tuple[0]
     else:
@@ -60,12 +69,12 @@ def check_similarity(s):
 
 # Takes code and returns show name
 def get_full_show_name(s):
-    name = None
+    name = 'No Show'
     for key, value in shows.items():
         if value == s:
             name = key
             return name
-    return 'No Show'
+    return name
 
 # Takes show name and returns code
 def get_show_code(s):
@@ -85,10 +94,14 @@ def codes_string_contains(s):
 def shows_string_contains(s):
     matches = []
     s = s.lower()
-    for word in shows:
-        word_lower = word.lower()
-        if word_lower in s:
-            matches.append(word)
+    for key in shows:
+        key_lower = key.lower()
+        if key_lower in s:
+            matches.append(key)
+
+    for key, value in aliases.items():
+        key_lower = key.lower()
+        if key_lower in s:
+            matches.append(value)
 
     return matches
-
