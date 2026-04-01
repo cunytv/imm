@@ -906,7 +906,12 @@ class DropboxUploadSession:
 
             # Email notification
             if cuny_emails:
-                self.email(cuny_emails, file_path.rsplit('/', 1)[1], self.share_link)
+                if link == "file":
+                    subject = file_path.rsplit('/', 1)[1]
+                else:
+                    subject = dropbox_path_prefix
+                    
+                self.email(cuny_emails, subject, self.share_link)
 
             # Dropbox notification
             if other_emails:
