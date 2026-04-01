@@ -56,6 +56,16 @@ while read -r FILE; do
         REL_PATH="${FILE#$SOURCE_DIR/}"   
         DEST_PATH="$DEST_DIR/$(dirname "$REL_PATH")"
 
+        if command -v remove_sdtb >/dev/null 2>&1; then
+            if ! remove_sdtb "$FILE"; then
+                echo "remove_sdtb failed on: $FILE" >&2
+                log_failure "$FILE"
+                continue
+            fi
+        else
+            echo "Warning: remove_sdtb not found in PATH" >&2
+        fi
+
         if $TEST_MODE; then
             echo "Would move: $FILE → $DEST_PATH/"
         else
