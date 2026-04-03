@@ -102,7 +102,7 @@ def send_notification():
 
     for p, l, l2 in zip(db_folder_paths, db_request_links, db_share_links):
         notification.html_content(f"<p></p>{p}<br>")
-        notification.html_content(f"""Upload link: <a href="{l}">{l}</a><p></p>""")
+        notification.html_content(f"""Upload link: <a href="{l}">{l}</a><br>""")
         notification.html_content(f"""Share link: <a href="{l2}">{l2}</a><p></p>""")
 
     notification.html_content("Best<br>Library Bot<p></p>")
