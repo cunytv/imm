@@ -16,6 +16,8 @@ def get_todays_calendar_events(url, calendar_type):
     response = requests.get(url)
     response.raise_for_status()
 
+    print(response)
+
     lines = response.text.splitlines()
 
     events = []
@@ -43,6 +45,13 @@ def get_todays_calendar_events(url, calendar_type):
 
     for e in events:
         date = e.get("start")
+
+        try:
+            time = date.split("T")[1]
+            time = f"{time[:2]}.{time[2:4]}"
+        except:
+            time = None
+
         date = date.split("T")[0]
         date_f = f"{date[:4]}.{date[4:6]}.{date[6:]}" # formatted date with periods
         show = e.get("summary", "No title")
@@ -63,13 +72,13 @@ def get_todays_calendar_events(url, calendar_type):
                 showname = show_name_matches[0]
 
             if showcode:
-                folder_string = f"{date_f}-{showcode}-{calendar_type}-SELECTS"
+                folder_string = f"{date_f}T{time}-{showcode}-{calendar_type}-SELECTS"
                 folder_string = folder_string.upper()
                 db_path = f"{db_main_dir}/►{showname.upper()}/PHOTOS/{folder_string}"
                 db_folder_paths.append(db_path)
             else:
                 description = show.upper().replace(" ", "")
-                folder_string = f"{date_f}-{calendar_type}-{description}-SELECTS"
+                folder_string = f"{date_f}T{time}-{description}-{calendar_type}-SELECTS"
                 folder_string = folder_string.upper()
                 db_path = f"{db_main_dir}/►NO SHOW/PHOTOS/{folder_string}"
                 db_folder_paths.append(db_path)
@@ -118,6 +127,7 @@ types = ["studio", "remote"]
 for u, t in zip(urls, types):
     get_todays_calendar_events(u, t)
 
-create_db_folders()
-create_request_links()
-send_notification()
+if db_folder_paths:
+    create_db_folders()
+    create_request_links()
+    send_notification()
