@@ -28,11 +28,7 @@ cleanup(){
 trap cleanup SIGHUP SIGINT SIGTERM
 _log -b
 
-MOUNT_YOUTUBE=/tmp/youtube_upload/
-if [[ ! -d "${MOUNT_YOUTUBE}" ]] ; then
-	mkdir "${MOUNT_YOUTUBE}"
-fi
-mount_afp afp://archivesx:cunytvx@cunytv/From%20library/youtube_delivery "${MOUNT_YOUTUBE}"
+DELIVERY_DIRECTORY="/Volumes/CUNY TV files/From library/youtube_delivery/"
 
 # command-line options to set mediaid and original variables
 OPTIND=1
@@ -51,18 +47,23 @@ while [ "$*" != "" ] ; do
     filename=$(basename "$sourcefile")
     if [ "$(echo "$filename" | grep -E "${UPLOADREGEX}")" -o "${FORCE}" = "y" ] ; then
         _report -dt "${filename} qualifies for youtube upload."
-        _report -dt "Starting to rsync $filename to ${MOUNT_YOUTUBE}..."
-        rsync -rtvP "$sourcefile" "${MOUNT_YOUTUBE}/"
+        if [[ ! -w "${DELIVERY_DIRECTORY}" ]]; then
+            _report -wt "================================"
+            _report -wt "${DELIVERY_DIRECTORY} is not available. Please connect and then upload a copy of the youtube file there."
+            _report -wt "================================"
+        else
+        _report -dt "Starting to rsync $filename to ${DELIVERY_DIRECTORY}..."
+        rsync -rtvP "$sourcefile" "${DELIVERY_DIRECTORY}/"
         upload_err="${?}"
         if [ "$upload_err" = "0" ] ; then
-            _report -dt "${filename} is uploaded to the ${MOUNT_YOUTUBE}"
+            _report -dt "${filename} is uploaded to the ${DELIVERY_DIRECTORY}"
         else
             _report -wt "rsync exited with code ${upload_err} for ${filename}."
+        fi
         fi
     else
         _report -dt "${filename} does NOT qualify for youtube upload, skipping."
     fi
     shift
 done
-umount "${MOUNT_YOUTUBE}"
 _log -e
