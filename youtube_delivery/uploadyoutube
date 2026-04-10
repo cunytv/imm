@@ -52,14 +52,14 @@ while [ "$*" != "" ] ; do
             _report -wt "${DELIVERY_DIRECTORY} is not available. Please connect and then upload a copy of the youtube file there."
             _report -wt "================================"
         else
-        _report -dt "Starting to rsync $filename to ${DELIVERY_DIRECTORY}..."
-        rsync -rtvP "$sourcefile" "${DELIVERY_DIRECTORY}/"
-        upload_err="${?}"
-        if [ "$upload_err" = "0" ] ; then
-            _report -dt "${filename} is uploaded to the ${DELIVERY_DIRECTORY}"
-        else
-            _report -wt "rsync exited with code ${upload_err} for ${filename}."
-        fi
+            _report -dt "Starting to rsync $filename to ${DELIVERY_DIRECTORY}..."
+            rsync -rtvP "$sourcefile" "${DELIVERY_DIRECTORY}/"
+            upload_err="${?}"
+            if [ "$upload_err" = "0" ] ; then
+                _report -dt "${filename} is uploaded to the ${DELIVERY_DIRECTORY}"
+            else
+                _report -wt "rsync exited with code ${upload_err} for ${filename}."
+            fi
         fi
     else
         _report -dt "${filename} does NOT qualify for youtube upload, skipping."
