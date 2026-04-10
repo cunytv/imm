@@ -40,6 +40,7 @@ shows = {
 
 aliases = {
     "Conversations w/ Jim Zirin": "Conversations with Jim Zirin",
+    "Sin Filtro": "LATiNAS",
 }
 
 def print_media_dict():
