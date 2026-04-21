@@ -10,6 +10,7 @@ import hashlib
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import longpoll
+import rsingestmanifest
 
 process = "photo"
 lp = longpoll.LongPoll()
@@ -186,11 +187,14 @@ if changes:
         file.write(cursor)
 
     for folder in lp.folders_files_detected:
+        manifest = rsingestmanifest.RSIngestManifest("photo")
+        
         if lp.folders_files_detected[folder]['share_link']:
             new_download_path = get_folder_download_path(folder)
 
             folder_already_on_server = False
             folder_csums = []
+            manifest.FOLDER = new_download_path
 
             if os.path.exists(new_download_path):  # Check if folder on server
                 folder_already_on_server = True
@@ -209,6 +213,9 @@ if changes:
                     db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
                     file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
                     lp.download(db_file_path, file_path_for_download)
+                    manifest.FILES.append(file_path_for_download)
+
+            manifest.save()
 
     # Update cursor
     with open(cursor_txt_path, 'w') as file:
