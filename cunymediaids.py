@@ -33,7 +33,7 @@ shows = {
     "One to One":                  "OTOO",
     "Shades of US":                "SHUS",
     "Sustainability Matters":       "STMT",
-    "Theater All the Moving Parts": "ATMP",
+    "Theater All the Moving Parts": "THMP",
     "Urban U":                     "URBN",
     "Special":                      "SPEC"
 }
