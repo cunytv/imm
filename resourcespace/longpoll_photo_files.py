@@ -31,8 +31,8 @@ photo_pattern = re.compile(r"/►CUNY TV REMOTE FOOTAGE \(for DELIVERY & COPY fr
 
 # Server folder path for downloads
 # Specify local directory for downloads
-#local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/Photos"
-local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
+local_directory = "/Volumes/CUNYTVMEDIA/archive_projects/Photos"
+#local_directory = "/Users/aidagarrido/Desktop/DOWNLOAD_TEST"
 os.makedirs(local_directory, exist_ok=True)
 
 # Get cursor
