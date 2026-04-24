@@ -413,6 +413,13 @@ def ingest_delivery_transfer(desktop_path, package, package_obj):
             packages_dict[package]["DELIVERY_transfer_okay"] = package_obj.TRANSFER_OKAY
             if package_obj.TRANSFER_ERROR:
                 packages_dict[package]["DELIVERY_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
+            else:
+                manifest = rsingestmanifest.RSIngestManifest("cameracard")
+                manifest.FOLDER = os.path.join(tiger_server, get_showcode(package), package)
+                window_dub_fn = f"{package}_WINDOW.mp4"
+                window_dub_fp = os.path.join(tiger_server, get_showcode(package), package, window_dub_fn)
+                manifest.FILES.append(window_dub_fp)
+                manifest.save()
         else:
             packages_dict[package]["DELIVERY_transfer_okay"] = False
             packages_dict[package]["DELIVERY_transfer_not_okay_reason"] = {"timestamp": str(datetime.now()),
