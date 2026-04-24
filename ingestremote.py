@@ -32,6 +32,7 @@ from datetime import datetime
 import json
 import detectiphone
 from pathlib import Path
+import rsingestmanifest
 
 # Tiger server flag; proceed with all other aspects of ingest if tiger_down true
 tiger_down = False
