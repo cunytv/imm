@@ -31,7 +31,13 @@ def is_av(file_path):
     else:
         duration = float(duration)
 
-    if nb_streams >= 1 and duration > 0:
-        return True
+    return nb_streams >= 1 and duration > 0
+
+if __name__ == "__main__":
+    fp = input("Enter file path: ")
+    av = is_av(fp)
+
+    if av:
+        print("File is AV")
     else:
-        return False
+        print("File is not AV")
