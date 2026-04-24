@@ -107,3 +107,6 @@ def shows_string_contains(s):
             matches.append(value)
 
     return matches
+
+if __name__ == "__main__":
+    print(shows)
