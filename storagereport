@@ -117,7 +117,7 @@ CUNY_FILLERS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_filler.txt"
 CUNY_PROGRAMS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_program.txt"
 CUNY_SEGMENTS="${CUNY_PROTRACK_REPORT_DIR}/all_ids_segments.txt"
 # nearline folder of NYCMG files
-NYCMG_ROOT="/Volumes/NYCM_Media"
+NYCMG_ROOT="/Volumes/NYCMEDIA"
 NYCMG_NEARLINE_PATH="${NYCMG_ROOT}/media"
 # nearline folder of CUNYTV files
 CUNYTV_DIGACQ_PATH="/Volumes/CUNYTVMEDIA/acquisitions"
