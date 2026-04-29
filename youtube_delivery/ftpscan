@@ -5,15 +5,15 @@
 
 LOCK="/tmp/$(basename "${0}").lock"
 
-YOUTUBEUPLOADER="/Users/cunytvadmin/go/bin/youtubeuploader"
-YOUTUBECACHE="/Users/cunytvadmin/go/bin/request.token"
+YOUTUBEUPLOADER="$(which youtubeuploader)"
+YOUTUBECACHE="$HOME/go/bin/request.token"
 
 dir="/Volumes/From library/youtube_delivery"
 donedir="${dir}/Uploaded"
 dupdir="${dir}/Duplicates"
 errordir="${dir}/Errors"
 errorFile="${errordir}/errors.stderr.txt"
-logDir="/Users/cunytvadmin"
+logDir="$HOME"
 logFile="${logDir}/ftpscan.log"
 ytErr="${logDir}/youtube-upload2.stderr"
 
