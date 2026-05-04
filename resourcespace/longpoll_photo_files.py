@@ -215,7 +215,8 @@ if changes:
                     lp.download(db_file_path, file_path_for_download)
                     manifest.FILES.append(file_path_for_download)
 
-            manifest.save()
+            if manifest.FILES:
+                manifest.save()
 
     # Update cursor
     with open(cursor_txt_path, 'w') as file:
