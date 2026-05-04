@@ -9,7 +9,7 @@ IDLE_MINUTES=1
 FILES_MOVED=false
 FILES_WAITING=false   
 
-mkdir -p "$LOGDIR"  
+mkdir -p "$LOGDIR"
 
 get_logfile() {
     echo "$LOGDIR/move_failures_$(date '+%Y-%m-%d').log"
@@ -25,7 +25,8 @@ cleanup_logs() {
 
 is_idle() {
     local file="$1"
-    find "$(dirname "$file")" -maxdepth 1 -type f -name "$(basename "$file")" -mmin +$IDLE_MINUTES | grep -q .
+    [ -f "$file" ] || return 1
+    find "$file" -maxdepth 0 -mmin +$IDLE_MINUTES | grep -q .
 }
 
 TEST_MODE=false
@@ -52,10 +53,14 @@ fi
 
 while read -r FILE; do
 
+    echo "FOUND FILE: $FILE"
+
     if is_idle "$FILE"; then
         REL_PATH="${FILE#$SOURCE_DIR/}"   
         DEST_PATH="$DEST_DIR/$(dirname "$REL_PATH")"
+        BASENAME="$(basename "$FILE")"
 
+        #remove_sdtb
         if command -v remove_sdtb >/dev/null 2>&1; then
             if ! remove_sdtb "$FILE"; then
                 echo "remove_sdtb failed on: $FILE" >&2
@@ -66,6 +71,22 @@ while read -r FILE; do
             echo "Warning: remove_sdtb not found in PATH" >&2
         fi
 
+        #run makestudio
+        if [[ "$BASENAME" == *Line* ]]; then
+            if command -v makestudio >/dev/null 2>&1; then
+                if $TEST_MODE; then
+                    echo "Would run makestudio on: $FILE"
+                else
+                    echo "Running makestudio on: $FILE"
+                    makestudio "$FILE"
+                fi
+            else
+                echo "Warning: makestudio not found in PATH" >&2
+                log_failure "$FILE (makestudio not found)"
+            fi
+        fi
+
+        #move files
         if $TEST_MODE; then
             echo "Would move: $FILE → $DEST_PATH/"
         else
@@ -81,7 +102,34 @@ while read -r FILE; do
     else
         FILES_WAITING=true
     fi
-done < <(find "$SOURCE_DIR" -type f -name "*.mov")
+done < <(find "$SOURCE_DIR" -type f -iname "*.mov")
+
+while read -r FILE; do
+
+    echo "waiting for multiview: $FILE"
+
+    if is_idle "$FILE"; then
+        REL_PATH="${FILE#$SOURCE_DIR/}"   
+        DEST_PATH="$DEST_DIR/$(dirname "$REL_PATH")"
+
+        if $TEST_MODE; then
+            echo "Would move: $FILE → $DEST_PATH/"
+        else
+            mkdir -p "$DEST_PATH"
+            if rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/"; then
+                FILES_MOVED=true
+            else
+                log_failure "$FILE"
+            fi
+        fi
+
+    else
+        echo "multiview still writing: $FILE"
+        FILES_WAITING=true
+    fi
+
+done < <(find "$SOURCE_DIR" -type f -iname "*.mp4")
+
 
 if $FILES_MOVED && [ -t 1 ]; then
 cat <<'EOF'
