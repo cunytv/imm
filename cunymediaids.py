@@ -15,6 +15,7 @@ shows = {
     "City Cinematheque":           "CCT",
     "City Works":                  "CTWR",
     "Conversations with Jim Zirin": "CNJZ",
+    "CUNY Cast":                  "CNCT",
     "CUNY Forum":                  "CFOR",
     "CUNY TV Presents":       "CNTVPR",
     "CUNY Uncut":                  "CNNT",
