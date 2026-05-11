@@ -1,13 +1,14 @@
 #!/bin/bash
 
 SOURCE_DIR="$HOME/Desktop/Local_recordings"
-DEST_DIR="/Volumes/TElements/Studio"  
+DEST_DIR="/Volumes/TElements/Studio"
 LOCKFILE="/tmp/move_recordings.lock"
 LOGDIR="$HOME/Library/Logs/move_recordings"
 LOG_RETENTION_DAYS=30
 IDLE_MINUTES=1
+
 FILES_MOVED=false
-FILES_WAITING=false   
+FILES_WAITING=false
 
 mkdir -p "$LOGDIR"
 
@@ -16,7 +17,7 @@ get_logfile() {
 }
 
 log_failure() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') | Failed to move: $1" >> "$(get_logfile)"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | Failed: $1" >> "$(get_logfile)"
 }
 
 cleanup_logs() {
@@ -39,6 +40,7 @@ if ! $TEST_MODE; then
     if [ -e "$LOCKFILE" ] && kill -0 "$(cat "$LOCKFILE")" 2>/dev/null; then
         exit 0
     fi
+
     echo $$ > "$LOCKFILE"
     trap 'rm -f "$LOCKFILE"' EXIT
 fi
@@ -51,16 +53,13 @@ if ! $TEST_MODE; then
     cleanup_logs
 fi
 
+##remove_sdtb
 while read -r FILE; do
 
-    echo "FOUND FILE: $FILE"
+    echo "Running remove_sdtb: $FILE"
 
     if is_idle "$FILE"; then
-        REL_PATH="${FILE#$SOURCE_DIR/}"   
-        DEST_PATH="$DEST_DIR/$(dirname "$REL_PATH")"
-        BASENAME="$(basename "$FILE")"
 
-        #remove_sdtb
         if command -v remove_sdtb >/dev/null 2>&1; then
             if ! remove_sdtb "$FILE"; then
                 echo "remove_sdtb failed on: $FILE" >&2
@@ -71,8 +70,25 @@ while read -r FILE; do
             echo "Warning: remove_sdtb not found in PATH" >&2
         fi
 
-        #run makestudio
-        if [[ "$BASENAME" == *Line* ]]; then
+    else
+        echo "Still writing: $FILE"
+        FILES_WAITING=true
+    fi
+
+done < <(find "$SOURCE_DIR" -type f \( -iname "*.mov" -o -iname "*.mp4" \))
+
+##run makestudio
+
+while read -r FILE; do
+
+    BASENAME="$(basename "$FILE")"
+
+    if [[ "$BASENAME" == *Line* ]]; then
+
+        echo "Runing makestudio on: $FILE"
+
+        if is_idle "$FILE"; then
+
             if command -v makestudio >/dev/null 2>&1; then
                 if $TEST_MODE; then
                     echo "Would run makestudio on: $FILE"
@@ -84,39 +100,39 @@ while read -r FILE; do
                 echo "Warning: makestudio not found in PATH" >&2
                 log_failure "$FILE (makestudio not found)"
             fi
-        fi
 
-        #move files
-        if $TEST_MODE; then
-            echo "Would move: $FILE → $DEST_PATH/"
         else
-            mkdir -p "$DEST_PATH"  
-            echo "Moving: $FILE → $DEST_PATH/"
-            if rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/" 2>/dev/null; then
-                FILES_MOVED=true
-            else    
-                log_failure "$FILE"
-            fi
+            echo "Still writing: $FILE"
+            FILES_WAITING=true
         fi
-    
-    else
-        FILES_WAITING=true
     fi
+
 done < <(find "$SOURCE_DIR" -type f -iname "*.mov")
+
+#wait for multiview files
+
+echo "Waiting for multiview files to finish..."
+sleep 70
+
+#rsync files to the server
 
 while read -r FILE; do
 
-    echo "waiting for multiview: $FILE"
+    echo "MOVING FILE: $FILE"
 
     if is_idle "$FILE"; then
-        REL_PATH="${FILE#$SOURCE_DIR/}"   
+
+        REL_PATH="${FILE#$SOURCE_DIR/}"
         DEST_PATH="$DEST_DIR/$(dirname "$REL_PATH")"
 
         if $TEST_MODE; then
             echo "Would move: $FILE → $DEST_PATH/"
         else
             mkdir -p "$DEST_PATH"
-            if rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/"; then
+
+            echo "Moving: $FILE → $DEST_PATH/"
+
+            if rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/" 2>/dev/null; then
                 FILES_MOVED=true
             else
                 log_failure "$FILE"
@@ -124,18 +140,17 @@ while read -r FILE; do
         fi
 
     else
-        echo "multiview still writing: $FILE"
+        echo "Still writing: $FILE"
         FILES_WAITING=true
     fi
 
-done < <(find "$SOURCE_DIR" -type f -iname "*.mp4")
-
+done < <(find "$SOURCE_DIR" -type f \( -iname "*.mov" -o -iname "*.mp4" \))
 
 if $FILES_MOVED && [ -t 1 ]; then
 cat <<'EOF'
 
 ========================================
- 🎉  All the files finished transferring!
+ 🎉  All files finished transferring!
 ========================================
 
 EOF
@@ -146,7 +161,7 @@ cat <<'EOF'
 
 Some recordings are still in progress.
 
-If you know files were just recorded, please wait a couple of minutes
+If files were just recorded, wait a couple minutes
 and run the script again.
 
 EOF
