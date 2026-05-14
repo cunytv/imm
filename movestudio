@@ -9,6 +9,7 @@ IDLE_MINUTES=1
 
 FILES_MOVED=false
 FILES_WAITING=false
+MOVED_FILES=()
 
 mkdir -p "$LOGDIR"
 
@@ -77,44 +78,7 @@ while read -r FILE; do
 
 done < <(find "$SOURCE_DIR" -type f \( -iname "*.mov" -o -iname "*.mp4" \))
 
-##run makestudio
-
-while read -r FILE; do
-
-    BASENAME="$(basename "$FILE")"
-
-    if [[ "$BASENAME" == *Line* ]]; then
-
-        echo "Runing makestudio on: $FILE"
-
-        if is_idle "$FILE"; then
-
-            if command -v makestudio >/dev/null 2>&1; then
-                if $TEST_MODE; then
-                    echo "Would run makestudio on: $FILE"
-                else
-                    echo "Running makestudio on: $FILE"
-                    makestudio "$FILE"
-                fi
-            else
-                echo "Warning: makestudio not found in PATH" >&2
-                log_failure "$FILE (makestudio not found)"
-            fi
-
-        else
-            echo "Still writing: $FILE"
-            FILES_WAITING=true
-        fi
-    fi
-
-done < <(find "$SOURCE_DIR" -type f -iname "*.mov")
-
-#wait for multiview files
-
-echo "Waiting for multiview files to finish..."
-sleep 70
-
-#rsync files to the server
+##rsync files to the server
 
 while read -r FILE; do
 
@@ -134,6 +98,7 @@ while read -r FILE; do
 
             if rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/" 2>/dev/null; then
                 FILES_MOVED=true
+                MOVED_FILES+=("$DEST_PATH/$(basename "$FILE")")
             else
                 log_failure "$FILE"
             fi
@@ -145,6 +110,31 @@ while read -r FILE; do
     fi
 
 done < <(find "$SOURCE_DIR" -type f \( -iname "*.mov" -o -iname "*.mp4" \))
+
+##run makestuio
+
+for FILE in "${MOVED_FILES[@]}"; do
+
+    BASENAME="$(basename "$FILE")"
+
+    if [[ "$BASENAME" == *Line* ]]; then
+
+        echo "MAKESTUDIO: $FILE"
+
+        if command -v makestudio >/dev/null 2>&1; then
+            if $TEST_MODE; then
+                echo "Would run makestudio on: $FILE"
+            else
+                echo "Running makestudio on: $FILE"
+                makestudio "$FILE"
+            fi
+        else
+            echo "Warning: makestudio not found in PATH" >&2
+            log_failure "$FILE (makestudio not found)"
+        fi
+    fi
+
+done
 
 if $FILES_MOVED && [ -t 1 ]; then
 cat <<'EOF'
