@@ -1,24 +1,25 @@
 #!/bin/bash
 # upload to YOUTUBE
+
 requireconfig="Y"
 
 version="1.1"
 UPLOADREGEX="^PR|^AALE|^AALF|^AITC|^BKIT|^BLAM|^BTNY|^BUNY|^CCT|^CFFL|^CFOR|^CITA|^CIWI|^CLIR|^CNJZ|^CNLR|^CNNT|^CTWR|^DANI|^DREAM|^ELCO|^FRFM|^INSO|^ITAL|^LTNS|^LTRP|^NUEV|^NYTCU|^OPED|^OTOO|^PTSBL|^SLNY|^SMRB|^SMSC|^SPEC|^SPLT|^STMT|^THMP|^THTK|^TKHL|^TKMV|^TWTT|^TEST|^TPNR|^URBN|^WW"
 scriptdir=$(dirname "$0")
-. "$scriptdir/mmfunctions" || { echo "Missing '$scriptdir/mmfunctions'. Exiting." ; exit 1 ;};
+. "$scriptdir/mmfunctions" || { echo "Missing '$scriptdir/mmfunctions'. Exiting." ; exit 1 ; }
 
 usage(){
     echo
-    echo "$(basename ${0}) ${version}"
+    echo "$(basename "${0}") ${version}"
     echo "This application will upload file(s) to a server via rsync in sequential order. Options are specified via 'mmconfig'."
     echo
-    echo "Usage: $(basename $0) file1 [ file2 ...]"
+    echo "Usage: $(basename "$0") file1 [ file2 ...]"
     echo "  -f ( force the upload without the regex pattern test )"
     echo "  -h ( display this help )"
     echo
     exit
 }
-[ "$#" = 0 ] && usage
+[ "$#" -eq 0 ] && usage
 
 cleanup(){
     _log -a "Process aborted"
@@ -28,7 +29,9 @@ cleanup(){
 trap cleanup SIGHUP SIGINT SIGTERM
 _log -b
 
-DELIVERY_DIRECTORY="/Volumes/CUNY TV files/From library/youtube_delivery/"
+# DELIVERY_DIRECTORY is expected to be set in mmconfig
+# Fallback default provided here if not already defined
+: "${DELIVERY_DIRECTORY:="/Volumes/SDATA/From library/youtube_delivery/"}"
 
 # command-line options to set mediaid and original variables
 OPTIND=1
@@ -40,23 +43,31 @@ while getopts ":hf" opt; do
         :) echo "Option -$OPTARG requires an argument" ; exit 1 ;;
     esac
 done
-shift $(( ${OPTIND} - 1 ))
-while [ "$*" != "" ] ; do
+shift $(( OPTIND - 1 ))
+
+while [[ $# -gt 0 ]] ; do
     sourcefile="$1"
-    removetmp="n"
     filename=$(basename "$sourcefile")
-    if [ "$(echo "$filename" | grep -E "${UPLOADREGEX}")" -o "${FORCE}" = "y" ] ; then
+
+    # Verify the source file exists before attempting upload
+    if [[ ! -f "$sourcefile" ]] ; then
+        _report -wt "File not found: ${sourcefile} — skipping."
+        shift
+        continue
+    fi
+
+    if [[ "$filename" =~ $UPLOADREGEX ]] || [[ "${FORCE}" = "y" ]] ; then
         _report -dt "${filename} qualifies for youtube upload."
-        if [[ ! -w "${DELIVERY_DIRECTORY}" ]]; then
+        if [[ ! -w "${DELIVERY_DIRECTORY}" ]] ; then
             _report -wt "================================"
             _report -wt "${DELIVERY_DIRECTORY} is not available. Please connect and then upload a copy of the youtube file there."
             _report -wt "================================"
         else
-            _report -dt "Starting to rsync $filename to ${DELIVERY_DIRECTORY}..."
-            rsync -rtvP "$sourcefile" "${DELIVERY_DIRECTORY}/"
-            upload_err="${?}"
-            if [ "$upload_err" = "0" ] ; then
-                _report -dt "${filename} is uploaded to the ${DELIVERY_DIRECTORY}"
+            _report -dt "Starting to rsync ${filename} to ${DELIVERY_DIRECTORY}..."
+            rsync -tvP "$sourcefile" "${DELIVERY_DIRECTORY}/"
+            upload_err="$?"
+            if [[ "$upload_err" -eq 0 ]] ; then
+                _report -dt "${filename} is uploaded to ${DELIVERY_DIRECTORY}"
             else
                 _report -wt "rsync exited with code ${upload_err} for ${filename}."
             fi
