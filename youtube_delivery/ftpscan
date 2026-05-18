@@ -8,13 +8,14 @@ LOCK="/tmp/$(basename "${0}").lock"
 YOUTUBEUPLOADER="$(which youtubeuploader)"
 YOUTUBECACHE="$HOME/go/bin/request.token"
 
-dir="/Volumes/From library/youtube_delivery"
+dir="/Volumes/SDATA/From library/youtube_delivery"
 donedir="${dir}/Uploaded"
 dupdir="${dir}/Duplicates"
 errordir="${dir}/Errors"
-errorFile="${errordir}/errors.stderr.txt"
+errorFile="${errordir}/youtube_upload.error.txt"
 logDir="$HOME"
-logFile="${logDir}/ftpscan.log"
+logDir2="${dir}/logs"
+logFile="${logDir}/youtube_upload.txt"
 ytErr="${logDir}/youtube-upload2.stderr"
 
 logit(){
@@ -79,6 +80,7 @@ else
             fi
         fi
     done < <(find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1)
+    rsync -rtvP "${logFile}" "${errorFile}" "${logDir2}"
     if [[ -f "$LOCK" ]] ; then
         rm "$LOCK"
     fi
