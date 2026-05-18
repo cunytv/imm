@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# This script is intended to scan a folder for newly uploaded files and then 
+# This script is intended to scan a folder for newly uploaded files and then
 # upload those files to youtube automatically.
 
 LOCK="/tmp/$(basename "${0}").lock"
 
-YOUTUBEUPLOADER="$(which youtubeuploader)"
+YOUTUBEUPLOADER="$(which youtubeuploader)" || { echo "youtubeuploader not found in PATH. Exiting." ; exit 1 ; }
 YOUTUBECACHE="$HOME/go/bin/request.token"
 
 dir="/Volumes/SDATA/From library/youtube_delivery"
@@ -18,22 +18,34 @@ logDir2="${dir}/logs"
 logFile="${logDir}/youtube_upload.txt"
 ytErr="${logDir}/youtube-upload2.stderr"
 
-logit(){
-    MSG="${1}"
-    WHEN="$(date +%FT%T)"
-    echo "${WHEN}: ${MSG}" >> "$logFile"
-}
+# Prefix that determines unlisted vs private upload
+UNLISTED_PREFIX="WPR"
+
+logit(){ echo "$(date +%FT%T): ${1}" >> "$logFile" ; }
+
+move_with_scc(){ mv -v "${file}" "$1" ; [[ -f "${SCC_NAME}" ]] && mv -v "${SCC_NAME}" "$1" ; }
+
+# Ensure destination directories exist
+for d in "${donedir}" "${dupdir}" "${errordir}" "${logDir2}" ; do
+    if [[ ! -d "$d" ]] ; then
+        mkdir "$d" || { echo "Failed to create directory: ${d}. Exiting." ; exit 1 ; }
+    fi
+done
 
 if [[ -f "$LOCK" ]] ; then
-    echo "$0 is already running, remove the $LOCK file is you need to reset"
+    echo "$0 is already running. Remove ${LOCK} if you need to reset."
 else
-    unset CAPTION
     touch "$LOCK"
-    # Get the current file list from the directory
-    while read file ; do
+    trap 'rm -f "$LOCK"; exit 1' SIGHUP SIGINT SIGTERM
+
+    while read -r file ; do
         echo "Trying to upload ${file} to youtube"
         FILE_NAME="$(basename "${file}")"
-        UPLOADED="$(grep " ${FILE_NAME}." "${logFile}" | grep "is uploaded")"
+
+        # Unset per-iteration variables to avoid stale values carrying over
+        unset CAPTION SCC_NAME CHAPTERLIST CHAP_COMMENT DRAFT_DESCRIPTION YOUTUBE_ID
+
+        UPLOADED="$(grep -F " ${FILE_NAME} " "${logFile}" | grep "is uploaded")"
         if [[ -n "${UPLOADED}" ]] ; then
             echo "${FILE_NAME} was already uploaded:"
             echo "${UPLOADED}"
@@ -43,45 +55,41 @@ else
             SCC_NAME="${file%.*}.scc"
             if [[ -f "${SCC_NAME}" ]] ; then
                 CAPTION=(-caption "${SCC_NAME}")
-                echo "Adding $SCC_NAME to tag along"
+                echo "Adding ${SCC_NAME} to tag along"
             fi
-            if [[ "${FILE_NAME:0:3}" == "WPR" ]] ; then
-                PRIVACY_TYPE="unlisted"
-            else
-                PRIVACY_TYPE="private"
-            fi
-            CHAPTERLIST="$(ffprobe -sexagesimal -v 0 "${file}" -show_entries chapter=start_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep=' '" | awk '{split($1, t, "."); printf "%s", t[1]; for (i=2; i<=NF; i++) printf " %s", $i; print ""}' |   sed 's/\\ / /g')"
+
+            [[ "${FILE_NAME:0:3}" == "${UNLISTED_PREFIX}" ]] && PRIVACY_TYPE="unlisted" || PRIVACY_TYPE="private"
+
+            CHAPTERLIST="$(ffprobe -sexagesimal -v 0 "${file}" -show_entries chapter=start_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep=' '" | awk '{split($1, t, "."); printf "%s", t[1]; for (i=2; i<=NF; i++) printf " %s", $i; print ""}' | sed 's/\\ / /g')"
             if [[ -n "${CHAPTERLIST}" ]] ; then
                 DRAFT_DESCRIPTION="${CHAPTERLIST}"$'\n\n\n'
                 CHAP_COMMENT=" with $(echo "${CHAPTERLIST}" | wc -l) chapters."
             fi
             DRAFT_DESCRIPTION+="${FILE_NAME%.*}"
-            # --credentials-file="${logDir}/.youtube-upload-credentials.json"
-            YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" "${CAPTION[@]}" -title "$(basename "${file%.*}")" -description "${DRAFT_DESCRIPTION}" -privacy "${PRIVACY_TYPE}" -filename "${file}" 2>$ytErr | grep -i "success" | awk 'NF>1{print $NF}')"
+
+            # YouTube IDs are always exactly 11 characters; used below to confirm successful upload
+            YOUTUBE_ID="$("${YOUTUBEUPLOADER}" -secrets="${logDir}/client_secrets.json" -cache "${YOUTUBECACHE}" "${CAPTION[@]}" -title "$(basename "${file%.*}")" -description "${DRAFT_DESCRIPTION}" -privacy "${PRIVACY_TYPE}" -filename "${file}" 2>"${ytErr}" | grep -i "success" | awk 'NF>1{print $NF}')"
             echo "Outcome of uploading ${file} is ${YOUTUBE_ID}${CHAP_COMMENT}."
-            if [[ "${#YOUTUBE_ID}" == 11 ]] ; then
-                mv -v "${file}" "${donedir}"
+
+            if [[ "${#YOUTUBE_ID}" -eq 11 ]] ; then
                 logit "${FILE_NAME} is uploaded${CHAP_COMMENT}, (${YOUTUBE_ID})."
-                if [[ -f "${SCC_NAME}" ]] ; then
-                    mv -v "${SCC_NAME}" "${donedir}"
-                fi
+                move_with_scc "${donedir}"
             else
-                if grep "quotaExceeded" "${errorFile}" ; then
+                # Check current stderr output (not accumulated log) for quota errors
+                if grep -q "quotaExceeded" "${ytErr}" ; then
                     echo "Gonna wait because ${FILE_NAME} gave a quotaExceeded error"
+                    logit "${FILE_NAME} upload halted due to quotaExceeded error."
                     break
                 else
-                    mv -v "${file}" "${errordir}"
                     logit "${FILE_NAME} had an error, see ${errorFile}"
-                    if [[ -f "${SCC_NAME}" ]] ; then
-                        mv -v "${SCC_NAME}" "${errordir}"
-                    fi
                     cat "${ytErr}" >> "${errorFile}"
+                    move_with_scc "${errordir}"
                 fi
             fi
         fi
-    done < <(find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1)
-    rsync -rtvP "${logFile}" "${errorFile}" "${logDir2}"
-    if [[ -f "$LOCK" ]] ; then
-        rm "$LOCK"
-    fi
+    done < <(find "${dir}" -type f -name "*.mp4" -maxdepth 1 -mindepth 1 | sort)
+
+    rsync -tvP "${logFile}" "${errorFile}" "${logDir2}"
+
+    rm -f "${LOCK}"
 fi
