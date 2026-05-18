@@ -1,192 +1,187 @@
 #!/bin/bash
-# This script sends an email when a new file is dropped off in the To Library folder. A cron job is set up to read the folder every 10 minutes. To edit the cron job, type crontab -e in the Terminal. 
+# This script sends an email when a new file is dropped off in the To Library
+# folder. A cron job is set up to read the folder every 20 minutes.
+# Run: */20 * * * * bash /opt/homebrew/bin/lookfornew "/Volumes/TElements/To_Library_2025-2026"
+
 searchdirectory="${1}"
 timefile="$HOME/.timefile2_$(basename "${searchdirectory}")"
+LOCK="/tmp/lookfornew_$(basename "${searchdirectory}").lock"
+LOGFILE="$HOME/lookfornew_$(basename "${searchdirectory}").log"
+MAX_FILE_PER_MSG=5
+
+_log(){ echo "$(date +%FT%T): $*" >> "$LOGFILE" ; }
 
 _maketemp(){
-    mktemp -q -t "$(basename "${0}")"
-    if [ "${?}" -ne 0 ]; then
-        echo "${0}: Can't create temp file, exiting..."
-        exit 1
+    local tmp
+    tmp="$(mktemp -q -t "$(basename "${0}")")"
+    if [[ $? -ne 0 ]] ; then
+        _log "ERROR: Can't create temp file"
+        return 1
     fi
+    echo "$tmp"
 }
 
-_get_broadcastduration(){
-    BROADCASTDURATION="$(mediainfo --inform="General;%Duration_String4%" "${1}")"
-}
-_get_filesize(){
-    FILESIZE="$(ls -hl "${1}" | awk '{print $5}')"
-}
-_get_user(){
-    USER="$(ls -hl "${1}" | awk '{print $3}')"
-}
-_get_framerate(){
-    FRAMERATE="$(mediainfo --inform="Video;%FrameRate%" "${1}")"
-}
-_get_framesize(){
-    WIDTH="$(mediainfo --inform="Video;%Width%" "${1}")"
-    HEIGHT="$(mediainfo --inform="Video;%Height%" "${1}")"
-}
-_get_codec(){
-    CODEC="$(mediainfo --inform="Video;%Format% %Format_Version% %Format_Profile% %Format_Commercial_IfAny% (%CodecID%)" "${1}")"
-}
-_get_video_bitrate(){
-    VBITRATE="$(mediainfo --inform="Video;%BitRate/String%" "${1}")"
-}
-_get_chapterlist(){
-    CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep='|'" | sed 's/|/\t/g')"
+_get_broadcastduration(){ BROADCASTDURATION="$(mediainfo --inform="General;%Duration_String4%" "${1}")" ; }
+_get_filesize(){          FILESIZE="$(stat -f "%z" "${1}")" ; }
+_get_file_owner(){        FILE_OWNER="$(stat -f "%Su" "${1}")" ; }
+_get_framerate(){         FRAMERATE="$(mediainfo --inform="Video;%FrameRate%" "${1}")" ; }
+_get_framesize(){         WIDTH="$(mediainfo --inform="Video;%Width%" "${1}")" ; HEIGHT="$(mediainfo --inform="Video;%Height%" "${1}")" ; }
+_get_codec(){             CODEC="$(mediainfo --inform="Video;%Format% %Format_Version% %Format_Profile% %Format_Commercial_IfAny% (%CodecID%)" "${1}")" ; }
+_get_video_bitrate(){     VBITRATE="$(mediainfo --inform="Video;%BitRate/String%" "${1}")" ; }
+_get_chapterlist(){       CHAPTER_LIST="$(ffprobe -sexagesimal -v 0 "${1}" -show_entries chapter=id,start_time,end_time:chapter_tags=title -of "compact=p=0:nk=1:item_sep='|'" | sed 's/|/\t/g')" ; }
+
+_message_header(){ echo "These new video files showed up in $(basename "${searchdirectory}"):\n\n" ; }
+
+send_email(){
+    cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu; catriona.schlosser@tv.cuny.edu; amy.monte@tv.cuny.edu; anne.murphy@tv.cuny.edu; oksana.israilova@tv.cuny.edu"
+MIME-Version: 1.0
+From: "Library Bot" <library@tv.cuny.edu>
+To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
+Subject: [New Files on $(basename "${searchdirectory}")] $(echo "${SUBJECT_LIST[*]}" | iconv -f utf-8 -t us-ascii//TRANSLIT)
+Content-Type: multipart/mixed; boundary="$BOUNDARY"
+
+--$BOUNDARY
+Content-Type: text/plain
+Content-Disposition: inline
+
+$(echo -e "${message}")
+
+
+Enjoy!
+
+
+
+--$BOUNDARY--
+
+EOF
 }
 
-if [[ ! -r "${searchdirectory}" ]]; then
-    echo "$searchdirectory is not readable"
+# Guard: searchdirectory must be provided and readable
+if [[ -z "${searchdirectory}" ]] ; then
+    echo "Usage: $(basename "$0") <search_directory>"
+    exit 1
+fi
+if [[ ! -r "${searchdirectory}" ]] ; then
+    echo "${searchdirectory} is not readable"
     exit 1
 fi
 
+# Lock file handling with stuck-process detection
+if [[ -f "$LOCK" ]] ; then
+    LOCK_PID="$(cat "$LOCK")"
+    if kill -0 "$LOCK_PID" 2>/dev/null ; then
+        _log "WARNING: Another instance (PID ${LOCK_PID}) is still running. Exiting."
+        echo "$(basename "$0") is already running as PID ${LOCK_PID}. If stuck, remove ${LOCK}."
+        exit 0
+    else
+        _log "WARNING: Stale lock file found (PID ${LOCK_PID} no longer running). Removing and continuing."
+        rm -f "$LOCK"
+    fi
+fi
+echo $$ > "$LOCK"
+trap 'rm -f "$LOCK"; _log "Process exited (PID $$)." ; exit' SIGHUP SIGINT SIGTERM EXIT
+
+_log "Starting (PID $$) on ${searchdirectory}"
+
+# Single find pass — used for both timefile update and difflist
 filelist="$(find "${searchdirectory}" -type f ! -name ".*" | sort)"
-filecount="$(find "${searchdirectory}" -type f ! -name ".*" | wc -l | sed 's| ||g')"
+
+if [[ -z "${filelist}" ]] ; then
+    filecount=0
+else
+    filecount="$(echo "${filelist}" | grep -c "")"
+fi
 
 if [[ -s "${timefile}" ]] ; then
-    difflist="$(diff "${timefile}" <(find "${searchdirectory}" -type f ! -name ".*" | sort) | grep "^> " | cut -c 3- | sort)"
+    difflist="$(diff "${timefile}" <(echo "${filelist}") | grep "^> " | cut -c 3- | sort)"
 else
     difflist="${filelist}"
 fi
+
 if [[ $filecount -gt 0 ]] ; then
     echo "${filelist}" > "${timefile}"
 fi
 
-message="These new video files showed up in $(basename "${searchdirectory}"):\n\n"
-
-DIFFLIST_COUNT="$(echo "${difflist}" | wc -l | awk '{print $1}')"
-DIFFLIST_C="0"
-MAX_FILE_PER_MSG="5"
-
-if [[ -n "${difflist}" ]] ; then
+if [[ -z "${difflist}" ]] ; then
+    _log "No new files found."
+else
+    DIFFLIST_COUNT="$(echo "${difflist}" | grep -c "")"
+    _log "${DIFFLIST_COUNT} new file(s) found."
     C=0
-     BOUNDARY="unique-boundary-$RANDOM"
-     while read file ; do
-         echo "Working on ${file}"
+    SUBJECT_LIST=()
+    BOUNDARY="boundary-$$-$(date +%s)"
+    message="$(_message_header)"
+
+    while IFS= read -r file ; do
+        echo "Working on ${file}"
+        _log "Processing: ${file}"
+
+        # Unset per-iteration metadata to prevent stale values
+        unset BROADCASTDURATION FILESIZE FILE_OWNER CODEC VBITRATE FRAMERATE WIDTH HEIGHT CHAPTER_LIST
+
         _get_broadcastduration "${file}"
         _get_filesize "${file}"
         _get_codec "${file}"
         _get_video_bitrate "${file}"
         _get_framerate "${file}"
         _get_framesize "${file}"
-        _get_user "${file}"
+        _get_file_owner "${file}"
         _get_chapterlist "${file}"
+
         message+="*********\n"
         message+="Filename:\t${file}\n"
-        if [ -n "${BROADCASTDURATION}" ] ; then
+
+        if [[ -n "${BROADCASTDURATION}" ]] ; then
             message+="Duration:\t\t${BROADCASTDURATION}\n"
-            if [ -n "${FILESIZE}" ] ; then
-                message+="Size:\t\t${FILESIZE}\n"
-            fi
-            if [ -n "${VBITRATE}" ] ; then
-                message+="Video Bitrate:\t${VBITRATE}\n"
-            fi
-            if [ -n "${CODEC}" ] ; then
-                message+="Encoding:\t${CODEC}\n"
-            fi
-            if [ -n "${FRAMERATE}" ] ; then
-                message+="Framerate:\t${FRAMERATE} fps\n"
-            fi
-            if [ -n "${WIDTH}" ] ; then
-                message+="Frame size:\t${WIDTH} x ${HEIGHT} pixels\n"
-            fi
-            if [ -n "${USER}" ] ; then
-                message+="User:\t\t${USER}\n\n\n"
-            fi
-            if [ -n "${CHAPTER_LIST}" ] ; then
-                message+="\nChapters:\n${CHAPTER_LIST}\n\n\n"
-            fi
-            if [ -n "${BROADCASTDURATION}" ] ; then
-                gifpath="$(_maketemp).gif"
-                waveformpath="$(_maketemp).png"
-                waveformdir="$(dirname "${waveformpath}")"
-                waveformname="$(basename "${waveformpath}")"
-                makegifsummary -o "${gifpath}" "${file}"
-                makewaveform -o "${waveformdir}" -N "${waveformname}" "${file}"
-                if [[ -s "${gifpath}" ]] ; then
-                    ATT_MIMETYPE="$(file -Ib "${gifpath}" | cut -d";" -f1)"
-                    ATT_ENCODED="$(base64 < "${gifpath}")"
+            [[ -n "${FILESIZE}" ]]    && message+="Size:\t\t${FILESIZE}\n"
+            [[ -n "${VBITRATE}" ]]    && message+="Video Bitrate:\t${VBITRATE}\n"
+            [[ -n "${CODEC}" ]]       && message+="Encoding:\t${CODEC}\n"
+            [[ -n "${FRAMERATE}" ]]   && message+="Framerate:\t${FRAMERATE} fps\n"
+            [[ -n "${WIDTH}" ]]       && message+="Frame size:\t${WIDTH} x ${HEIGHT} pixels\n"
+            [[ -n "${FILE_OWNER}" ]]  && message+="User:\t\t${FILE_OWNER}\n\n\n"
+            [[ -n "${CHAPTER_LIST}" ]] && message+="\nChapters:\n${CHAPTER_LIST}\n\n\n"
+
+            gifpath="$(_maketemp).gif"
+            waveformpath="$(_maketemp).png"
+            waveformdir="$(dirname "${waveformpath}")"
+            waveformname="$(basename "${waveformpath}")"
+            makegifsummary -o "${gifpath}" "${file}"
+            makewaveform -o "${waveformdir}" -N "${waveformname}" "${file}"
+
+            for attpath in "${gifpath}" "${waveformpath}" ; do
+                if [[ -s "${attpath}" ]] ; then
+                    ATT_MIMETYPE="$(file -Ib "${attpath}" | cut -d";" -f1)"
+                    ATT_ENCODED="$(base64 < "${attpath}")"
                     message+="--$BOUNDARY\n"
-                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${gifpath}")"\n"
+                    message+="Content-Type: $ATT_MIMETYPE; name=\"$(basename "${attpath}")\"\n"
                     message+="Content-Transfer-Encoding: base64\n"
-                    message+="Content-Disposition: attachment; filename="$(basename "${gifpath}")"\n"
+                    message+="Content-Disposition: attachment; filename=\"$(basename "${attpath}")\"\n"
                     message+="\n"
                     message+="$ATT_ENCODED"
-                    message+="\n\n"
-                    message+="--$BOUNDARY"
-                    message+="\n\n\n"
-                    echo "cleaning up gif"
-                    rm -v "${gifpath}"
+                    message+="\n\n--$BOUNDARY\n\n\n"
+                    echo "cleaning up $(basename "${attpath}")"
+                    rm -v "${attpath}"
                 fi
-                if [[ -s "${waveformpath}" ]] ; then
-                    ATT_MIMETYPE="$(file -Ib "${waveformpath}" | cut -d";" -f1)"
-                    ATT_ENCODED="$(base64 < "${waveformpath}")"
-                    message+="--$BOUNDARY\n"
-                    message+="Content-Type: $ATT_MIMETYPE; name="$(basename "${waveformpath}")"\n"
-                    message+="Content-Transfer-Encoding: base64\n"
-                    message+="Content-Disposition: attachment; filename="$(basename "${waveformpath}")"\n"
-                    message+="\n"
-                    message+="$ATT_ENCODED"
-                    message+="\n\n"
-                    message+="--$BOUNDARY"
-                    message+="\n\n\n"
-                    echo "cleaning up waveform png"
-                    rm -v "${waveformpath}"
-                fi
-            fi
+            done
             ((C++))
         fi
+
         message+="\n\n"
-        SUBJECT_LIST+=": $(basename "${file}") "
+        SUBJECT_LIST+=("$(basename "${file}")")
+
         if [[ "$C" -ge "${MAX_FILE_PER_MSG}" ]] ; then
-            cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu; catriona.schlosser@tv.cuny.edu; amy.monte@tv.cuny.edu; anne.murphy@tv.cuny.edu; oksana.israilova@tv.cuny.edu"
-MIME-Version: 1.0
-From: "Library Bot" <library@tv.cuny.edu>
-To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
-Subject: [New Files on $(basename "${searchdirectory}")] $(echo "${SUBJECT_LIST[*]}" | iconv -f utf-8 -t us-ascii//TRANSLIT)
-Content-Type: multipart/mixed; boundary="$BOUNDARY"
-
---$BOUNDARY
-Content-Type: text/plain
-Content-Disposition: inline
-
-$(echo -e "${message}")
-
-
-Enjoy!
-
-
-
---$BOUNDARY--
-
-EOF
-            unset message SUBJECT_LIST
+            send_email
+            unset SUBJECT_LIST
+            SUBJECT_LIST=()
             C=0
+            BOUNDARY="boundary-$$-$(date +%s)"
+            message="$(_message_header)"
         fi
-    done < <(echo "${difflist}")
-    if [[ -n "${message}" ]] ; then
-            cat <<EOF | sendmail -f "library@tv.cuny.edu" -F "Library Bot" "david.rice@tv.cuny.edu; catriona.schlosser@tv.cuny.edu; amy.monte@tv.cuny.edu; anne.murphy@tv.cuny.edu; oksana.israilova@tv.cuny.edu"
-MIME-Version: 1.0
-From: "Library Bot" <library@tv.cuny.edu>
-To: "Amy, Annie, Catriona, Dave, and Oksana" <amy.monte.anne.murphy.catriona.schlosser.david.rice.oksana.israilova@tv.cuny.edu>
-Subject: [New Files on $(basename "${searchdirectory}")] $(echo "${SUBJECT_LIST[*]}" | iconv -f utf-8 -t us-ascii//TRANSLIT)
-Content-Type: multipart/mixed; boundary="$BOUNDARY"
+    done <<< "${difflist}"
 
---$BOUNDARY
-Content-Type: text/plain
-Content-Disposition: inline
-
-$(echo -e "${message}")
-
-
-Enjoy!
-
-
-
---$BOUNDARY--
-
-EOF
+    if [[ -n "${message}" && "${C}" -gt 0 ]] ; then
+        send_email
     fi
 fi
+
+_log "Done (PID $$)."
