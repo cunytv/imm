@@ -78,6 +78,9 @@ while read -r FILE; do
 
 done < <(find "$SOURCE_DIR" -type f \( -iname "*.mov" -o -iname "*.mp4" \))
 
+echo "Waiting for files to become idle..."
+sleep 70
+
 ##rsync files to the server
 
 while read -r FILE; do
