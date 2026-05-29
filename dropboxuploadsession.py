@@ -15,13 +15,20 @@ import sendnetworkmail
 import filetype
 import subprocess
 import multiprogressbar
+from pathlib import Path
+
+json_path = Path.home() / "Documents" / "Application_Support" / "db_upload_keys.json"
+if not json_path.exists():
+    print("JSON with dropbox upload session API keys does not exist. Contact aida.garrido@tv.cuny.edu for instructions.")
+    sys.exit()
 
 class DropboxUploadSession:
     def __init__(self, path=None, filesdict=None, transfertype=None, checksum=True):
         # Credentials for creating access token
-        self.client_id = 'zxka9wntib7t1nn'
-        self.client_secret = '3oag5msq6eslynv'
-        self.refresh_token = 'BeoDf-HCH5wAAAAAAAAAAZngRU1m49sJglEOh1-5VdRq_Qg0EJy80Mso7YluLNzl'
+        self.load_keys()
+        self.client_id = ''
+        self.client_secret = ''
+        self.refresh_token = ''
         self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
@@ -57,6 +64,14 @@ class DropboxUploadSession:
             self.get_path_stats(path, transfertype, filesdict, checksum)
 
         self.refresh_access_token()
+
+    def load_keys(self):
+        with open(json_path, "r") as f:
+            data = json.load(f)
+    
+        self.client_id = data["app_key"]
+        self.client_secret = data["app_secret"]
+        self.refresh_token = data["refresh_token"]
 
     def get_path_stats(self, path, transfer_type=None, files_dict=None, checksum=True):
         total_size = 0
