@@ -15,11 +15,11 @@ if not json_path.exists():
 class LongPoll:
     # Two types of processes, specify by string: 'remote' and 'photo'
     def __init__(self):
-        self.load_keys()
         self.client_id = ''
         self.client_secret = ''
         self.refresh_token = ''
         self.ACCESS_TOKEN = ''
+        self.load_keys()
 
         # Keeping track of access token's expiration
         self.time_now = ''
