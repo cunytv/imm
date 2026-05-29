@@ -5,10 +5,17 @@ import requests
 import time
 import json
 
-## CS's personal dropbox
-client_id = 'wjmmemxgpuxh911'
-client_secret = 'mynnf0nelu4xahk'
-refresh_token = 'ST-MxmX3A50AAAAAAAAAAahnN5Tez_DKUHRTFfp9-VhLcf73AzHQlyJQdVxdDrZM'
+json_path = Path.home() / "Documents" / "Application_Support" / "db_photo_keys.json"
+if not json_path.exists():
+    print("JSON with dropbox photo API keys does not exist. Contact aida.garrido@tv.cuny.edu for instructions.")
+    sys.exit()
+
+with open(json_path, "r") as f:
+    data = json.load(f)
+    
+client_id = data["app_key"]
+client_secret = data["app_secret"]
+refresh_token = data["refresh_token"]
 ACCESS_TOKEN = ''
 
 # Keeping track of access token's expiration
@@ -16,7 +23,6 @@ time_now = ''
 time_expire = ''
 
 db_main_dir = "/►CUNY TV REMOTE FOOTAGE (for DELIVERY & COPY from)"
-
 
 # Timer
 def timer(timeout):
