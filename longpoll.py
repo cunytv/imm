@@ -4,22 +4,21 @@ import json
 import time
 import os
 import sendnetworkmail
+import sys
+from pathlib import Path
 
+json_path = Path.home() / "Documents" / "Application_Support" / "db_longpoll_keys.json"
+if not json_path.exists():
+    print("JSON with dropbox longpoll API keys does not exist. Contact aida.garrido@tv.cuny.edu for instructions.")
+    sys.exit()
 
 class LongPoll:
     # Two types of processes, specify by string: 'remote' and 'photo'
     def __init__(self):
-        # Credentials for creating access token
-        ## AG's personal dropbox
-        #self.client_id = 'bsp8x2pbkklqbz8'
-        #self.client_secret = 'c3po7io03u5zgtt'
-        #self.refresh_token = 'diOhyTjXTgsAAAAAAAAAAfak8rrGSeI0tELBy1SdQceJyvoei6qBfsSXFvAMOzio'
-        #self.ACCESS_TOKEN = ''
-
-        ## ag's dropbox
-        self.client_id = 'wmub6kuvhq3xviy'
-        self.client_secret = '9blokt7f8ac0v9c'
-        self.refresh_token = '-Nge1IcRsd4AAAAAAAAAAePwq4IlQJ2vvR9EjOIJZK8vB2XwOUwx0iqjyUuETkjG'
+        self.load_keys()
+        self.client_id = ''
+        self.client_secret = ''
+        self.refresh_token = ''
         self.ACCESS_TOKEN = ''
 
         # Keeping track of access token's expiration
@@ -34,6 +33,14 @@ class LongPoll:
         # Activate API variables
         self.refresh_access_token()
 
+    def load_keys(self):
+        with open(json_path, "r") as f:
+            data = json.load(f)
+    
+        self.client_id = data["app_key"]
+        self.client_secret = data["app_secret"]
+        self.refresh_token = data["refresh_token"]
+        
     def timer(self, timeout):
         for remaining in range(timeout, 0, -1):
             time.sleep(1)
