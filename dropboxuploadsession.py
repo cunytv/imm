@@ -25,11 +25,11 @@ if not json_path.exists():
 class DropboxUploadSession:
     def __init__(self, path=None, filesdict=None, transfertype=None, checksum=True):
         # Credentials for creating access token
-        self.load_keys()
         self.client_id = ''
         self.client_secret = ''
         self.refresh_token = ''
         self.ACCESS_TOKEN = ''
+        self.load_keys()
 
         # Keeping track of access token's expiration
         self.time_now = ''
