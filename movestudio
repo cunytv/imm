@@ -10,6 +10,16 @@ IDLE_MINUTES=1
 FILES_MOVED=false
 FILES_WAITING=false
 MOVED_FILES=()
+LINECUT_FILES=()
+MULTIVIEW_FILES=()
+RSINGESTMANIFEST="$(command -v rsingestmanifest.py)"
+
+echo "Using rsingestmanifest: $RSINGESTMANIFEST"
+
+if [ -z "$RSINGESTMANIFEST" ]; then
+    echo "rsingestmanifest.py not found in PATH"
+    exit 1
+fi
 
 mkdir -p "$LOGDIR"
 
@@ -76,9 +86,9 @@ while read -r FILE; do
         FILES_WAITING=true
     fi
 
-done < <(find "$SOURCE_DIR" -type f \( -iname "*.mov" -o -iname "*.mp4" \))
+done < <(find "$SOURCE_DIR" -type f -iname "*.mov")
 
-echo "Waiting for files to become idle..."
+echo "Bear with me. I'm just waiting for files to become idle before proceeding."
 sleep 70
 
 ##rsync files to the server
@@ -101,7 +111,14 @@ while read -r FILE; do
 
             if rsync -rtvP --remove-source-files "$FILE" "$DEST_PATH/" 2>/dev/null; then
                 FILES_MOVED=true
-                MOVED_FILES+=("$DEST_PATH/$(basename "$FILE")")
+                DEST_FILE="$DEST_PATH/$(basename "$FILE")"
+                MOVED_FILES+=("$DEST_FILE")
+                BASENAME="$(basename "$FILE")"
+
+                if [[ "${BASENAME}" == *Line*Cut* ]]; then
+                    LINECUT_FILES+=("$DEST_FILE")
+                fi
+
             else
                 log_failure "$FILE"
             fi
@@ -114,15 +131,35 @@ while read -r FILE; do
 
 done < <(find "$SOURCE_DIR" -type f \( -iname "*.mov" -o -iname "*.mp4" \))
 
+## create rs manifest
+
+for FOLDER in $(printf '%s\n' "${LINECUT_FILES[@]}" | xargs -n1 dirname | sort -u); do
+
+    FILES=()
+
+    for FILE in "${LINECUT_FILES[@]}"; do
+        if [[ "$(dirname "$FILE")" == "$FOLDER" ]]; then
+            FILES+=("$FILE")
+        fi
+    done
+
+    if [ ${#FILES[@]} -gt 0 ]; then
+
+        echo "Creating Line Cut manifest for: $FOLDER"
+        printf '  %s\n' "${FILES[@]}"
+
+        if ! $TEST_MODE; then
+            python3 "$RSINGESTMANIFEST" \
+                --type studio \
+                --folder "$FOLDER" \
+                --files "${FILES[@]}"
+        fi
+    fi
+done
+
 ##run makestuio
 
-for FILE in "${MOVED_FILES[@]}"; do
-
-    BASENAME="$(basename "$FILE")"
-
-    if [[ "$BASENAME" == *Line* ]]; then
-
-        echo "MAKESTUDIO: $FILE"
+for FILE in "${LINECUT_FILES[@]}"; do
 
         if command -v makestudio >/dev/null 2>&1; then
             if $TEST_MODE; then
@@ -130,21 +167,82 @@ for FILE in "${MOVED_FILES[@]}"; do
             else
                 echo "Running makestudio on: $FILE"
                 makestudio "$FILE"
+                LINECUT_DIR="$(dirname "$FILE")"
+                PARENT_DIR="$(dirname "$LINECUT_DIR")"
+
+                LINECUT_FOLDER="$(basename "$LINECUT_DIR")"
+
+                SHOW_NAME="${LINECUT_FOLDER%_Line_Cut}"
+                SHOW_NAME="${SHOW_NAME%_LINE_CUT}"
+
+                TIMESTAMP="$(basename "$FILE")"
+
+                TIMESTAMP="${TIMESTAMP%% *}"
+
+                MULTIVIEW_FILE="${PARENT_DIR}/${SHOW_NAME}_MULTIVIEWS/${SHOW_NAME}_${TIMESTAMP}_MULTIVIEW.mp4"
+
+                if [ -f "$MULTIVIEW_FILE" ]; then
+
+                    echo "Found multiview: $MULTIVIEW_FILE"
+
+                    MULTIVIEW_FILES+=("$MULTIVIEW_FILE")
+
+                else
+
+                    echo "Expected multiview not found: $MULTIVIEW_FILE"
+
+                fi
             fi
         else
             echo "Warning: makestudio not found in PATH" >&2
             log_failure "$FILE (makestudio not found)"
         fi
+done
+
+##multiview manifest
+
+for FOLDER in $(printf '%s\n' "${MULTIVIEW_FILES[@]}" | xargs -n1 dirname | sort -u); do
+
+    FILES=()
+
+    for FILE in "${MULTIVIEW_FILES[@]}"; do
+
+        if [[ "$(dirname "$FILE")" == "$FOLDER" ]]; then
+            FILES+=("$FILE")
+        fi
+
+    done
+
+    if [ ${#FILES[@]} -gt 0 ]; then
+
+        echo "Creating Multiview manifest for: $FOLDER"
+        printf '  %s\n' "${FILES[@]}"
+
+        if $TEST_MODE; then
+
+            echo "Would run:"
+            echo "python3 $RSINGESTMANIFEST --type studio --folder \"$FOLDER\" --files ..."
+
+        else
+
+            python3 "$RSINGESTMANIFEST" \
+                --type studio \
+                --folder "$FOLDER" \
+                --files "${FILES[@]}"
+
+        fi
+
     fi
 
 done
 
+
 if $FILES_MOVED && [ -t 1 ]; then
 cat <<'EOF'
 
-========================================
- 🎉  All files finished transferring!
-========================================
+====================================================
+ 🎉  Transfer and Multiview File Creation Complete!
+====================================================
 
 EOF
 fi
