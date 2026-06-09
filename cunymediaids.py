@@ -42,6 +42,7 @@ shows = {
 aliases = {
     "Conversations w/ Jim Zirin": "Conversations with Jim Zirin",
     "Sin Filtro": "LATiNAS",
+    "Theater's ATMP": "Theater All the Moving Parts",
 }
 
 def print_media_dict():
