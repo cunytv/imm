@@ -78,6 +78,7 @@ def get_todays_calendar_events(url, calendar_type):
                 db_folder_paths.append(db_path)
             else:
                 description = show.upper().replace(" ", "")
+                description = description.replace("/", "")
                 folder_string = f"{date_f}T{time}-{description}-{calendar_type}-SELECTS"
                 folder_string = folder_string.upper()
                 db_path = f"{db_main_dir}/►NO SHOW/PHOTOS/{folder_string}"
