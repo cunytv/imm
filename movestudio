@@ -21,6 +21,11 @@ if [ -z "$RSINGESTMANIFEST" ]; then
     exit 1
 fi
 
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "python3 not found in PATH"
+    exit 1
+fi
+
 mkdir -p "$LOGDIR"
 
 get_logfile() {
@@ -157,7 +162,7 @@ for FOLDER in $(printf '%s\n' "${LINECUT_FILES[@]}" | xargs -n1 dirname | sort -
     fi
 done
 
-##run makestuio
+##run makestudio
 
 for FILE in "${LINECUT_FILES[@]}"; do
 
@@ -167,30 +172,21 @@ for FILE in "${LINECUT_FILES[@]}"; do
             else
                 echo "Running makestudio on: $FILE"
                 makestudio "$FILE"
+                
                 LINECUT_DIR="$(dirname "$FILE")"
                 PARENT_DIR="$(dirname "$LINECUT_DIR")"
-
                 LINECUT_FOLDER="$(basename "$LINECUT_DIR")"
-
                 SHOW_NAME="${LINECUT_FOLDER%_Line_Cut}"
                 SHOW_NAME="${SHOW_NAME%_LINE_CUT}"
-
                 TIMESTAMP="$(basename "$FILE")"
-
                 TIMESTAMP="${TIMESTAMP%% *}"
-
                 MULTIVIEW_FILE="${PARENT_DIR}/${SHOW_NAME}_MULTIVIEWS/${SHOW_NAME}_${TIMESTAMP}_MULTIVIEW.mp4"
 
                 if [ -f "$MULTIVIEW_FILE" ]; then
-
                     echo "Found multiview: $MULTIVIEW_FILE"
-
                     MULTIVIEW_FILES+=("$MULTIVIEW_FILE")
-
                 else
-
                     echo "Expected multiview not found: $MULTIVIEW_FILE"
-
                 fi
             fi
         else
