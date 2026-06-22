@@ -16,6 +16,7 @@ import filetype
 import subprocess
 import multiprogressbar
 from pathlib import Path
+import argparse
 
 json_path = Path.home() / "Documents" / "Application_Support" / "db_upload_keys.json"
 if not json_path.exists():
@@ -924,8 +925,8 @@ class DropboxUploadSession:
                 if link == "file":
                     subject = file_path.rsplit('/', 1)[1]
                 else:
-                    subject = dropbox_path_prefix
-                    
+                    subject = os.path.basename(dropbox_path_prefix.rstrip("/"))
+
                 self.email(cuny_emails, subject, self.share_link)
 
             # Dropbox notification
@@ -934,17 +935,38 @@ class DropboxUploadSession:
 
             self.bytes_read += self.email_increment
 
+
 if __name__ == "__main__":
-    paths = input_path = sys.argv[1:]
+    parser = argparse.ArgumentParser(
+        description="Upload files to Dropbox"
+    )
 
-    emails = validateuserinput.emails(input("List email(s) delimited by space or press enter to continue: "))
-    emails.extend(["library@tv.cuny.edu"])
-    #emails.extend(["aida.garrido@tv.cuny.edu"])
+    parser.add_argument(
+        "paths",
+        nargs="+",
+        help="Files or directories to upload"
+    )
 
-    # Custom dropbox parent folder path,
-    custom_prefix = input(
-        "Specify dropbox directory (/Example/Example) or press enter for default /_AD_HOC_REQUESTS: "
-    ).strip() or "/_AD_HOC_REQUESTS"
+    parser.add_argument(
+        "-e", "--emails",
+        nargs="*",
+        default=[],
+        help="Notification email addresses"
+    )
+
+    parser.add_argument(
+        "-p", "--prefix",
+        default="/_AD_HOC_REQUESTS",
+        help="Dropbox destination folder, default is /_AD_HOC_REQUESTS"
+    )
+
+    args = parser.parse_args()
+
+    paths = args.paths
+    emails = validateuserinput.emails(" ".join(args.emails))
+    emails.extend(["aida.garrido@tv.cuny.edu"])
+
+    custom_prefix = args.prefix
 
     # Create class instance
     session = DropboxUploadSession(paths)
