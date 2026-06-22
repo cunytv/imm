@@ -26,7 +26,7 @@ class RSIngestManifest:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, indent=4)
 
-        print(f"Saved manifest to: {output_path}")
+        return output_path
 
 
 def main():
@@ -59,7 +59,8 @@ def main():
     manifest.FOLDER = args.folder
     manifest.FILES = args.files
 
-    manifest.save()
+    output_path = manifest.save()
+    print(f"Saved manifest to: {output_path}")
 
 
 if __name__ == "__main__":

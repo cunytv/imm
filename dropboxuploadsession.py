@@ -629,6 +629,7 @@ class DropboxUploadSession:
         notification.sender("library@tv.cuny.edu")
         notification.recipients(cuny_emails)
         notification.subject(f"Dropbox Upload: {package}")
+        rs_link = "http://resourcespace/"
 
         html_content = f"""
             <html>
@@ -640,6 +641,8 @@ class DropboxUploadSession:
                 <p></p>
                 Click the link below to access all files, including the window dub:
                 <br><a href="{self.share_link}">{self.share_link}</a>.
+                <p></p>
+                <em>** Consider using ResourceSpace to find recent photos and footage: <a href="{rs_link}">{rs_link}</a> **</em>
                 <p></p>
                 Best
                 <br>

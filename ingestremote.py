@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
 
-# top of your script, before anything else
-#import builtins
-#import traceback
-
-#original_print = print
-
-#def debug_print(*args, **kwargs):
-#    stack = traceback.extract_stack(limit=3)
-#    filename, lineno, func, _ = stack[0]
-#    original_print(f"[PRINT from {filename}:{lineno} in {func}] ", *args, **kwargs)
-
-#builtins.print = debug_print
-
 import detectrecentlyinserteddrives
 import restructurepackage
 import ingestcommands
@@ -33,21 +20,48 @@ import json
 import detectiphone
 from pathlib import Path
 import rsingestmanifest
+import platform
+import getpass
 
-# Tiger server flag; proceed with all other aspects of ingest if tiger_down true
-tiger_down = False
+tiger_down = False # Tiger server flag; proceed with all other aspects of ingest if tiger_down true
 
-# iphone flag; proceed accordingly if true
-iphone = False
+iphone = False # iphone flag; proceed accordingly if true
 
-# Because cards mount generically as Untitled volumes
-currentcards = []
+currentcards = [] #Because cards mount generically as Untitled volumes
 
-# Create dictionary of packages
-packages_dict = {}
+packages_dict = {} # Create dictionary of packages
 
-# Array of incomplete multibatch packages
-incomplete_multibatch = []
+incomplete_multibatch = [] #Array of incomplete multibatch packages
+
+# Local path for initial processing
+home_dir = os.path.expanduser('~')
+local_path = os.path.join(home_dir, 'Desktop')
+
+# Archive server path
+archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
+
+# Delivery server path
+tiger_server = "/Volumes/TElements/Camera Card Delivery"
+
+# Iphone temp folder path
+iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
+
+# log prefix
+log_prefix = {
+    "operator": None,
+    "computer_name": platform.node(),
+    "user_name": getpass.getuser(),
+    "operating_system_version": platform.platform(),
+    "datetime_start": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+    "made_this": os.path.basename(__file__),
+    "package_type": "camera card",
+    "local_path": local_path,
+    "local_freespace": f"{shutil.disk_usage(local_path).free / (1024 ** 3):.2f}Gi",
+    "delivery_path": tiger_server,
+    "delivery_freespace": f"{shutil.disk_usage(tiger_server).free / (1024 ** 3):.2f}Gi",
+    "archive_path": archive_server,
+    "archive_freespace": f"{shutil.disk_usage(archive_server).free / (1024 ** 3):.2f}Gi",
+}
 
 # Create dictionary structure for one package
 package_dict = {
@@ -55,13 +69,13 @@ package_dict = {
     "input_paths": None,
     "do_fixity": True,
     "do_drive_delete": False,
-    "do_desktop_delete": False,
+    "do_local_delete": False,
     "do_commands": False,
     "do_dropbox": False,
     "emails": None,
     "DROPBOX_link": None,
-    "DESKTOP_transfer_okay": None,
-    "DESKTOP_transfer_not_okay_reason": None,
+    "LOCAL_transfer_okay": None,
+    "LOCAL_transfer_not_okay_reason": None,
     "MAKEWINDOW_okay": None,
     "MAKEWINDOW_not_okay_reason": None,
     "MAKEMETADATA_okay": None,
@@ -74,26 +88,11 @@ package_dict = {
     "DELIVERY_transfer_not_okay_reason": None,
     "DROPBOX_transfer_okay": None,
     "DROPBOX_transfer_not_okay_reason": None,
-    "DESKTOP_files_dict": None,
+    "LOCAL_files_dict": None,
     "ARCHIVE_files_dict": None,
     "DELIVERY_files_dict": None,
     "DROPBOX_files_dict": None
 }
-
-DESKTOP_obj = ''
-
-# Archive server path
-archive_server = "/Volumes/CUNYTVMEDIA/archive_projects/camera_card_ingests"
-#archive_server = "/Users/aidagarrido/Desktop/camera_card_ingests"
-
-# Delivery server path
-#tiger_server = "/Users/aidagarrido/Desktop/Camera Card Delivery"
-#tiger_server = "/Volumes/TigerVideo/Camera Card Delivery"
-tiger_server = "/Volumes/TElements/Camera Card Delivery"
-
-# Iphone temp folder path
-#iphone_temp_folder = '/Users/aidagarrido/Pictures/Iphone_Ingest_Temp'
-iphone_temp_folder = '/Users/libraryad/Pictures/Iphone_Ingest_Temp'
 
 # Checks if user is connected to server
 def server_check(s, s_type):
@@ -230,19 +229,17 @@ def print_log(log_dest, package):
 
     # Write data to json file
     if old_log_exists:
-        overlap = all(d in new_log_data for d in old_log_data)
-        if overlap:
-            old_log_data["DESKTOP_files_dict"] = []
         merged_data = merge_dicts(old_log_data, new_log_data)
         with open(new_log_path, "w") as file:
             json.dump(merged_data, file, indent=4)
         os.remove(old_log_path)
     else:
+        combined = {**log_prefix, **new_log_data}
         with open(new_log_path, "w") as file:
-            json.dump(new_log_data, file, indent=4)
+            json.dump(combined, file, indent=4)
 
 def error_report(log_dest, package):
-    dpto = packages_dict[package]["DESKTOP_transfer_okay"]
+    dpto = packages_dict[package]["LOCAL_transfer_okay"]
     mwo = packages_dict[package]["MAKEWINDOW_okay"]
     mmo = packages_dict[package]["MAKEMETADATA_okay"]
     mcpo = packages_dict[package]["MAKECHECKSUMPACKAGE_okay"]
@@ -250,7 +247,7 @@ def error_report(log_dest, package):
     dyto = packages_dict[package]["DELIVERY_transfer_okay"]
     dbto = packages_dict[package]["DROPBOX_transfer_okay"]
 
-    event_keys = ["DESKTOP_transfer_okay", "MAKEWINDOW_okay", "MAKEMETADATA_okay", "MAKECHECKSUMPACKAGE_okay",
+    event_keys = ["LOCAL_transfer_okay", "MAKEWINDOW_okay", "MAKEMETADATA_okay", "MAKECHECKSUMPACKAGE_okay",
                   "ARCHIVE_transfer_okay", "DELIVERY_transfer_okay", "DROPBOX_transfer_okay"]
     event_values = [dpto, mwo, mmo, mcpo, ato, dyto, dbto]
 
@@ -306,7 +303,7 @@ def error_report(log_dest, package):
         print(f"\033[32mIngest succesfully completed\033[0m")
 
 def runcommands(filepath, package):
-    if packages_dict[package]["DESKTOP_transfer_okay"] and packages_dict[package]["do_commands"]:
+    if packages_dict[package]["LOCAL_transfer_okay"] and packages_dict[package]["do_commands"]:
         makewindow_okay, makewindow_error = ingestcommands.makewindow(filepath)
     else:
         return
@@ -350,16 +347,15 @@ def empty_iphone_temp():
             os.remove(file_path)
 
 
-def ingest_desktop_transfer(package_obj, package, desktop_path, input_path, card):
+def ingest_local_transfer(package_obj, package, input_path, card):
     # Create package object from RestructurePackage class
-    # Files are first transferred locally to desktop to quicken file processing (e.g. windowdub)
+    # Files are first transferred locally to quicken file processing (e.g. windowdub)
     # File are transformed into archive package
     if input_path == iphone_temp_folder:
         ingest_iphone_media()
 
-    package_obj.create_output_directory(desktop_path, package, card)
-    # Transfer files to Desktop
-    package_obj.restructure_copy("archive", input_path, desktop_path, package, card,
+    package_obj.create_output_directory(local_path, package, card)
+    package_obj.restructure_copy("archive", input_path, local_path, package, card,
                                      packages_dict[package]["do_fixity"],
                                      packages_dict[package]["do_drive_delete"])
     if input_path == iphone_temp_folder:
@@ -384,26 +380,24 @@ def ingest_iphone_media():
         print("AppleScript failed:")
         print(e.stderr)
 
-
-def ingest_commands(desktop_path):
+def ingest_commands():
     # Run commands on local copy if last batch or only batch in process
     # do_commands set accordingly in main
     for package in packages_dict:
         if packages_dict[package]["do_commands"]:
-            runcommands(os.path.join(desktop_path, package), package)
+            runcommands(os.path.join(local_path, package), package)
 
 
-def ingest_delivery_transfer(desktop_path, package, package_obj):
+def ingest_delivery_transfer(package, package_obj):
     # Transfer to servers if last batch or only batch in process
-    # do_desktop_delete is set accordingly in main
-    if packages_dict[package]["do_desktop_delete"]:
+    if packages_dict[package]["do_local_delete"]:
         # Transfer files to Tiger
         global tiger_down
         if not tiger_down:
             # Create new package object from RestructurePackage class
-            # Files are transferred from desktop to Tiger server
+            # Files are transferred from local path to delivery server
             # File are transformed into delivery package
-            package_obj.restructure_copy("delivery", os.path.join(desktop_path, package, "objects"),
+            package_obj.restructure_copy("delivery", os.path.join(local_path, package, "objects"),
                                              os.path.join(tiger_server, get_showcode(package)),
                                              package, do_fixity=packages_dict[package]["do_fixity"],
                                              do_delete=False,
@@ -428,18 +422,17 @@ def ingest_delivery_transfer(desktop_path, package, package_obj):
                                                                                "message": "Tiger volume is down"}
 
 
-def ingest_archive_transfer(desktop_path, package, package_obj):
+def ingest_archive_transfer(package, package_obj):
     # Transfer to servers if last batch or only batch in process
-    # do_desktop_delete is set accordingly in main
-    if packages_dict[package]["do_desktop_delete"]:
+    if packages_dict[package]["do_local_delete"]:
         # Create new package object
-        # Files are transferred from desktop to CUNYTVMedia
-        # File are not transformed, since desktop copy is already an archive package; thus one2one method
-        package_obj.restructure_copy("one2one", os.path.join(desktop_path, package),
+        # Files are transferred from local to CUNYTVMedia
+        # File are not transformed, since local copy is already an archive package; thus one2one method
+        package_obj.restructure_copy("one2one", os.path.join(local_path, package),
                                              os.path.join(archive_server, package),
                                              do_fixity=packages_dict[package]["do_fixity"],
                                              do_delete=False,
-                                             files_dict=packages_dict[package]["DESKTOP_files_dict"])
+                                             files_dict=packages_dict[package]["LOCAL_files_dict"])
 
         # Save delivery transfer results and checksums
         packages_dict[package]["ARCHIVE_files_dict"] = package_obj.FILES_DICT
@@ -448,17 +441,17 @@ def ingest_archive_transfer(desktop_path, package, package_obj):
             packages_dict[package]["ARCHIVE_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
 
 
-def ingest_dropbox_upload(desktop_path, package, uploadsession):
+def ingest_dropbox_upload(package, uploadsession):
     # Upload to dropbox that have successfully transferred, went through makewindow, and send email notification
-    no_error = packages_dict[package]["DESKTOP_transfer_okay"] and packages_dict[package]["MAKEWINDOW_okay"]
+    no_error = packages_dict[package]["LOCAL_transfer_okay"] and packages_dict[package]["MAKEWINDOW_okay"]
     do_dropbox = packages_dict[package]["do_dropbox"]
 
-    desktop_object_directory = os.path.join(desktop_path, package, "objects")
+    local_object_directory = os.path.join(local_path, package, "objects")
     dropbox_directory = dropbox_prefix(package) + f'/{package}'
     emails = packages_dict[package]["emails"]
 
     if no_error and do_dropbox:
-        for root, dirs, files in os.walk(desktop_object_directory, topdown=False):
+        for root, dirs, files in os.walk(local_object_directory, topdown=False):
             # remove hidden directories (starting with '.')
             dirs[:] = [d for d in dirs if not d.startswith('.')]
             for filename in files:
@@ -468,7 +461,7 @@ def ingest_dropbox_upload(desktop_path, package, uploadsession):
 
                     uploadsession.upload_file_to_dropbox(filepath, dropboxpath,
                                                              packages_dict[package]["do_fixity"],
-                                                             packages_dict[package]["DESKTOP_files_dict"])
+                                                             packages_dict[package]["LOCAL_files_dict"])
 
         packages_dict[package]["DROPBOX_files_dict"] = uploadsession.DROPBOX_FILES_DICT
         packages_dict[package]["DROPBOX_transfer_okay"] = uploadsession.DROPBOX_TRANSFER_OKAY
@@ -478,10 +471,10 @@ def ingest_dropbox_upload(desktop_path, package, uploadsession):
 
         # Send email notification if Dropbox transfer goes well.
         if packages_dict[package]["DROPBOX_transfer_okay"]:
-            uploadsession.ingestremote_email(desktop_path, emails, dropbox_directory, package)
+            uploadsession.ingestremote_email(local_path, emails, dropbox_directory, package)
             packages_dict[package]["DROPBOX_link"] = uploadsession.share_link
 
-def ingest_log_and_errors(desktop_path):
+def ingest_log_and_errors():
     for package in packages_dict:
         log_dest = os.path.join(archive_server, package, "metadata", "logs")
         # Check if the log exists, if not, create it
@@ -491,44 +484,15 @@ def ingest_log_and_errors(desktop_path):
         print_log(log_dest, package)
         error_report(log_dest, package)
 
-        if packages_dict[package]['do_desktop_delete']:
-            shutil.rmtree(os.path.join(desktop_path, package))
+        if packages_dict[package]['do_local_delete']:
+            shutil.rmtree(os.path.join(local_path, package))
 
     to_delete = [pkg for pkg in packages_dict if pkg not in incomplete_multibatch]
     for pkg in to_delete:
         del packages_dict[pkg]
 
-
-def ingest_resourcespace():
-    script_dir = Path(__file__).resolve().parent
-    php_script_path = script_dir / "remote_resource_space_ingest.php"
-
-    for package in packages_dict:
-        no_error = (packages_dict[package]["ARCHIVE_transfer_okay"] and packages_dict[package]["MAKEWINDOW_okay"])
-
-        if no_error:
-            dir = os.path.join(archive_server, package, "objects")
-            dropbox_link = packages_dict[package]['DROPBOX_link']
-            if dropbox_link is None:
-                dropbox_link = ""
-            else:
-                dropbox_link = dropbox_link.split('&', 1)[0]
-
-            command = f"php {php_script_path} {dir} {dropbox_link}"
-            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       text=True)
-
-            for line in process.stdout:
-                print(line, end='')
-                process.wait()
-
-            print("Exit code:", process.returncode)
-
 # Ingests files
 def ingest():
-    home_dir = os.path.expanduser('~')
-    desktop_path = os.path.join(home_dir, 'Desktop')
-
     for package in packages_dict:
         for card, input_path in zip(packages_dict[package]["cards"], packages_dict[package]["input_paths"]):
 
@@ -536,12 +500,12 @@ def ingest():
             package_obj = restructurepackage.RestructurePackage()
 
             mpb = multiprogressbar.MultiProgressBar()
-            mpb.add_task("Desktop Transfer", package_obj, 'TOTAL_BYTES', 'TOTAL_FILES', 'PROG_BYTES', 'PROG_FILES',
+            mpb.add_task("Local Transfer", package_obj, 'TOTAL_BYTES', 'TOTAL_FILES', 'PROG_BYTES', 'PROG_FILES',
                              'CURRENT_PROCESS')
 
 
             # Create threads for each function
-            t1 = threading.Thread(target=ingest_desktop_transfer, args=(package_obj, package, desktop_path,input_path, card,))
+            t1 = threading.Thread(target=ingest_local_transfer, args=(package_obj, package,input_path, card,))
             stop_event = threading.Event()
             t2 = threading.Thread(target=mpb.render, args=(stop_event,))
 
@@ -554,20 +518,20 @@ def ingest():
 
             t2.join()
 
-            # Save desktop transfer results and checksums
-            if packages_dict[package]["DESKTOP_files_dict"]:
-                packages_dict[package]["DESKTOP_files_dict"] += package_obj.FILES_DICT
+            # Save local transfer results and checksums
+            if packages_dict[package]["LOCAL_files_dict"]:
+                packages_dict[package]["LOCAL_files_dict"] += package_obj.FILES_DICT
             else:
-                packages_dict[package]["DESKTOP_files_dict"] = package_obj.FILES_DICT
-            if packages_dict[package]["DESKTOP_transfer_okay"] is not False:
-                packages_dict[package]["DESKTOP_transfer_okay"] = package_obj.TRANSFER_OKAY
+                packages_dict[package]["LOCAL_files_dict"] = package_obj.FILES_DICT
+            if packages_dict[package]["LOCAL_transfer_okay"] is not False:
+                packages_dict[package]["LOCAL_transfer_okay"] = package_obj.TRANSFER_OKAY
             if package_obj.TRANSFER_ERROR:
-                if packages_dict[package]["DESKTOP_transfer_not_okay_reason"]:
-                    packages_dict[package]["DESKTOP_transfer_not_okay_reason"] += package_obj.TRANSFER_ERROR
+                if packages_dict[package]["LOCAL_transfer_not_okay_reason"]:
+                    packages_dict[package]["LOCAL_transfer_not_okay_reason"] += package_obj.TRANSFER_ERROR
                 else:
-                    packages_dict[package]["DESKTOP_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
+                    packages_dict[package]["LOCAL_transfer_not_okay_reason"] = package_obj.TRANSFER_ERROR
 
-    ingest_commands(desktop_path)
+    ingest_commands()
 
     for package in packages_dict:
         if package not in incomplete_multibatch:
@@ -575,8 +539,8 @@ def ingest():
             archive_obj = restructurepackage.RestructurePackage()
             delivery_obj = restructurepackage.RestructurePackage()
 
-            desktop_object_directory = os.path.join(desktop_path, package, "objects")
-            db_obj = dropboxuploadsession.DropboxUploadSession(desktop_object_directory, packages_dict[package]["DESKTOP_files_dict"])
+            local_object_directory = os.path.join(local_path, package, "objects")
+            db_obj = dropboxuploadsession.DropboxUploadSession(local_object_directory, packages_dict[package]["LOCAL_files_dict"])
 
             mpb = multiprogressbar.MultiProgressBar()
             if packages_dict[package]["do_dropbox"]:
@@ -588,9 +552,9 @@ def ingest():
                          'CURRENT_PROCESS')
 
             # Create threads for each function
-            t1 = threading.Thread(target=ingest_dropbox_upload, args=(desktop_path, package, db_obj,))
-            t2 = threading.Thread(target=ingest_delivery_transfer, args=(desktop_path, package, delivery_obj,))
-            t3 = threading.Thread(target=ingest_archive_transfer, args=(desktop_path, package, archive_obj,))
+            t1 = threading.Thread(target=ingest_dropbox_upload, args=(package, db_obj,))
+            t2 = threading.Thread(target=ingest_delivery_transfer, args=(package, delivery_obj,))
+            t3 = threading.Thread(target=ingest_archive_transfer, args=(package, archive_obj,))
 
             stop_event = threading.Event()
             t4 = threading.Thread(target=mpb.render, args=(stop_event,))
@@ -608,9 +572,7 @@ def ingest():
 
             t4.join()
 
-    #ingest_resourcespace()  # Uses archive package since filestore and cc ingests are on the same server
-
-    ingest_log_and_errors(desktop_path)  # Deletes dekstop transfer at this point
+    ingest_log_and_errors()  # Deletes dekstop transfer at this point
 
 def startup(multibatchname=None):
     global tiger_down, iphone, packages_dict, incomplete_multibatch, package_dict, samebatch, currentcards
@@ -618,17 +580,24 @@ def startup(multibatchname=None):
     # Organizes user inputs into dictionary
     if not volume_paths and num_iphones == 0:
         print("No cards detected")
-        #add mistaken batch process?
     else:
         if not currentcards and not multibatchname:
             cunymediaids.print_media_dict()
             print()
+
         print(f"{len(volume_paths)} card(s) detected and {num_iphones} iphone(s) detected.")
 
         if num_iphones > 0:
             input("Please ensure iPhone remains unlocked during ingest. Press enter to continue. ")
             iphone = True
             volume_paths.insert(0, iphone_temp_folder)
+
+        if not currentcards and not multibatchname:
+            while True:
+                operator = input("Enter your name or initials: ").strip()
+                if operator:
+                    break
+            log_prefix['operator'] = operator
 
         for input_path in volume_paths:
             if input_path == iphone_temp_folder:
@@ -705,13 +674,13 @@ def startup(multibatchname=None):
                         emails = validateuserinput.emails(
                             input("\tList email(s) delimited by space or press enter to continue: "))
                         emails.extend(["library@tv.cuny.edu"])
-                        #emails.extend(["aida.garrido@tv.cuny.edu"])
+                        # emails.extend(["aida.garrido@tv.cuny.edu"])
                         # Update key-value pair from default
                         new_package_dict['do_dropbox'] = True
                         new_package_dict['emails'] = emails
 
                     # Update key-value pair from default
-                    new_package_dict['do_desktop_delete'] = True
+                    new_package_dict['do_local_delete'] = True
                     new_package_dict['do_commands'] = True
 
                     packages_dict[package_name] = new_package_dict
