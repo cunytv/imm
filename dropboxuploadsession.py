@@ -935,7 +935,6 @@ class DropboxUploadSession:
 
             self.bytes_read += self.email_increment
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Upload files to Dropbox"
