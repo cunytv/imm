@@ -180,7 +180,7 @@ for FILE in "${LINECUT_FILES[@]}"; do
                 SHOW_NAME="${SHOW_NAME%_LINE_CUT}"
                 TIMESTAMP="$(basename "$FILE")"
                 TIMESTAMP="${TIMESTAMP%% *}"
-                MULTIVIEW_FILE="${PARENT_DIR}/${SHOW_NAME}_MULTIVIEWS/${SHOW_NAME}_${TIMESTAMP}_MULTIVIEW.mp4"
+                MULTIVIEW_FILE="${PARENT_DIR}/${SHOW_NAME}_MULTIVIEWS/${TIMESTAMP}_${SHOW_NAME}_MULTIVIEW.mp4"
 
                 if [ -f "$MULTIVIEW_FILE" ]; then
                     echo "Found multiview: $MULTIVIEW_FILE"
