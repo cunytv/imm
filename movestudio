@@ -14,8 +14,6 @@ LINECUT_FILES=()
 MULTIVIEW_FILES=()
 RSINGESTMANIFEST="$(command -v rsingestmanifest.py)"
 
-echo "Using rsingestmanifest: $RSINGESTMANIFEST"
-
 if [ -z "$RSINGESTMANIFEST" ]; then
     echo "rsingestmanifest.py not found in PATH"
     exit 1
@@ -46,6 +44,21 @@ is_idle() {
     find "$file" -maxdepth 0 -mmin +$IDLE_MINUTES | grep -q .
 }
 
+check_mount() {
+
+    local VOLUME="$1"
+
+    if [ ! -d "$VOLUME" ]; then
+        echo
+        echo "Looks like the server is unavailable."
+        echo "  $VOLUME"
+        echo
+        echo "Please mount the server before proceeding. If needed, reboot the computer, mount the Volumes and then run movestudio."
+        echo
+        exit 1
+    fi
+}
+
 TEST_MODE=false
 if [[ "$1" == "--test" ]]; then
     TEST_MODE=true
@@ -67,6 +80,11 @@ fi
 
 if ! $TEST_MODE; then
     cleanup_logs
+fi
+
+if ! $TEST_MODE; then
+    check_mount "/Volumes/TElements"
+    check_mount "/Volumes/CUNYTVMEDIA"
 fi
 
 ##remove_sdtb
