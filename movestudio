@@ -48,15 +48,20 @@ check_mount() {
 
     local VOLUME="$1"
 
-    if [ ! -d "$VOLUME" ]; then
-        echo
-        echo "Looks like the server is unavailable."
-        echo "  $VOLUME"
-        echo
-        echo "Please mount the server before proceeding. If needed, reboot the computer, mount the Volumes and then run movestudio."
-        echo
+    if [ ! -e "$VOLUME" ]; then
+
+        log_failure "$VOLUME is not mounted"
+
+        osascript -e "display dialog \"Required server is not mounted:
+
+$VOLUME
+
+Please mount the server and run movestudio again. If server still doesn't mount, trying rebooting\" buttons {\"OK\"} default button \"OK\" with icon stop"
+
         exit 1
+
     fi
+
 }
 
 TEST_MODE=false
@@ -74,18 +79,13 @@ if ! $TEST_MODE; then
     trap 'rm -f "$LOCKFILE"' EXIT
 fi
 
-if ! $TEST_MODE && [ ! -d "$DEST_DIR" ]; then
-    exit 0
-fi
 
 if ! $TEST_MODE; then
     cleanup_logs
-fi
-
-if ! $TEST_MODE; then
     check_mount "/Volumes/TElements"
     check_mount "/Volumes/CUNYTVMEDIA"
 fi
+
 
 ##remove_sdtb
 while read -r FILE; do
