@@ -332,8 +332,7 @@ def normalize_objects(inspection, dry_run=True):
     if dry_run:
         print("\nDRY RUN - No files were modified.")
     else:
-        print(f"\nMoved {len(inspection['camera_cards'])} camera card folder(s).")
-        print("Object normalization complete.")
+        print(f"\nMoved {len(inspection['camera_cards'])} camera card folder(s) into objects.")
 
 # ----------------------------------------------------------
 # Create metadata structure
@@ -411,7 +410,7 @@ def move_metadata_files(inspection, dry_run=True):
             inspection["camera_cards"],
             start=1):
 
-        source = card
+        source = objects / str(number)
         destination = logs / str(number)
 
         if not destination.exists():
@@ -503,7 +502,7 @@ def main():
                 dry_run=False
             )
     else:
-        print("\nObject normalization is not required.")
+        print("\nObjects folder is already there.")
 
     ## normalize metadata directory if needed
 
