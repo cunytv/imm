@@ -20,10 +20,11 @@ import shutil
 
 CAMERA_EXTENSIONS = {".mxf"}
 ACCESS_EXTENSIONS = {".mov", ".mp4"}
+METADATA_EXTENSIONS = {".xml", ".bim"}
 
-# ----------------------------------------------------------
-# Helper functions
-# ----------------------------------------------------------
+# ==========================================================
+# Helper functions:
+# ==========================================================
 
 # ----------------------------------------------------------
 # Print heading
@@ -36,7 +37,6 @@ def print_heading(title):
     print("=" * 60)
     print(title)
     print("=" * 60)
-
 
 # ----------------------------------------------------------
 # Create directory
@@ -69,6 +69,10 @@ def print_operation(source, destination):
     print("    ↓")
     print(destination)
     print()
+
+#===========================================================
+#Inspection
+#===========================================================
 
 # ----------------------------------------------------------
 # Find camera card folders
@@ -124,67 +128,6 @@ def find_camera_cards(package):
 
 
 # ----------------------------------------------------------
-# Create metadata structure
-# ----------------------------------------------------------
-
-def create_metadata_structure(inspection, dry_run=True):
-
-    package = inspection["package"]
-
-    metadata = package / "metadata"
-
-    logs = metadata / "logs"
-
-    print_heading("Metadata Structure")
-
-    #
-    # metadata/
-    #
-
-    if not metadata.exists():
-
-        create_directory(
-            metadata,
-            package,
-            dry_run
-        )
-
-    #
-    # metadata/logs/
-    #
-
-    if not logs.exists():
-
-        create_directory(
-            logs,
-            package,
-            dry_run
-        )
-
-    #
-    # metadata/logs/<camera card>
-    #
-
-    for number, card in enumerate(
-            inspection["camera_cards"],
-            start=1):
-
-        log_directory = logs / str(number)
-
-        if not log_directory.exists():
-
-            create_directory(
-                log_directory,
-                package,
-                dry_run
-            )
-
-    if dry_run:
-        print("DRY RUN - No directories were created.")
-    else:
-        print("Metadata structure complete.")
-
-# ----------------------------------------------------------
 # Count files
 # ----------------------------------------------------------
 
@@ -227,7 +170,7 @@ def count_files(package):
 # Validation
 # ----------------------------------------------------------
 
-def validate(counts):
+def validate_package(counts):
 
     messages = []
 
@@ -250,10 +193,10 @@ def validate(counts):
 
 
 # ----------------------------------------------------------
-# Report
+# Report Inspection
 # ----------------------------------------------------------
 
-def report(package, package_type, cards, counts, validation):
+def report_inspection(package, package_type, cards, counts, validation):
 
     print("=" * 65)
     print("Package Inspection")
@@ -338,7 +281,9 @@ def report(package, package_type, cards, counts, validation):
         print("• Rename 'obects' to 'objects'")
         print("• Continue normalization")
 
-
+#===========================================================
+# Normalization
+#===========================================================
 
 # ----------------------------------------------------------
 # create an objects directory if needed
@@ -390,6 +335,121 @@ def normalize_objects(inspection, dry_run=True):
         print(f"\nMoved {len(inspection['camera_cards'])} camera card folder(s).")
         print("Object normalization complete.")
 
+# ----------------------------------------------------------
+# Create metadata structure
+# ----------------------------------------------------------
+
+def create_metadata_structure(inspection, dry_run=True):
+
+    package = inspection["package"]
+
+    metadata = package / "metadata"
+
+    logs = metadata / "logs"
+
+    print_heading("Metadata Structure")
+
+    # metadata/
+
+    if not metadata.exists():
+
+        create_directory(
+            metadata,
+            package,
+            dry_run
+        )
+
+    # metadata/logs/
+
+    if not logs.exists():
+
+        create_directory(
+            logs,
+            package,
+            dry_run
+        )
+
+    # metadata/logs/<camera card>
+
+    for number, card in enumerate(
+            inspection["camera_cards"],
+            start=1):
+
+        log_directory = logs / str(number)
+
+        if not log_directory.exists():
+
+            create_directory(
+                log_directory,
+                package,
+                dry_run
+            )
+
+    if dry_run:
+        print("DRY RUN - No directories were created.")
+    else:
+        print("Metadata structure complete.")
+
+## move XML/BIM camera card files
+
+# ----------------------------------------------------------
+# Move metadata files
+# ----------------------------------------------------------
+
+def move_metadata_files(inspection, dry_run=True):
+
+    package = inspection["package"]
+    
+    objects = package / "objects"
+    logs = package / "metadata" / "logs"
+
+    moved = 0
+
+    print_heading("Move Metadata Files")
+
+    for number, card in enumerate(
+            inspection["camera_cards"],
+            start=1):
+
+        source = card
+        destination = logs / str(number)
+
+        if not destination.exists():
+            raise RuntimeError(
+                f"Missing destination directory:\n{destination}"
+            )
+
+        print(f"Camera Card {number}")
+        print("----------------")
+
+        metadata_files = sorted(
+            f for f in source.iterdir()
+            if f.suffix.lower() in METADATA_EXTENSIONS
+        )
+
+        if not metadata_files:
+            print("No metadata files found.\n")
+            continue
+
+        for file in metadata_files: 
+            
+            print_operation(
+                file.relative_to(package),
+                destination.relative_to(package)
+            )
+
+            if not dry_run:
+               shutil.move(
+                str(file), 
+                str(destination / file.name)
+                )
+
+            moved += 1 
+
+    if dry_run:
+        print(f"\nDRY RUN - {moved} metadata file(s) would be moved .")
+    else:
+        print(f"\nMoved {moved} metadata file(s).")
 
 # ----------------------------------------------------------
 # Main
@@ -397,7 +457,7 @@ def normalize_objects(inspection, dry_run=True):
 
 def main():
 
-    ## inspect
+    ## inspect package
 
     parser = argparse.ArgumentParser()
 
@@ -414,7 +474,7 @@ def main():
 
     counts = count_files(package)
 
-    validation = validate(counts)
+    validation = validate_package(counts)
 
     inspection = {
         "package": package,
@@ -424,7 +484,9 @@ def main():
         "validation": validation,
     }
 
-    report(package, package_type, cards, counts, validation)
+    ## report inspection
+
+    report_inspection(package, package_type, cards, counts, validation)
 
     ## normalize objects if needed
 
@@ -458,6 +520,21 @@ def main():
             )
     else:
         print("\nMetadata structure already exists.")
+
+    ## Move metadata files
+
+    answer = input(
+        "\nMove XML/BIM files to metadata/logs? [y/N] "
+    )
+
+    if answer.lower() == "y":
+
+        move_metadata_files(
+            inspection,
+            dry_run=False
+        )
+
+
 
 
 if __name__ == "__main__":
