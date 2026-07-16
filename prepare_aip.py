@@ -70,6 +70,22 @@ def print_operation(source, destination):
     print(destination)
     print()
 
+def record_camera_cards(inspection):
+
+    if inspection["package_type"] != "editor_delivery":
+        return
+
+    inspection["preparation"]["camera_cards"].clear()
+
+    for number, card in enumerate(
+            inspection["camera_cards"],
+            start=1):
+
+        inspection["preparation"]["camera_cards"].append({
+            "original": card.name,
+            "normalized": f"objects/{number}"
+        })
+
 #===========================================================
 #Inspection
 #===========================================================
@@ -296,9 +312,7 @@ def normalize_objects(inspection, dry_run=True):
 
     print_heading("Object Normalization")
 
-    #
     # Create objects/
-    #
 
     if not objects.exists():
 
@@ -308,9 +322,7 @@ def normalize_objects(inspection, dry_run=True):
             dry_run
         )
 
-    #
     # Move camera card folders
-    #
 
     print("Camera Card Mapping")
     print("-------------------")
@@ -327,7 +339,15 @@ def normalize_objects(inspection, dry_run=True):
         )
 
         if not dry_run:
-            shutil.move(str(card), str(destination))
+            shutil.move(
+                str(card), 
+                str(destination)
+            )
+
+            inspection["preparation"]["camera_cards"].append({
+                "original": card.name,
+                "normalized": f"objects/{number}"
+                })
 
     if dry_run:
         print("\nDRY RUN - No files were modified.")
@@ -450,6 +470,60 @@ def move_metadata_files(inspection, dry_run=True):
     else:
         print(f"\nMoved {moved} metadata file(s).")
 
+#------------------------------------------------------------
+# Write preparation log
+#------------------------------------------------------------
+
+def write_preparation_log(inspection, dry_run=True):
+
+    package = inspection["package"]
+
+    log = package / "metadata" / "logs" / "preparation.log"
+
+    print_heading("Preparation Log")
+
+    print_operation(
+        "Preparation information",
+        log.relative_to(package)
+    )
+
+    if dry_run:
+        print("\nDRY RUN - Log would be created.")
+        return
+
+    prep = inspection["preparation"]
+
+    with log.open("w", encoding="utf-8") as f:
+
+        f.write("Preparation Log\n")
+        f.write("================\n\n")
+
+        f.write(
+            f"Original package:\n"
+            f"{prep['original_package']}\n\n"
+        )
+
+        if prep["prepared_package"]:
+
+            f.write(
+                f"Prepared package:\n"
+                f"{prep['prepared_package']}\n\n"
+            )
+
+        if prep["camera_cards"]:
+        
+            f.write("Camera Cards\n")
+            f.write("------------\n")
+
+            for card in prep["camera_cards"]:
+
+                f.write(
+                    f"{card['original']}\n"
+                    f"→ {card['normalized']}\n\n"
+                )
+
+    print("\nPreparation log written.")
+
 # ----------------------------------------------------------
 # Main
 # ----------------------------------------------------------
@@ -481,13 +555,20 @@ def main():
         "camera_cards": cards,
         "counts": counts,
         "validation": validation,
+        "preparation": {
+            "original_package": package.name,
+            "prepared_package": None,
+            "camera_cards": []
+        }
     }
+
+    record_camera_cards(inspection)
 
     ## report inspection
 
     report_inspection(package, package_type, cards, counts, validation)
 
-    ## normalize objects if needed
+    ## create objects folder
 
     if inspection["package_type"] == "editor_delivery":
 
@@ -533,8 +614,18 @@ def main():
             dry_run=False
         )
 
+    ## Write preparation log
 
+    answer = input(
+        "\nWrite preparation log? [y/N] "
+    )
 
+    if answer.lower() == "y":
+
+        write_preparation_log(
+            inspection,
+            dry_run=False
+        )
 
 if __name__ == "__main__":
     main()
