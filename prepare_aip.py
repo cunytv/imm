@@ -4,12 +4,7 @@
 
 Inspects an incoming package and turns it into an AIP
 
-Determines:
-    • Package type
-    • Camera card folders
-    • Existing AIP structure
-    • File counts
-    • Validation
+2026-07-16
 
 """
 
@@ -101,9 +96,7 @@ def find_camera_cards(package):
 
     objects = package / "objects"
 
-    #
     # Existing AIP like structure
-    #
 
     if objects.is_dir():
 
@@ -114,9 +107,7 @@ def find_camera_cards(package):
 
         return "existing_aip", cards
 
-    #
     # Common typo
-    #
 
     typo = package / "obects"
 
@@ -129,9 +120,7 @@ def find_camera_cards(package):
 
         return "typo_objects", cards
 
-    #
     # package without objects
-    #
 
     cards = []
 
@@ -530,10 +519,6 @@ def rename_package(inspection, dry_run=True):
         return
 
     package.rename(destination)
-
-    #
-    # Update inspection so later functions use the new path
-    #
 
     inspection["package"] = destination
 
