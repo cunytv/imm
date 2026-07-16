@@ -17,8 +17,11 @@ from pathlib import Path
 import argparse
 import sys
 import shutil
+import subprocess
 
+## revise camera exensions in future release
 CAMERA_EXTENSIONS = {".mxf"}
+## revise access extensions in future release
 ACCESS_EXTENSIONS = {".mov", ".mp4"}
 METADATA_EXTENSIONS = {".xml", ".bim"}
 
@@ -99,7 +102,7 @@ def find_camera_cards(package):
     objects = package / "objects"
 
     #
-    # Existing AIP
+    # Existing AIP like structure
     #
 
     if objects.is_dir():
@@ -127,7 +130,7 @@ def find_camera_cards(package):
         return "typo_objects", cards
 
     #
-    # Editor delivery
+    # package without objects
     #
 
     cards = []
@@ -536,6 +539,43 @@ def rename_package(inspection, dry_run=True):
 
     print("\nPackage renamed.")
 
+# ----------------------------------------------------------
+# Package cleanup
+# ----------------------------------------------------------
+
+def review_package(package):
+
+    print_heading("Package Cleanup")
+
+    print(
+        "The package has been created.\n"
+    )
+
+    print(
+        "Please review the remaining files and "
+        "remove any non-preservation material.\n"
+    )
+
+    print(
+        "Examples include:\n"
+        "  • Adobe Premiere Auto-Save files\n"
+        "  • Timecode dubs\n"
+        "  • Temporary exports\n"
+    )
+
+    print("Opening package in Finder...\n")
+
+    subprocess.run([
+        "open",
+        str(package)
+    ])
+
+    input(
+        "Press Enter after cleanup is complete..."
+    )
+
+    print("\nPackage cleanup complete.")
+
 #------------------------------------------------------------
 # Write preparation log
 #------------------------------------------------------------
@@ -701,6 +741,12 @@ def main():
             inspection,
             dry_run=False
         )
+
+    ## review package
+
+    review_package(
+        inspection["package"]
+    )
 
     ## Write preparation log
 
