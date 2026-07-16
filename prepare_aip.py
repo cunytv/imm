@@ -470,6 +470,72 @@ def move_metadata_files(inspection, dry_run=True):
     else:
         print(f"\nMoved {moved} metadata file(s).")
 
+#-----------------------------------------------------------
+#determine package name
+#-----------------------------------------------------------
+
+def determine_package_name(inspection):
+
+    package = inspection["package"]
+
+    print_heading("Package Name")
+
+    print(f"Current package:\n{package.name}\n")
+
+    new_name = input(
+        "Enter archival package identifier:\n> "
+    ).strip()
+
+    if not new_name:
+
+        print("\nPackage rename cancelled.")
+        return
+
+    inspection["preparation"]["prepared_package"] = new_name
+
+# ----------------------------------------------------------
+# Rename package
+# ----------------------------------------------------------
+
+def rename_package(inspection, dry_run=True):
+
+    package = inspection["package"]
+
+    new_name = inspection["preparation"]["prepared_package"]
+
+    if not new_name:
+        print("\nNo package name specified.")
+        return
+
+    destination = package.parent / new_name
+
+    print_heading("Rename Package")
+
+    print_operation(
+        package.name,
+        new_name
+    )
+
+    if destination.exists():
+
+        print(f"\nDestination already exists:\n{destination}")
+        return
+
+    if dry_run:
+
+        print("\nDRY RUN - Package would be renamed.")
+        return
+
+    package.rename(destination)
+
+    #
+    # Update inspection so later functions use the new path
+    #
+
+    inspection["package"] = destination
+
+    print("\nPackage renamed.")
+
 #------------------------------------------------------------
 # Write preparation log
 #------------------------------------------------------------
@@ -608,8 +674,30 @@ def main():
     )
 
     if answer.lower() == "y":
-
         move_metadata_files(
+            inspection,
+            dry_run=False
+        )
+
+    ## Determine package name
+    
+    answer = input(
+        "\nRename package? [y/N] "
+    )
+
+    if answer.lower() == "y":
+        determine_package_name(
+            inspection
+        )
+
+    ## Rename package
+
+    answer = input(
+        "\nRename package [y/N]"
+    )
+
+    if answer.lower() == "y":
+        rename_package(
             inspection,
             dry_run=False
         )
