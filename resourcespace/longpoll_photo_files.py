@@ -8,7 +8,7 @@ import sys
 import os
 import hashlib
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append("/opt/homebrew/bin/")
 import longpoll
 import rsingestmanifest
 
@@ -72,7 +72,10 @@ def transfer_files(src_folder, dst_folder):
     os.rmdir(src_folder)
 
 def update_db_link_by_folder():
-    result = subprocess.run(["php", "/Users/libraryad/Documents/GitHub/imm/resourcespace/update_db_link_by_folder.php", link_json_path], capture_output=True, text=True, start_new_session=True)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_path = os.path.join(script_dir, "update_db_link_by_folder.php")
+    
+    result = subprocess.run(["php", script_path, link_json_path], capture_output=True, text=True, start_new_session=True)
     print(result.stdout)
     print(result.stderr)
 
@@ -213,8 +216,20 @@ if changes:
                     db_file_path = os.path.join(folder, lp.folders_files_detected[folder]['files'][file]['name'])
                     file_path_for_download = os.path.join(new_download_path, lp.folders_files_detected[folder]['files'][file]['name'])
                     lp.download(db_file_path, file_path_for_download)
-                    manifest.FILES.append(file_path_for_download)
 
+                    # Check EXIF orientation and auto-orient if it's not 1
+                    result = subprocess.run(
+                        ["identify", "-format", "%[EXIF:Orientation]", file_path_for_download],
+                        capture_output=True, text=True
+                    )
+                    orientation = result.stdout.strip().splitlines()[0] if result.stdout.strip() else ""
+
+                    if orientation and orientation != "1":
+                        print(f"  Reorienting {file_path_for_download} (orientation={orientation})")
+                        subprocess.run(["mogrify", "-auto-orient", file_path_for_download], check=True)
+                        
+                    manifest.FILES.append(file_path_for_download)
+            
             if manifest.FILES:
                 manifest.save()
 
